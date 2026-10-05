@@ -126,7 +126,7 @@ Nix 2.34.8, nixpkgs `c59305b`, x86_64-linux, `/usr/bin/env time -v`, fixture `./
 
 | Run | Wall | Max RSS | JSON | Modules | Options | Evaluations / crash recoveries | Mismatches |
 |---|---|---|---|---|---|---|---|
-| default (2026-10-05) | 5.95 s | 301 MB | 730 KB | 957 | 29 | 4 / 3 (all deliberate) | 0 |
+| default (2026-10-05) | 6.29 s | 295 MB | 38 KB | 24 | 30 | 4 / 3 (all deliberate) | 0 |
 | `--all` (2026-10-03, before definitions were omitted by default) | 84 s | 1.43 GB | 20 MB | 3993 | 16812 | 14 / 13 (3 deliberate, 10 in stock nixpkgs options; by stage: 9 self-check, 3 preview, 1 reconstruct) | 0 |
 
 With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash recoveries. Timings vary by about a second between runs.
@@ -138,7 +138,7 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 - An option whose active definition has an unknown priority, or whose `mkIf` condition throws, gets no winner (`highestPrio: null`, `winners: []`).
 - Messages of `throw`/`assert` cannot be read (`tryEval` does not return them); `error` fields name the failing stage only. Crash warnings do carry the Nix error text.
 - `--all` is slow and big (table above).
-- List-merged options keep every active definition, because each one is a winner: once you touch `assertions` or `environment.systemPackages`, all their active nixpkgs definitions and the defining modules are listed. In the fixture that is most of the 957 modules and the 730 KB.
+- For options with several winners (lists, attrsets) only non-nixpkgs definitions are listed; nixpkgs winners are counted in `omitted`, so the listed `winners` of such an option are not the whole merged value. Use `--include-all-definitions` to see them.
 - Value previews are bounded but not scrubbed: only options whose path looks like a secret (`password`, `token`, `secret`, `credential`, `api_key`, ...) are `<redacted>`. A preview can still contain sensitive values; don't share `graph.json` blindly.
 - Relative `path:` inputs are resolved only for the root flake.
 - Inline user modules carry nixpkgs' own `flake.nix` as `file` (a nixosSystem quirk); use `origin`, `modulesIndex` and `position` for them. An anonymous module nested in an inline one has no `modulesIndex`.
@@ -156,7 +156,7 @@ nix fmt                # nixfmt (RFC style); CI runs: nix fmt -- --check .
 nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes
 ```
 
-`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-05). `tests/assertions.jq` has 82 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
+`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-05). `tests/assertions.jq` has 84 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
 Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
 

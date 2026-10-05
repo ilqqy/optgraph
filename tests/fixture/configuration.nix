@@ -16,6 +16,7 @@
     ./modules/wrappers.nix
     ./modules/lazy.nix
     ./modules/secrets.nix
+    ./modules/lists.nix
   ];
 
   boot.loader.grub.enable = false;
