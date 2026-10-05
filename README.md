@@ -40,6 +40,7 @@ Logs go to stderr. Without `-o` the JSON goes to stdout. With `-o` it is written
 |---|---|
 | `-o`, `--output FILE` | Write `graph.json` to `FILE`. Default: stdout. |
 | `--all` | No scope filter: every declared option and every loaded module. Slow and big, see [Measured](#measured). |
+| `--include-all-definitions` | List every definition. By default, nixpkgs definitions that neither win nor come from a non-nixpkgs module are only counted (`options[].omitted`). Independent of `--all`. |
 | `--max-retries N` | Number of uncatchable crashes to recover from by re-running. Default 10, with `--all` 100. The (N+1)th crash ends the run with partial output and exit 3. The fixture crashes 3 times on purpose: `--max-retries 3` completes, `--max-retries 2` ends partial. |
 | `--time-budget SECS` | Wall-clock budget for all evaluations. Default 600, with `--all` 1800. Each evaluation runs under `timeout` with what is left of the budget; an evaluation that is killed (status 124), or a budget that runs out between evaluations, ends the run as exhausted (exit 3). The partial-output evaluations that follow have their own limit of `max(120, SECS/4)` seconds each, so the total can exceed `SECS`. |
 | `-h`, `--help` | Usage. |
@@ -121,12 +122,12 @@ All five come from options that the fixture breaks on purpose.
 
 ## Measured
 
-2026-10-03, Nix 2.34.8, nixpkgs `c59305b`, x86_64-linux, `/usr/bin/env time -v`, fixture `./tests/fixture#nixosConfigurations.test`:
+Nix 2.34.8, nixpkgs `c59305b`, x86_64-linux, `/usr/bin/env time -v`, fixture `./tests/fixture#nixosConfigurations.test`:
 
 | Run | Wall | Max RSS | JSON | Modules | Options | Evaluations / crash recoveries | Mismatches |
 |---|---|---|---|---|---|---|---|
-| default | 6.97 s | 564 MB | 1.05 MB | 21 | 25 | 4 / 3 (all deliberate) | 0 |
-| `--all` | 84 s | 1.43 GB | 20 MB | 3993 | 16812 | 14 / 13 (3 deliberate, 10 in stock nixpkgs options; by stage: 9 self-check, 3 preview, 1 reconstruct) | 0 |
+| default (2026-10-05) | 5.95 s | 301 MB | 730 KB | 957 | 29 | 4 / 3 (all deliberate) | 0 |
+| `--all` (2026-10-03, before definitions were omitted by default) | 84 s | 1.43 GB | 20 MB | 3993 | 16812 | 14 / 13 (3 deliberate, 10 in stock nixpkgs options; by stage: 9 self-check, 3 preview, 1 reconstruct) | 0 |
 
 With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash recoveries. Timings vary by about a second between runs.
 
@@ -137,7 +138,8 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 - An option whose active definition has an unknown priority, or whose `mkIf` condition throws, gets no winner (`highestPrio: null`, `winners: []`).
 - Messages of `throw`/`assert` cannot be read (`tryEval` does not return them); `error` fields name the failing stage only. Crash warnings do carry the Nix error text.
 - `--all` is slow and big (table above).
-- In the default scope, options you touch list every definition from nixpkgs too: in the fixture `systemd.services` has 1666 entries, which is most of its 1.05 MB.
+- List-merged options keep every active definition, because each one is a winner: once you touch `assertions` or `environment.systemPackages`, all their active nixpkgs definitions and the defining modules are listed. In the fixture that is most of the 957 modules and the 730 KB.
+- Value previews are bounded but not scrubbed: only options whose path looks like a secret (`password`, `token`, `secret`, `credential`, `api_key`, ...) are `<redacted>`. A preview can still contain sensitive values; don't share `graph.json` blindly.
 - Relative `path:` inputs are resolved only for the root flake.
 - Inline user modules carry nixpkgs' own `flake.nix` as `file` (a nixosSystem quirk); use `origin`, `modulesIndex` and `position` for them. An anonymous module nested in an inline one has no `modulesIndex`.
 - A module key built from a string keeps what the string says: with a relative `path:` input, `"${extra}/interpolated.nix"` gives an id containing `/./`.
@@ -154,6 +156,10 @@ nix fmt                # nixfmt (RFC style); CI runs: nix fmt -- --check .
 nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes
 ```
 
-`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-03). `tests/assertions.jq` has 69 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
+`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-05). `tests/assertions.jq` has 82 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
 Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
