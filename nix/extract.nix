@@ -462,9 +462,13 @@ let
         if includeAllDefinitions then
           indices
         else
+          # A single nixpkgs winner is kept; with several winners (mergeable
+          # types: lists, attrsets) nixpkgs ones are only counted.
           filter (
-            i: winnerSet ? ${toString i} || originOfDef (elemAt recon.definitions i) != "nixpkgs"
+            i:
+            (singleWinner && winnerSet ? ${toString i}) || originOfDef (elemAt recon.definitions i) != "nixpkgs"
           ) indices;
+      singleWinner = length recon.winners == 1;
       keepSet = listToAttrs (
         map (i: {
           name = toString i;

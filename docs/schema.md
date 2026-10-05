@@ -94,10 +94,10 @@ Sorted by `path` (bytewise). `_module.*` is never listed, in either scope.
 | `loc` | array of string, at least 1 | Option path components. |
 | `declaredIn` | array of string | The option's `declarations`: files that declare it, usually one. `[]` for excluded options, or when reading them threw. |
 | `type` | string or null | `type.description` of the option type, e.g. `string`, `signed integer`, `attribute set of (submodule)`. `null` for excluded options, or when it cannot be read. |
-| `definitions` | array of definition | The listed definitions of the option, plus the option default as the last entry (if the option has a `default` and it is listed). By default a definition is listed when it comes from a module whose origin is not `nixpkgs` (active or not), or when it is a winner; every other nixpkgs definition is only counted in `omitted`. With `--include-all-definitions` every definition found in the loaded modules is listed. Order: modules in the order of `modules`, each module's definitions in walk order. This is not the module system's merge order. |
+| `definitions` | array of definition | The listed definitions of the option, plus the option default as the last entry (if the option has a `default` and it is listed). By default a definition is listed when it comes from a module whose origin is not `nixpkgs` (`user`, `user-inline`, `input:*` or `unknown`; active or not), or when it is the option's only winner. Every other nixpkgs definition, including nixpkgs winners of options with several winners (lists, attrsets), is only counted in `omitted`; `winners` then indexes only the listed ones. With `--include-all-definitions` every definition found in the loaded modules is listed. Order: modules in the order of `modules`, each module's definitions in walk order. This is not the module system's merge order. |
 | `winners` | array of integer | Ascending indices into the listed `definitions` of the definitions that are active and have priority `highestPrio`. One entry for single-value types; several for mergeable types (lists, attrsets, submodules, ...). Empty when `highestPrio` is `null`. |
 | `highestPrio` | integer or null | Lowest priority number among active definitions (lower wins). `null` if there is no active definition (the module system reports `9999` then), or if the winner is unknown: some active definition has an unknown priority (reading its value threw) or some `mkIf` condition is `"mkIf-error"`. In the unknown case `winners` is `[]` and `error` ends with `winner unknown: ...`; the module system itself would throw for such an option. |
-| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive }`: nixpkgs definitions that were counted instead of listed, split by `active`. Both `0` with `--include-all-definitions`. Winners are never omitted. Computed after the self-check, which always sees every definition. |
+| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive }`: nixpkgs definitions that were counted instead of listed, split by `active`. Both `0` with `--include-all-definitions`. A single winner is never omitted; with several winners, nixpkgs ones are counted here (as active). Computed after the self-check, which always sees every definition. |
 | `error` | string or null | `null`, or messages joined by `"; "`, in this order: per definition `N`, `definition N: throw/assert while reading its value` (the outer value threw; its priority is unknown) and `definition N: an mkIf condition threw or is not a bool` (`condition` is `"mkIf-error"`); then `winner unknown: a definition could not be classified` if `highestPrio` is `null` for that reason; then `definition N: preview hit throw/assert` (a throw/assert was hit while previewing it). The last one is set by an explicit failure flag, not by the text: a string value that contains `<error>` does not count. An excluded option has only `excluded after an uncatchable crash during reconstruct (see meta.warnings)`. `N` indexes `definitions`. `tryEval` cannot return the message of a `throw`, so the text names the stage, not the cause. |
 
 Submodule-typed options (`users.users`, `systemd.services`) and freeform options (`services.openssh.settings`) are leaves: definitions are listed per module at the declared option path, as one value each. There are no entries for `users.users.alice.shell` or `services.openssh.settings.PermitRootLogin`, and priorities inside the submodule value are not visible.
@@ -144,17 +144,17 @@ Not part of `graph.json`. When the lib cannot produce a document it returns `{ f
 
 The `setDefaultModuleLocation` wrapper nodes that `nixosSystem` puts around each user module are collapsed in aligned attribution: only the wrapped module is listed.
 
-Options that a user module touches can have hundreds of nixpkgs definitions (in the fixture `systemd.services` has 1666, almost all under a false `mkIf`). By default those that don't win are counted in `omitted` instead of listed. List-merged options are the exception: every active definition of a list option such as `assertions` or `environment.systemPackages` is a winner, so all of them stay listed.
+Options that a user module touches can have hundreds of nixpkgs definitions (in the fixture `systemd.services` has 1666, almost all under a false `mkIf`). By default those that don't win are counted in `omitted` instead of listed. For options with several winners (every active definition of a list option such as `assertions` or `environment.systemPackages` is a winner), nixpkgs winners are counted too, so only non-nixpkgs definitions are listed.
 
 ## Invariants
 
 Enforced by the JSON Schema: field presence and types, enums, `origin` pattern, unique `imports` and `winners`, `loc` non-empty, indices and `modulesIndex` non-negative.
 
-Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (82 checks; a check whose target is missing fails, it is not skipped):
+Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (84 checks; a check whose target is missing fails, it is not skipped):
 
 - every id in `imports` and every definition's `module` is the `id` of a record in `modules`, and module ids are unique;
 - a definition's `file` is absent when it equals its module's file;
-- in the default scope every listed nixpkgs definition is a winner (or the option default);
+- in the default scope a listed nixpkgs definition is the option's only winner (or the option default);
 - every index in `winners` is below `definitions.length`, and each winner's `priority` equals `highestPrio`;
 - `options` is sorted by `path`;
 - no `_module.*` option; in the default scope every option has a definition from a non-nixpkgs module (or none at all);
@@ -172,7 +172,7 @@ Hold by construction (code reading and the runs above, not asserted by tests):
 
 ## Example
 
-Run: `nix run . -- ./tests/fixture#nixosConfigurations.test -o /tmp/graph.json` (5 warnings, 957 modules, 29 options; most modules are the definers of the listed `assertions` winners). Store paths are shortened to `/nix/store/…-source/...`. In the module record below, `file` is nixpkgs' `flake.nix`, `position` is the fixture's own.
+Run: `nix run . -- ./tests/fixture#nixosConfigurations.test -o /tmp/graph.json` (5 warnings, 24 modules, 30 options). Store paths are shortened to `/nix/store/…-source/...`. In the module record below, `file` is nixpkgs' `flake.nix`, `position` is the fixture's own.
 
 `meta`, warnings reduced to code and subject:
 
