@@ -22,7 +22,31 @@ jobs:
           nix run . -- ./tests/fixture#nixosConfigurations.test -o graph.json
           jq '{modules: (.modules|length), options: (.options|length)}' graph.json
           du -h graph.json
+      - name: CLI end-to-end
+        run: nix develop -c tests/e2e.sh "$RUNNER_TEMP/e2e"
       - uses: actions/upload-artifact@v4
         with:
           name: graph-json
           path: graph.json
+
+  # checks.fixture runs the lib against the fixture built with this flake's
+  # nixpkgs; overriding it tests the oldest and newest supported releases.
+  fixture-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nixpkgs: nixos-25.11
+            override: --override-input nixpkgs github:NixOS/nixpkgs/b6018f87da91d19d0ab4cf979885689b469cdd41
+          - nixpkgs: nixos-unstable (flake.lock)
+            override: ""
+    name: checks.fixture (${{ matrix.nixpkgs }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: checks.fixture
+        run: nix build -L --no-link --print-out-paths .#checks.x86_64-linux.fixture ${{ matrix.override }}

@@ -17,6 +17,22 @@
     {
       lib = import ./nix { inherit toolVersion; };
 
+      packages = forAllSystems (pkgs: {
+        default = pkgs.callPackage ./cli {
+          src = self;
+          inherit (self) narHash;
+          inherit toolVersion;
+        };
+      });
+
+      apps = forAllSystems (pkgs: {
+        default = {
+          type = "app";
+          program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/optgraph";
+          meta.description = "Extract the module graph and option definitions of a NixOS configuration";
+        };
+      });
+
       checks = forAllSystems (
         pkgs:
         import ./tests {
