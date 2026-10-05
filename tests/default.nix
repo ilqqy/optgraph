@@ -1,6 +1,7 @@
 # Checks run by `nix flake check`. The extraction lib is exercised directly on
 # the fixture (no CLI): the fixture's outputs are called with this flake's
 # nixpkgs, so `--override-input nixpkgs ...` tests other nixpkgs releases.
+# The CLI is covered by tests/e2e.sh (a CI step).
 {
   pkgs,
   nixpkgs,
@@ -62,4 +63,7 @@ in
         jq '{modules: (.modules | length), options: (.options | length), warnings: [.meta.warnings[].code]}' ${graphJson}
         cp ${graphJson} $out
       '';
+
+  # Building the package runs shellcheck on the CLI.
+  cli = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
 }
