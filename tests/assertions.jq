@@ -10,9 +10,11 @@ def check($name; f): {name: $name, ok: ([try f catch false] | length > 0 and all
 
 def opt($p): first(.options[] | select(.path == $p));
 def hasOpt($p): any(.options[]; .path == $p);
-def defsFrom($p; $suffix): [opt($p).definitions[] | select((.file // "") | endswith($suffix))];
+# A definition's file: its own `file`, else its module's file.
+def defFile($g): .file // (.module as $m | first($g.modules[] | select(.id == $m)) | .file);
+def defsFrom($p; $suffix): . as $g | [opt($p).definitions[] | select((defFile($g) // "") | endswith($suffix))];
 def defIn($p; $suffix): defsFrom($p; $suffix) | first;
-def idx($p; $suffix): opt($p).definitions | map((.file // "") | endswith($suffix)) | index(true);
+def idx($p; $suffix): . as $g | opt($p).definitions | map((defFile($g) // "") | endswith($suffix)) | index(true);
 def mod($id): first(.modules[] | select(.id == $id));
 def modOfDef($p; $i): opt($p).definitions[$i].module as $m | mod($m);
 def warning($code; $subject): any(.meta.warnings[]; .code == $code and .subject == $subject);
@@ -104,9 +106,24 @@ def defaultIdx($p): opt($p).definitions | map(.kind == "default") | index(true);
   check("no _module options"; [.options[].path | select(startswith("_module"))] | length == 0),
   check("nixpkgs-only option filtered out"; hasOpt("services.openssh.enable") | not),
   check("every option has a non-nixpkgs definition"; [.modules[] | select(.origin != "nixpkgs") | .id] as $user | all(.options[]; . as $o | ($o.definitions | any(.module as $m | $user | index($m) != null)) or $o.definitions == [])),
-  check("only non-nixpkgs modules, their ancestors and imports listed"; .modules | length < 40),
+  check("default scope: nixpkgs definitions that don't win are omitted"; ([.modules[] | {key: .id, value: .origin}] | from_entries) as $o | all(.options[]; . as $opt | all(range(0; $opt.definitions | length); . as $i | ($opt.winners | index($i)) != null or $opt.definitions[$i].module == null or $o[$opt.definitions[$i].module] != "nixpkgs"))),
+  check("omitted counts on every option"; all(.options[]; .omitted.nixpkgsActive >= 0 and .omitted.nixpkgsInactive >= 0)),
+  check("systemd.services: inactive nixpkgs definitions counted, not listed"; opt("systemd.services") | .omitted.nixpkgsInactive > 1000 and (.definitions | length) < 100),
+  check("user definitions are never omitted"; defsFrom("fixture.prio"; "/modules/conditional.nix") | length == 1),
+
+  # --- redaction and lazy values
+  check("secret-looking option: string preview redacted"; opt("fixture.apiToken").definitions[0].valuePreview == "<redacted>"),
+  check("secret-looking option: bool preview kept"; opt("fixture.secretEnabled").definitions[0].valuePreview == "true"),
+  check("nested attrsets preview names only (lazy field not forced)"; defIn("fixture.lazy"; "/modules/lazy.nix").valuePreview == "{ nested = { boom, fine }; }"),
+  check("lazy field: no crash, no recovery"; [.meta.warnings[] | select(.subject == "fixture.lazy" or .subject == "assertions")] | length == 0),
+  check("assertions option: never previewed"; opt("assertions") | all(.definitions[]; .valuePreview == null)),
+  check("assertions option: the fixture's entry is listed"; defsFrom("assertions"; "/modules/lazy.nix") | length == 1),
+  check("only the three deliberate crash warnings"; [.meta.warnings[] | select(.code | endswith("crash"))] | length == 3),
 
   # --- referential integrity
+  check("every definition's module is listed"; [.modules[].id] as $ids | all(.options[].definitions[]; .module == null or (.module as $m | $ids | index($m) != null))),
+  check("file dropped when it is the module's file"; . as $g | all(.options[].definitions[]; .module == null or .file == null or (.module as $m | first($g.modules[] | select(.id == $m)).file != .file))),
+  check("mkDefinition keeps its own file"; any(opt("fixture.viaDefinition").definitions[]; .file == "/virtual/defined-here.nix")),
   check("imports resolve"; [.modules[].id] as $ids | all(.modules[].imports[]; . as $i | $ids | index($i) != null)),
   check("module ids unique"; [.modules[].id] | length == (unique | length)),
   check("winners index definitions"; all(.options[]; . as $o | all($o.winners[]; . < ($o.definitions | length)))),

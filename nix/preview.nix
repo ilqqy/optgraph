@@ -6,8 +6,12 @@
 # Errors tryEval cannot catch (abort, missing attribute, ...) still propagate;
 # callers wrap previews in a "preview" stage marker so the CLI can degrade.
 #
+# Attrsets show `name = value;` only at the top level; nested attrsets show
+# their names only (`{ a, b }`), so lazy fields are never forced.
+#
 # Internally every node yields { s = text; e = whether a throw/assert was hit; }.
 let
+  take = n: xs: builtins.genList (builtins.elemAt xs) n;
   inherit (builtins)
     any
     attrNames
@@ -124,8 +128,10 @@ let
       in
       if n == 0 then
         ok "{ }"
-      else if depth >= maxDepth then
-        ok "{ ...(${toString n}) }"
+      else if depth >= 1 then
+        # Below the top level only the names: attribute values are often lazy
+        # by design (e.g. assertion messages) and must not be forced.
+        ok ("{ " + concatStringsSep ", " (map showKey (take shown names) ++ more n shown) + " }")
       else
         join "{ " " }" (genList item shown) (more n shown);
 

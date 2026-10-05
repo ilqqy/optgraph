@@ -21,6 +21,9 @@ in
     fromDisabled = str;
     fromInterpolated = str;
     nestedInline = str;
+    lazy = lib.mkOption { type = lib.types.attrsOf lib.types.anything; };
+    apiToken = str;
+    secretEnabled = lib.mkOption { type = lib.types.bool; };
     inlineAttrs = str;
     inlineFunction = str;
     fromExtra = str;

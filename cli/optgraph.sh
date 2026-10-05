@@ -16,6 +16,9 @@ usage: optgraph <flakeref>#nixosConfigurations.<host> [options]
 
   -o, --output FILE       write graph.json to FILE (default: stdout)
       --all               no scope filter: every declared option and module
+      --include-all-definitions
+                          list every definition; by default nixpkgs definitions
+                          that don't win are only counted (option.omitted)
       --max-retries N     uncatchable crashes to recover from by re-running
                           (default 10; --all: 100)
       --time-budget SECS  wall-clock budget for all evaluations (default 600;
@@ -39,7 +42,7 @@ usage_error() {
   die 1 "$*"
 }
 
-installable="" output="" all=false max_retries="" time_budget=""
+installable="" output="" all=false include_all_defs=false max_retries="" time_budget=""
 while [ $# -gt 0 ]; do
   case $1 in
   -o | --output)
@@ -49,6 +52,10 @@ while [ $# -gt 0 ]; do
     ;;
   --all)
     all=true
+    shift
+    ;;
+  --include-all-definitions)
+    include_all_defs=true
     shift
     ;;
   --max-retries)
@@ -133,6 +140,7 @@ base_args=$(jq -c -n \
   --arg host "$host" \
   --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson all "$all" \
+  --argjson includeAllDefinitions "$include_all_defs" \
   '
   $archive[0] as $a | $metadata[0] as $m
   | ($a.path + (if ($m.original.dir // "") != "" then "/" + $m.original.dir else "" end)) as $flakeDir
@@ -150,6 +158,7 @@ base_args=$(jq -c -n \
       host: $host,
       generatedAt: $generatedAt,
       all: $all,
+      includeAllDefinitions: $includeAllDefinitions,
       selfRoot: $a.path,
       inputs: ([($a.inputs // {}) | flat("")] + $relative | from_entries)
     }')
