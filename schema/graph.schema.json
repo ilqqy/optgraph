@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ilqqy/optgraph/schema/graph.schema.json",
+  "title": "optgraph graph.json",
+  "description": "Module import graph and option definitions of one NixOS configuration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "modules", "options"],
+  "properties": {
+    "meta": { "$ref": "#/$defs/meta" },
+    "modules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "options": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/option" }
+    }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "nixpkgsRev",
+        "nixpkgsVersion",
+        "generatedAt",
+        "toolVersion",
+        "scope",
+        "attribution",
+        "complete",
+        "warnings"
+      ],
+      "properties": {
+        "host": { "$ref": "#/$defs/nullableString" },
+        "nixpkgsRev": { "$ref": "#/$defs/nullableString" },
+        "nixpkgsVersion": { "type": "string" },
+        "generatedAt": { "$ref": "#/$defs/nullableString" },
+        "toolVersion": { "type": "string" },
+        "scope": { "enum": ["user", "all"] },
+        "attribution": { "enum": ["aligned", "file-based"] },
+        "complete": { "type": "boolean" },
+        "warnings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/warning" }
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "subject"],
+      "properties": {
+        "code": {
+          "enum": [
+            "alignment-failed",
+            "nixpkgs-untested",
+            "input-ambiguous",
+            "module-error",
+            "graph-mismatch",
+            "eval-crash",
+            "preview-crash",
+            "selfcheck-crash",
+            "selfcheck-skipped",
+            "reconstruction-mismatch",
+            "budget-exhausted"
+          ]
+        },
+        "message": { "type": "string" },
+        "subject": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "origin": {
+      "type": "string",
+      "pattern": "^(user|user-inline|nixpkgs|unknown|input:.+)$"
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "imports", "origin", "disabled", "modulesIndex", "position"],
+      "properties": {
+        "id": { "type": "string" },
+        "file": { "type": "string" },
+        "imports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "origin": { "$ref": "#/$defs/origin" },
+        "disabled": { "type": "boolean" },
+        "modulesIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "position": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "loc",
+        "declaredIn",
+        "type",
+        "definitions",
+        "winners",
+        "highestPrio",
+        "error"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "loc": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "declaredIn": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "type": { "$ref": "#/$defs/nullableString" },
+        "definitions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/definition" }
+        },
+        "winners": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "uniqueItems": true
+        },
+        "highestPrio": { "type": ["integer", "null"] },
+        "error": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "file", "module", "priority", "active", "condition", "valuePreview"],
+      "properties": {
+        "kind": { "enum": ["definition", "default"] },
+        "file": { "$ref": "#/$defs/nullableString" },
+        "module": { "$ref": "#/$defs/nullableString" },
+        "priority": { "type": ["integer", "null"] },
+        "active": { "type": "boolean" },
+        "condition": { "enum": ["mkIf-false", "mkIf-error", null] },
+        "valuePreview": { "$ref": "#/$defs/nullableString" }
+      }
+    }
+  }
+}
