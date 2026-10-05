@@ -14,6 +14,8 @@
     ./modules/disabler.nix
     ./modules/layers.nix
     ./modules/wrappers.nix
+    ./modules/lazy.nix
+    ./modules/secrets.nix
   ];
 
   boot.loader.grub.enable = false;

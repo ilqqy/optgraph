@@ -25,6 +25,9 @@
   excludeModules ? [ ],
   preview ? true,
   selfcheck ? true,
+  # List every definition; by default nixpkgs definitions that neither win
+  # nor come from a non-nixpkgs module are only counted (`omitted`).
+  includeAllDefinitions ? false,
   # "full" | "scope" (only list the in-scope option locs)
   mode ? "full",
   host ? null,
@@ -48,11 +51,13 @@ let
     isString
     length
     listToAttrs
+    match
     seq
     sort
     stringLength
     toJSON
     tryEval
+    typeOf
     ;
 
   supported = import ./supported.nix;
@@ -232,6 +237,12 @@ let
     }) liveNodes
   );
   nonNixpkgsNodes = filter (n: originByKey.${noCtx n.key} != "nixpkgs") liveNodes;
+  fileByKey = listToAttrs (
+    map (n: {
+      name = noCtx n.key;
+      value = n.file;
+    }) liveNodes
+  );
 
   # ------------------------------------------------------- definitions walk
   walkNode =
@@ -294,6 +305,12 @@ let
   excludeSet = setOf exclude;
   noPreviewSet = setOf noPreview;
   noSelfcheckSet = setOf noSelfcheck;
+  # Never previewed: their attrsets carry fields (assertion messages) that
+  # nixpkgs forces only when an assertion fails; forcing them can throw.
+  neverPreviewSet = setOf [
+    [ "assertions" ]
+    [ "warnings" ]
+  ];
   optionDefaultPriority = (lib.mkOptionDefault null).priority;
 
   # Sorted, deduplicated list of strings.
@@ -427,33 +444,105 @@ let
 
       contents = map (d: d.content) classified;
 
+      # ---- output stage, after the self-check: which definitions to list
+      winnerSet = listToAttrs (
+        map (i: {
+          name = toString i;
+          value = true;
+        }) recon.winners
+      );
+      originOfDef =
+        d:
+        if d.module != null then
+          originByKey.${noCtx d.module} or (originOfFile d.file)
+        else
+          originOfFile d.file;
+      indices = lib.range 0 (length recon.definitions - 1);
+      keep =
+        if includeAllDefinitions then
+          indices
+        else
+          filter (
+            i: winnerSet ? ${toString i} || originOfDef (elemAt recon.definitions i) != "nixpkgs"
+          ) indices;
+      keepSet = listToAttrs (
+        map (i: {
+          name = toString i;
+          value = true;
+        }) keep
+      );
+      dropped = filter (i: !(keepSet ? ${toString i})) indices;
+      omitted = {
+        nixpkgsActive = length (filter (i: (elemAt recon.definitions i).active) dropped);
+        nixpkgsInactive = length (filter (i: !(elemAt recon.definitions i).active) dropped);
+      };
+
+      # Option paths that look like secrets: non-scalar values are redacted.
+      sensitive =
+        match ".*(password|passwd|secret|token|private|credential|api[_-]?key).*" (lib.toLower path)
+        != null;
+      isScalar =
+        v:
+        let
+          t = tryEval (typeOf v);
+        in
+        t.success
+        && lib.elem t.value [
+          "bool"
+          "null"
+          "int"
+          "float"
+        ];
+      redacted = {
+        text = "<redacted>";
+        failed = false;
+      };
+      previewValue = v: f: if sensitive && !(isScalar v) then redacted else f v;
+
       previews =
-        if !preview || noPreviewSet ? ${key} then
-          map (_: null) recon.definitions
+        if !preview || noPreviewSet ? ${key} || neverPreviewSet ? ${key} then
+          map (_: null) keep
         else
           seq recon (
             mark "preview" subject (
               strict (
-                lib.imap0 (
-                  i: d:
+                map (
+                  i:
+                  let
+                    d = elemAt recon.definitions i;
+                  in
                   if d.kind == "default" then
-                    P.previewDefault opt
+                    previewValue opt.default (_: P.previewDefault opt)
                   else if d.active && !(elemAt classified i).probeFailed then
-                    P.preview (elemAt contents i)
+                    previewValue (elemAt contents i) P.preview
                   else
                     null
-                ) recon.definitions
+                ) keep
               )
             )
           );
 
       previewErrors = concatMap (x: x) (
-        lib.imap0 (
+        lib.zipListsWith (
           i: p: lib.optional (p != null && p.failed) "definition ${toString i}: preview hit throw/assert"
-        ) previews
+        ) keep previews
       );
 
       errors = recon.errors ++ previewErrors;
+
+      # `file` is dropped when it is the file of the definition's module.
+      outDef =
+        i: p:
+        let
+          d = elemAt recon.definitions i;
+          sameFile = d.module != null && (fileByKey.${noCtx d.module} or null) == d.file;
+        in
+        (if sameFile then removeAttrs d [ "file" ] else d)
+        // {
+          valuePreview = if p == null then null else p.text;
+        };
+
+      keptDefs = map (i: elemAt recon.definitions i) keep;
 
       warnings =
         lib.optional (noPreviewSet ? ${key}) (
@@ -479,30 +568,33 @@ let
           definitions = [ ];
           winners = [ ];
           highestPrio = null;
+          omitted = {
+            nixpkgsActive = 0;
+            nixpkgsInactive = 0;
+          };
           error = "excluded after an uncatchable crash during reconstruct (see meta.warnings)";
         };
         warnings = [
           (warn "eval-crash" path "uncatchable crash while reconstructing definitions; option excluded")
         ];
+        moduleIds = [ ];
+        files = [ ];
       }
     else
       seq recon (
         seq selfcheckResult (
           seq previews {
             record = {
-              inherit path loc;
-              inherit (recon)
-                declaredIn
-                type
-                highestPrio
-                winners
-                ;
-              definitions = lib.zipListsWith (
-                d: p: d // { valuePreview = if p == null then null else p.text; }
-              ) recon.definitions previews;
+              inherit path loc omitted;
+              inherit (recon) declaredIn type highestPrio;
+              # winners re-indexed into the listed definitions
+              winners = filter (j: winnerSet ? ${toString (elemAt keep j)}) (lib.range 0 (length keep - 1));
+              definitions = lib.zipListsWith outDef keep previews;
               error = if errors == [ ] then null else concatStringsSep "; " errors;
             };
             inherit warnings;
+            moduleIds = filter (m: m != null) (map (d: d.module) keptDefs);
+            files = filter (f: f != null) (map (d: d.file) keptDefs);
           }
         )
       );
@@ -547,7 +639,10 @@ let
         # `imports` edges resolve.
         imported = concatMap childKeys nonNixpkgsNodes;
       in
-      ancestors ++ imported;
+      ancestors ++ imported ++ definers;
+
+  # Modules of the listed definitions, so every definition's `module` resolves.
+  definers = concatMap (o: o.moduleIds) optionResults;
 
   disabledKeys = map (n: n.key) col.disabledNodes;
   included = setOf (includedKeys ++ disabledKeys);
@@ -598,6 +693,14 @@ let
         )
       ];
 
+  # Files the output actually attributes: listed modules (file and position)
+  # and the listed definitions' own files.
+  usedFiles =
+    map (m: m.file) modules
+    ++ map (m: m.position) (filter (m: m.position != null) modules)
+    ++ concatMap (o: o.files) optionResults;
+  rootUsed = root: any (f: f == root || lib.hasPrefix (root + "/") (normRoot f)) usedFiles;
+
   globalWarnings =
     lib.optional (!col.aligned) (
       warn "alignment-failed" null
@@ -610,7 +713,7 @@ let
     ++ map (
       r:
       warn "input-ambiguous" r.root "inputs ${toJSON r.names} share one source; attributed to ${r.origin}"
-    ) (filter (r: r ? names && length r.names > 1) rootList)
+    ) (filter (r: r ? names && length r.names > 1 && rootUsed r.root) rootList)
     ++ map (
       n:
       if n.status == "excluded" then

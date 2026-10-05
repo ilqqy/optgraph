@@ -43,6 +43,13 @@ jq_check "full: selfcheck-crash message carries the abort" "$out/graph.json" \
   'any(.meta.warnings[]; .code == "selfcheck-crash" and .subject == "fixture.whnfAbort" and (.message | contains("aborts when forced to WHNF")))'
 echo "     full: $(evaluations full)"
 
+# 1b. --include-all-definitions: nothing omitted, more definitions listed.
+expect_exit 0 include-all "$optgraph" "$fixture" -o "$out/include-all.json" --include-all-definitions
+check-jsonschema --schemafile schema/graph.schema.json "$out/include-all.json" && pass "include-all: schema" || fail "include-all: schema"
+jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; .omitted == {nixpkgsActive: 0, nixpkgsInactive: 0})'
+jq_check "include-all: inactive nixpkgs definitions listed" "$out/include-all.json" \
+  '(.options[] | select(.path == "systemd.services") | .definitions | length) > 1000'
+
 # 2. Bisection fallback (markers ignored): both aborting options get excluded.
 OPTGRAPH_LOCALIZE=bisect expect_exit 0 bisect "$optgraph" "$fixture" -o "$out/bisect.json"
 check-jsonschema --schemafile schema/graph.schema.json "$out/bisect.json" && pass "bisect: schema" || fail "bisect: schema"
