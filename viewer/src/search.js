@@ -27,9 +27,22 @@ function fuzzyMatch(query, text) {
   return { score: score - text.length * 0.1, hits };
 }
 
-// -> [{ index, hits }] sorted by score (all options for an empty query).
+// -> [{ index, hits }] sorted by score. For an empty query: all options in
+// sections (overrides, set by non-nixpkgs modules, nixpkgs only), each
+// preceded by a { header } row.
 function searchOptions(model, rawQuery) {
   const q = rawQuery.trim().toLowerCase().replace(/\s+/g, "");
+  if (!q) {
+    const a = model.analysis;
+    const sections = [
+      ["Overrides", a.overrides],
+      ["Set by your modules", a.withUser],
+      ["nixpkgs only", a.nixpkgsOnly],
+    ];
+    return sections.flatMap(([title, list]) =>
+      list.length ? [{ header: `${title} (${list.length})` }, ...list.map((i) => ({ index: i, hits: [] }))] : [],
+    );
+  }
   const out = [];
   for (let i = 0; i < model.lowerPaths.length; i++) {
     const m = fuzzyMatch(q, model.lowerPaths[i]);

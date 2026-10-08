@@ -27,6 +27,14 @@ class VirtualList {
     this.draw();
   }
 
+  // Scroll row i into view (with some context above it) if it is not visible.
+  reveal(i) {
+    const top = i * this.rowHeight;
+    const c = this.container;
+    if (top < c.scrollTop || top + this.rowHeight > c.scrollTop + c.clientHeight) c.scrollTop = Math.max(0, top - 2 * this.rowHeight);
+    this.draw();
+  }
+
   draw() {
     const n = this.items.length;
     if (n === 0) {

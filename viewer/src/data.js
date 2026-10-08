@@ -21,8 +21,73 @@ function buildModel(doc) {
 
   // Lower-cased paths for search, computed once.
   const lowerPaths = doc.options.map((o) => o.path.toLowerCase());
+  const modIndex = new Map(doc.modules.map((m, i) => [m.id, i]));
 
-  return { doc, meta: doc.meta, modules: doc.modules, options: doc.options, modById, modOptions, lowerPaths };
+  const model = { doc, meta: doc.meta, modules: doc.modules, options: doc.options, modById, modIndex, modOptions, lowerPaths };
+  model.analysis = analyse(model);
+  return model;
+}
+
+// Per-option facts for the start panel and the empty-query order.
+//   override: a listed definition lost: active, known priority, not a winner.
+//     The option default losing does not count (that is just setting an
+//     option), and neither can omitted nixpkgs definitions: `omitted` does not
+//     say whether they won or lost.
+//   userVsUser: winner and strongest loser both come from non-nixpkgs modules.
+//   off: indices of mkIf-false definitions from non-nixpkgs modules.
+function analyse(model) {
+  const info = model.options.map((o) => {
+    const winners = new Set(o.winners);
+    let hasUser = false, loser = null;
+    const off = [];
+    o.definitions.forEach((d, i) => {
+      if (d.kind !== "definition") return;
+      const user = defOrigin(model, d) !== "nixpkgs";
+      if (user) hasUser = true;
+      if (winners.has(i)) return;
+      if (!d.active) {
+        if (user && d.condition === "mkIf-false") off.push(i);
+      } else if (d.priority != null && (loser == null || d.priority < loser.priority)) {
+        loser = d;
+      }
+    });
+    if (!loser) return { hasUser, override: false, userVsUser: false, beats: null, off };
+    const winner = o.definitions[o.winners[0]];
+    const wo = defOrigin(model, winner);
+    const lo = defOrigin(model, loser);
+    return {
+      hasUser,
+      override: true,
+      userVsUser: wo !== "nixpkgs" && lo !== "nixpkgs",
+      // "mkForce (user) beats mkDefault (input:shared)"
+      beats: `${prioName(o.highestPrio)} (${wo}) beats ${prioName(loser.priority)} (${lo})`,
+      off,
+    };
+  });
+  const byPath = (a, b) => a - b; // options are sorted by path
+  const all = info.map((_, i) => i);
+  const overrides = all.filter((i) => info[i].override).sort((a, b) => info[b].userVsUser - info[a].userVsUser || byPath(a, b));
+  const withUser = all.filter((i) => !info[i].override && info[i].hasUser);
+  const nixpkgsOnly = all.filter((i) => !info[i].override && !info[i].hasUser);
+  const switchedOff = all.flatMap((i) => info[i].off.map((d) => ({ oi: i, di: d })));
+  const errors = all.filter((i) => model.options[i].error != null);
+  const definitions = model.options.reduce((n, o) => n + o.definitions.filter((d) => d.kind === "definition").length, 0);
+  return {
+    info,
+    overrides,
+    withUser,
+    nixpkgsOnly,
+    switchedOff,
+    errors,
+    stats: {
+      modules: model.modules.length,
+      options: model.options.length,
+      definitions,
+      overrides: overrides.length,
+      switchedOff: switchedOff.length,
+      errors: errors.length,
+    },
+  };
 }
 
 // A definition's file: its own, else its module's (docs/schema.md).

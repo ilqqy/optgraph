@@ -33,12 +33,81 @@ function ladderOrder(defs) {
     .sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
 }
 
-function renderOption(model, oi, onModule) {
+// Start state (nothing selected): summary and the options worth a look.
+const START_LIST_LIMIT = 200;
+
+function renderStart(model, onOption) {
+  const a = model.analysis;
+  const s = a.stats;
+  const tile = (n, label, title) => h("div", { class: "tile", title }, h("b", {}, n.toLocaleString("en")), h("span", {}, label));
+  const row = (oi, extra, title) =>
+    h("li", { onclick: () => onOption(oi), title }, h("span", { class: "path" }, model.options[oi].path), extra);
+  // Two lines: the path, then a note (long notes would squeeze the path).
+  const row2 = (oi, note, cls) =>
+    h("li", { class: "two", onclick: () => onOption(oi), title: note }, h("span", { class: "path" }, model.options[oi].path), h("span", { class: `note ${cls || ""}` }, note));
+  const list = (title, hint, items, render, emptyText) => [
+    h("h3", {}, title, h("span", { class: "count" }, String(items.length)), hint ? h("span", { class: "hint" }, hint) : null),
+    items.length
+      ? h(
+          "ul",
+          { class: "picklist" },
+          ...items.slice(0, START_LIST_LIMIT).map(render),
+          items.length > START_LIST_LIMIT ? h("li", { class: "more" }, `${items.length - START_LIST_LIMIT} more: use the search`) : null,
+        )
+      : h("p", { class: "muted" }, emptyText),
+  ];
+  return [
+    h(
+      "div",
+      { class: "tiles" },
+      tile(s.modules, "modules"),
+      tile(s.options, "options"),
+      tile(s.definitions, "definitions", "listed definitions, without option defaults and without the nixpkgs definitions counted as +N"),
+      tile(s.overrides, "overrides", "options where a listed definition lost to a stronger one (the option default losing does not count)"),
+      tile(s.switchedOff, "switched off", "definitions from non-nixpkgs modules under a false mkIf"),
+      tile(s.errors, "errors", "options with an error (a value or condition threw)"),
+    ),
+    h("p", { class: "muted intro" }, "Select an option to see who set it, at what priority, and why the others lost. Click a module in the graph to see what it sets."),
+    ...list(
+      "Overrides",
+      "between your modules first",
+      a.overrides,
+      (oi) => row2(oi, a.info[oi].beats),
+      "No listed definition lost.",
+    ),
+    ...list(
+      "Switched off",
+      "mkIf false",
+      a.switchedOff,
+      ({ oi, di }) => {
+        const m = model.modById.get(model.options[oi].definitions[di].module);
+        return row(oi, h("span", { class: "aside" }, moduleShortLabel(m)), moduleLabel(m));
+      },
+      "No definition is switched off.",
+    ),
+    ...list(
+      "Errors",
+      null,
+      a.errors,
+      (oi) => row2(oi, model.options[oi].error, "error"),
+      "No option has an error.",
+    ),
+  ];
+}
+
+function renderOption(model, oi, onModule, onCopyLink) {
   const o = model.options[oi];
   const winners = new Set(o.winners);
   const omittedN = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
+  const copyBtn = h("button", { type: "button", class: "copy-link", title: "Copy a link to this option" }, "Copy link");
+  copyBtn.addEventListener("click", () =>
+    onCopyLink().then((ok) => {
+      copyBtn.textContent = ok ? "Copied" : "Copy failed";
+      setTimeout(() => (copyBtn.textContent = "Copy link"), 1500);
+    }),
+  );
   const head = [
-    h("h2", {}, o.path),
+    h("div", { class: "title-row" }, h("h2", {}, o.path), copyBtn),
     h("div", { class: "kv" }, "type ", h("code", {}, o.type ?? "?")),
     o.declaredIn.length ? h("div", { class: "kv" }, "declared in ", ...o.declaredIn.map((f) => h("code", { title: f }, shortPath(f), " "))) : null,
     h(
