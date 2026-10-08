@@ -17,12 +17,16 @@
     {
       lib = import ./nix { inherit toolVersion; };
 
-      packages = forAllSystems (pkgs: {
+      packages = forAllSystems (pkgs: rec {
         default = pkgs.callPackage ./cli {
           src = self;
           inherit (self) narHash;
-          inherit toolVersion;
+          inherit toolVersion viewer;
         };
+        # Single-file viewer: result/index.html (viewer/build.sh).
+        viewer = pkgs.runCommand "optgraph-viewer" { } ''
+          bash ${./viewer/build.sh} ${./viewer} $out
+        '';
       });
 
       apps = forAllSystems (pkgs: {

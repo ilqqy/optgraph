@@ -14,7 +14,8 @@ usage() {
   cat <<'EOF'
 usage: optgraph <flakeref>#nixosConfigurations.<host> [options]
 
-  -o, --output FILE       write graph.json to FILE (default: stdout)
+  -o, --output FILE       write graph.json to FILE (default: stdout, unless --html)
+      --html FILE         write a self-contained viewer page with the graph embedded
       --all               no scope filter: every declared option and module
       --include-all-definitions
                           list every definition; by default nixpkgs definitions
@@ -42,9 +43,14 @@ usage_error() {
   die 1 "$*"
 }
 
-installable="" output="" all=false include_all_defs=false max_retries="" time_budget=""
+installable="" output="" html="" all=false include_all_defs=false max_retries="" time_budget=""
 while [ $# -gt 0 ]; do
   case $1 in
+  --html)
+    [ $# -ge 2 ] || usage_error "$1 needs a file argument"
+    html=$2
+    shift 2
+    ;;
   -o | --output)
     [ $# -ge 2 ] || usage_error "$1 needs a file argument"
     output=$2
@@ -320,15 +326,21 @@ enrich() {
       else . end' "$work/out.json"
 }
 
+enrich >"$work/final.json" || die 2 "cannot post-process the output"
+where=""
 if [ -n "$output" ]; then
   tmp="$output.tmp.$$"
-  enrich >"$tmp" || die 2 "cannot write $output"
+  cp "$work/final.json" "$tmp" || die 2 "cannot write $output"
   mv -f "$tmp" "$output" || die 2 "cannot write $output"
   tmp=""
   where=$output
-else
-  enrich
+elif [ -z "$html" ]; then
+  cat "$work/final.json"
   where=stdout
+fi
+if [ -n "$html" ]; then
+  optgraph-embed-html "$OPTGRAPH_VIEWER" "$work/final.json" "$html" || die 2 "cannot write $html"
+  where="${where:+$where and }$html"
 fi
 
 log "wrote $where: $(jq -r '"\(.modules | length) modules, \(.options | length) options, \(.meta.warnings | length) warnings"' "$work/out.json"); $evals evaluations, $retries crash recoveries, $((SECONDS - start))s"
