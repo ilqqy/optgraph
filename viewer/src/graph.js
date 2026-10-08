@@ -198,7 +198,8 @@ class ModuleGraph {
       const lit = hl && hl.has(n.id);
       const show = lit || n === this.selected || (n.cls !== "nixpkgs" ? t.k > 0.5 : t.k > 2.5);
       if (!show || (hl && !lit && n !== this.selected)) continue;
-      ctx.fillText(n.label, n.x + n.r + 3, n.y + 4 / t.k);
+      // Highlighted nodes are drawn 3 units larger: keep their labels clear.
+      ctx.fillText(n.label, n.x + n.r + (lit ? 6 : 3), n.y + 4 / t.k);
     }
   }
 
