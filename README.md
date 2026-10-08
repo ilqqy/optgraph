@@ -6,7 +6,7 @@ Shows how a NixOS flake configuration is put together: the module import graph, 
 
 <!-- demo.gif -->
 
-Live demo (synthetic graph of `tests/fixture`): https://ilqqy.github.io/optgraph/?src=demo.json
+Live demo (synthetic graph of `tests/fixture`): https://ilqqy.github.io/optgraph/ (for example https://ilqqy.github.io/optgraph/?opt=fixture.prio)
 
 Status: phase 2 of 4 (extractor and viewer). Diff and polish are not started.
 
@@ -109,12 +109,12 @@ All five come from options that the fixture breaks on purpose.
 
 ## Viewer
 
-`optgraph … --html graph.html` writes one HTML file that opens offline in any browser: the module graph on the left, option search and details on the right. The same viewer without embedded data is `nix build .#viewer` (`result/index.html`); open a `graph.json` in it with *Open graph.json* or by dropping the file onto the page, or serve it next to a graph and open `index.html?src=graph.json`.
+`optgraph … --html graph.html` writes one HTML file that opens offline in any browser: the module graph on the left, option search and details on the right. The same viewer without embedded data is `nix build .#viewer` (`result/index.html`); open a `graph.json` in it with *Open graph.json* or by dropping the file onto the page, or serve it next to a graph and open `index.html?src=graph.json`. Served over http(s) with no embedded data and no `?src=`, the page loads `./demo.json` if the site has one (that is how the live demo works); opened as a `file://` page it shows the drop zone.
 
 - Graph: modules coloured by origin (user, user-inline, input, nixpkgs, unknown), edges are imports, disabled modules dashed; inline user modules are labelled by their index in nixosSystem's `modules`. Pan by dragging, zoom with the wheel; click a module to see the options it sets. Above 1500 modules (`--all`) only the non-nixpkgs modules are drawn.
 - Options: instant fuzzy search over paths (`/` focuses it). The detail panel shows the definitions as a priority ladder (lowest number first, with names: 50 mkForce, 100 normal, 1000 mkDefault, 1500 default), winners highlighted, losers dimmed, `mkIf` false/error marked, each with its module, origin and value preview; `+N nixpkgs` counts definitions that were omitted. Selecting an option highlights its modules in the graph.
 - Top bar: host, nixpkgs version, attribution, `complete`, and the warnings (click to list them). Light and dark follow the system setting.
-- Deep links, for embedded data and `?src=` alike: `?opt=<option path>` opens that option's ladder and highlights its modules, `?module=<index or id>` opens a module (index into `modules`, or its `id`), `?warnings` opens the warnings panel. Example: `graph.html?opt=networking.hostName`, `index.html?src=demo.json&module=0`.
+- Deep links, for embedded data and `?src=` alike: `?opt=<option path>` opens that option's ladder and highlights its modules, `?module=<index or id>` opens a module (index into `modules`, or its `id`), `?warnings` opens the warnings panel. Example: `graph.html?opt=networking.hostName`, `https://ilqqy.github.io/optgraph/?module=0`.
 - Local only: no analytics and no external requests. The page's Content-Security-Policy allows inline code only and limits `fetch` (`?src=`) to the page's own origin. d3-force and its dependencies are vendored in `viewer/vendor/` (ISC licence, pinned in `viewer/vendor/VERSIONS`).
 
 ## Scope and support
