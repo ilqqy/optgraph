@@ -2,11 +2,17 @@
 
 Shows how a NixOS flake configuration is put together: the module import graph, and for every option who sets it, at what priority, and why one definition won over the others.
 
-`optgraph` evaluates a `nixosConfigurations.<host>` of your flake and writes `graph.json`: the modules and where they come from (your files, inline modules, flake inputs, nixpkgs), and all definitions of each option you touch, including the ones that lost and the ones switched off by `mkIf`. An interactive viewer for this file is planned; today you get the JSON.
+`optgraph` evaluates a `nixosConfigurations.<host>` of your flake and writes `graph.json`: the modules and where they come from (your files, inline modules, flake inputs, nixpkgs), and all definitions of each option you touch, including the ones that lost and the ones switched off by `mkIf`. With `--html` it also writes a single-file interactive viewer of the same data.
 
 <!-- demo.gif -->
 
-Live demo (synthetic graph of `tests/fixture`): https://ilqqy.github.io/optgraph/ (for example https://ilqqy.github.io/optgraph/?opt=fixture.prio)
+Live demo: https://ilqqy.github.io/optgraph/
+
+It shows the graph of [`demo/`](demo/), a synthetic Hyprland desktop configuration (no real machine, the only user is `demo`). Options worth opening:
+
+- `mkForce` beats `mkDefault`: [`networking.firewall.enable`](https://ilqqy.github.io/optgraph/?opt=networking.firewall.enable), turned off with `mkDefault` in `dev-tools.nix` and forced on in `core/hardening.nix`.
+- `mkIf false`: [`services.printing.enable`](https://ilqqy.github.io/optgraph/?opt=services.printing.enable), set in `desktop/printing.nix` behind the `demo.features.printing` flag, which is off, so the option default wins.
+- Several winners: [`environment.systemPackages`](https://ilqqy.github.io/optgraph/?opt=environment.systemPackages), a list set in six modules (plus one inactive definition), with the nixpkgs definitions counted as `+962 nixpkgs`.
 
 Status: phase 2 of 4 (extractor and viewer). Diff and polish are not started.
 
@@ -14,10 +20,10 @@ Status: phase 2 of 4 (extractor and viewer). Diff and polish are not started.
 
 Requires Nix with flakes enabled. Developed and tested with Nix 2.34.8 on x86_64-linux; the package is also exposed for aarch64-linux, which was not run.
 
-From a checkout (first run downloads the fixture's nixpkgs):
+From a checkout, on the demo configuration (first run downloads the demo's nixpkgs):
 
 ```sh
-nix run . -- ./tests/fixture#nixosConfigurations.test -o graph.json
+nix run . -- ./demo#nixosConfigurations.demo -o graph.json
 ```
 
 From GitHub: <!-- unverified: the repository is not published yet -->
@@ -65,47 +71,52 @@ Logs go to stderr. Without `-o` the JSON goes to stdout. With `-o` it is written
 - `options`: for each option that one of your modules defines, every definition from every module: priority (1500 default, 1000 `mkDefault`, 100 plain, 50 `mkForce`, 10 `mkVMOverride`), whether it is active (`mkIf` conditions), a bounded value preview (never the raw value), which definitions won, and the resulting `highestPrio`. When a value or condition throws, the winner is unknown: `highestPrio` is `null`, `winners` is empty and `error` says so.
 - `meta.warnings`: everything that went wrong or was degraded, with a machine-readable code.
 
-On the fixture (the commands were run on the output of the call above):
+On the demo (the commands were run on the output of the call above):
 
 ```sh
-jq -r '.options[] | select(.path == "fixture.prio") | .definitions[] | [(.priority // "?"), .active, (.valuePreview // "-")] | @tsv' graph.json
+jq -r '.options[] | select(.path == "networking.firewall.enable") | .definitions[] | [.priority, (.module | sub("^.*/demo/"; "")), .valuePreview] | @tsv' graph.json
 ```
 
 ```
-1000	true	"mkDefault"
-100	true	"plain"
-50	true	"mkForce"
-?	false	-
-1500	true	"from the option default"
+1000	modules/dev-tools.nix	false
+50	modules/core/hardening.nix	true
 ```
 
-`mkForce` (50) wins; the fourth line is a definition under `mkIf false` with unknown priority. The inline modules:
+`mkForce` (50) wins over `mkDefault` (1000). The nixpkgs default (`true`, 1500) lost as well; it is not listed but counted in `omitted.nixpkgsActive`. A definition under a false `mkIf` is listed with unknown priority, and here the option default wins:
 
 ```sh
-jq -r '.modules[] | select(.origin == "user-inline") | [.id, .modulesIndex // "null", (.position | sub("^.*/"; ""))] | @tsv' graph.json
+jq -r '.options[] | select(.path == "services.printing.enable") | .definitions[] | [(.priority // "?"), .active, (.condition // "-"), (.valuePreview // "-")] | @tsv' graph.json
 ```
 
 ```
-:anon-2119:anon-1	3	flake.nix:19
-:anon-2120:anon-1	4	flake.nix:23
-:anon-2119:anon-1:anon-1	null	flake.nix:20
+?	false	mkIf-false	-
+1500	true	-	false
 ```
 
-The third is an anonymous module imported by the first; it has no index of its own. The warnings of the same run:
+A list set in several modules has several winners; only the non-nixpkgs definitions are listed:
 
 ```sh
-jq -r '.meta.warnings[] | [.code, .subject] | @tsv' graph.json
+jq -c '.options[] | select(.path == "environment.systemPackages") | {listed: (.definitions | length), winners: (.winners | length), omitted}' graph.json
 ```
 
 ```
-eval-crash	fixture.aborting
-selfcheck-skipped	fixture.conditionalError
-selfcheck-skipped	fixture.throws
-preview-crash	fixture.whnfAbort
-selfcheck-crash	fixture.whnfAbort
+{"listed":7,"winners":6,"omitted":{"nixpkgsActive":70,"nixpkgsInactive":892}}
 ```
 
-All five come from options that the fixture breaks on purpose.
+Where the modules come from (`input:shared` is the demo's second local input, `user-inline` the module written inline in `demo/flake.nix`, `nixpkgs` the `not-detected.nix` profile that `hardware-configuration.nix` imports):
+
+```sh
+jq -r '.modules[].origin' graph.json | sort | uniq -c
+```
+
+```
+      1 input:shared
+      1 nixpkgs
+     24 user
+      1 user-inline
+```
+
+The demo has no warnings (`jq '.meta.warnings | length' graph.json` prints `0`). Crashes, throwing options and the warnings they cause are exercised by `tests/fixture`, which breaks options on purpose.
 
 ## Viewer
 
@@ -135,12 +146,13 @@ All five come from options that the fixture breaks on purpose.
 
 ## Measured
 
-Nix 2.34.8, nixpkgs `c59305b`, x86_64-linux, `/usr/bin/env time -v`, fixture `./tests/fixture#nixosConfigurations.test`:
+Nix 2.34.8, nixpkgs `c59305b`, x86_64-linux, `/usr/bin/env time -v`; fixture `./tests/fixture#nixosConfigurations.test`, demo `./demo#nixosConfigurations.demo`:
 
 | Run | Wall | Max RSS | JSON | Modules | Options | Evaluations / crash recoveries | Mismatches |
 |---|---|---|---|---|---|---|---|
-| default (2026-10-05) | 6.29 s | 295 MB | 38 KB | 24 | 30 | 4 / 3 (all deliberate) | 0 |
-| `--all` (2026-10-03, before definitions were omitted by default) | 84 s | 1.43 GB | 20 MB | 3993 | 16812 | 14 / 13 (3 deliberate, 10 in stock nixpkgs options; by stage: 9 self-check, 3 preview, 1 reconstruct) | 0 |
+| fixture, default (2026-10-05) | 6.29 s | 295 MB | 38 KB | 24 | 30 | 4 / 3 (all deliberate) | 0 |
+| fixture, `--all` (2026-10-03, before definitions were omitted by default) | 84 s | 1.43 GB | 20 MB | 3993 | 16812 | 14 / 13 (3 deliberate, 10 in stock nixpkgs options; by stage: 9 self-check, 3 preview, 1 reconstruct) | 0 |
+| demo, default (2026-10-08) | 1.26 s | 305 MB | 94 KB | 27 | 94 | 1 / 0 | 0 |
 
 With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash recoveries. Timings vary by about a second between runs.
 
@@ -164,15 +176,16 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 
 ```sh
 nix develop            # shell with gh, jq, nixfmt, check-jsonschema
-nix flake check -L     # lib checks on the fixture, schema validation, CLI build (a few minutes)
+nix flake check -L     # lib checks on the fixture and the demo, schema validation, CLI build (a few minutes)
 nix fmt                # nixfmt (RFC style); CI runs: nix fmt -- --check .
 nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes, --html
 nix build .#viewer     # viewer/build.sh: one result/index.html
+nix run . -- ./demo#nixosConfigurations.demo -o demo/graph.json   # regenerate the live demo's graph
 ```
 
 `nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-08). `tests/assertions.jq` has 84 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
-Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/`), `demo/graph.json` the synthetic demo graph, `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/`), `demo/` the demo flake (a synthetic desktop configuration) and its graph `demo/graph.json`, published as the live demo's `demo.json` and kept clean by `checks.demo` (no warnings, no option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
 
 ## License
 
