@@ -2,7 +2,9 @@
 
 `schema/graph.schema.json` (JSON Schema 2020-12) is the source of truth. This file explains what the fields mean and which invariants hold. Statements here were checked against `nix/*.nix`, `cli/optgraph.sh` and a run on `tests/fixture` (nixpkgs `c59305b`, Nix 2.34.8, 2026-10-03) unless marked otherwise.
 
-All objects set `additionalProperties: false` and list every field below as required; nullable fields are present with value `null`, never omitted. There is no separate schema version; `meta.toolVersion` identifies the producer.
+All objects set `additionalProperties: false` and list every field below as required, except `definitions[].file`, which is absent when it equals its module's file; other nullable fields are present with value `null`. There is no separate schema version; `meta.toolVersion` identifies the producer.
+
+`optgraph --html FILE` embeds the same document, unchanged, in the viewer page's `<script type="application/json" id="optgraph-data">` element; every `<` in it is written as `\u003c`, so `JSON.parse` of the element's text gives the document back.
 
 ```
 graph.json = { meta, modules[], options[] }

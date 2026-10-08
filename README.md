@@ -6,7 +6,9 @@ Shows how a NixOS flake configuration is put together: the module import graph, 
 
 <!-- demo.gif -->
 
-Status: phase 1 of 4 (extractor). Viewer, diff and polish are not started.
+Live demo (synthetic graph of `tests/fixture`): https://ilqqy.github.io/optgraph/?src=demo.json
+
+Status: phase 2 of 4 (extractor and viewer). Diff and polish are not started.
 
 ## Install and run
 
@@ -38,7 +40,8 @@ Logs go to stderr. Without `-o` the JSON goes to stdout. With `-o` it is written
 
 | Flag | Meaning |
 |---|---|
-| `-o`, `--output FILE` | Write `graph.json` to `FILE`. Default: stdout. |
+| `-o`, `--output FILE` | Write `graph.json` to `FILE`. Default: stdout (unless `--html` is given). |
+| `--html FILE` | Write a self-contained viewer page with the graph embedded. Can be combined with `-o`. |
 | `--all` | No scope filter: every declared option and every loaded module. Slow and big, see [Measured](#measured). |
 | `--include-all-definitions` | List every definition. By default, nixpkgs definitions that neither win nor come from a non-nixpkgs module are only counted (`options[].omitted`). Independent of `--all`. |
 | `--max-retries N` | Number of uncatchable crashes to recover from by re-running. Default 10, with `--all` 100. The (N+1)th crash ends the run with partial output and exit 3. The fixture crashes 3 times on purpose: `--max-retries 3` completes, `--max-retries 2` ends partial. |
@@ -104,6 +107,15 @@ selfcheck-crash	fixture.whnfAbort
 
 All five come from options that the fixture breaks on purpose.
 
+## Viewer
+
+`optgraph … --html graph.html` writes one HTML file that opens offline in any browser: the module graph on the left, option search and details on the right. The same viewer without embedded data is `nix build .#viewer` (`result/index.html`); open a `graph.json` in it with *Open graph.json* or by dropping the file onto the page, or serve it next to a graph and open `index.html?src=graph.json`.
+
+- Graph: modules coloured by origin (user, user-inline, input, nixpkgs, unknown), edges are imports, disabled modules dashed; inline user modules are labelled by their index in nixosSystem's `modules`. Pan by dragging, zoom with the wheel; click a module to see the options it sets. Above 1500 modules (`--all`) only the non-nixpkgs modules are drawn.
+- Options: instant fuzzy search over paths (`/` focuses it). The detail panel shows the definitions as a priority ladder (lowest number first, with names: 50 mkForce, 100 normal, 1000 mkDefault, 1500 default), winners highlighted, losers dimmed, `mkIf` false/error marked, each with its module, origin and value preview; `+N nixpkgs` counts definitions that were omitted. Selecting an option highlights its modules in the graph.
+- Top bar: host, nixpkgs version, attribution, `complete`, and the warnings (click to list them). Light and dark follow the system setting.
+- Local only: no analytics and no external requests. The page's Content-Security-Policy allows inline code only and limits `fetch` (`?src=`) to the page's own origin. d3-force and its dependencies are vendored in `viewer/vendor/` (ISC licence, pinned in `viewer/vendor/VERSIONS`).
+
 ## Scope and support
 
 - Default scope: options with at least one definition from a module that is not nixpkgs, plus the non-nixpkgs modules, their ancestors and their direct imports. `--all` lifts the filter.
@@ -139,7 +151,7 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 - Messages of `throw`/`assert` cannot be read (`tryEval` does not return them); `error` fields name the failing stage only. Crash warnings do carry the Nix error text.
 - `--all` is slow and big (table above).
 - For options with several winners (lists, attrsets) only non-nixpkgs definitions are listed; nixpkgs winners are counted in `omitted`, so the listed `winners` of such an option are not the whole merged value. Use `--include-all-definitions` to see them.
-- Value previews are bounded but not scrubbed: only options whose path looks like a secret (`password`, `token`, `secret`, `credential`, `api_key`, ...) are `<redacted>`. A preview can still contain sensitive values; don't share `graph.json` blindly.
+- `graph.json` and `--html` pages contain previews of option values. Previews are bounded but not scrubbed: only options whose path looks like a secret (`password`, `token`, `secret`, `credential`, `api_key`, ...) are `<redacted>`. A preview can still contain sensitive values; don't share `graph.json` or an `--html` page blindly.
 - Relative `path:` inputs are resolved only for the root flake.
 - Inline user modules carry nixpkgs' own `flake.nix` as `file` (a nixosSystem quirk); use `origin`, `modulesIndex` and `position` for them. An anonymous module nested in an inline one has no `modulesIndex`.
 - A module key built from a string keeps what the string says: with a relative `path:` input, `"${extra}/interpolated.nix"` gives an id containing `/./`.
@@ -153,12 +165,13 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 nix develop            # shell with gh, jq, nixfmt, check-jsonschema
 nix flake check -L     # lib checks on the fixture, schema validation, CLI build (a few minutes)
 nix fmt                # nixfmt (RFC style); CI runs: nix fmt -- --check .
-nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes
+nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes, --html
+nix build .#viewer     # viewer/build.sh: one result/index.html
 ```
 
-`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-05). `tests/assertions.jq` has 84 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
+`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-08). `tests/assertions.jq` has 84 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
-Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/`), `demo/graph.json` the synthetic demo graph, `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
 
 ## License
 
