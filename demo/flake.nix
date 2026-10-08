@@ -1,8 +1,8 @@
-# Synthetic desktop configuration for the README and the live demo
-# (demo/graph.json, published as demo.json). Nothing here comes from a real
-# machine: boot and file systems are stubs, the only user is "demo".
+# Synthetic desktop configuration for the README and the live demo (pages.yml
+# extracts its graph at deploy time as demo.json). Nothing here comes from a
+# real machine: boot and file systems are stubs, the only user is "demo".
 #
-#   nix run . -- ./demo#nixosConfigurations.demo -o demo/graph.json    # from the repo root
+#   nix run . -- ./demo#nixosConfigurations.demo -o demo.json    # from the repo root
 {
   description = "optgraph demo: a synthetic Hyprland desktop";
 
