@@ -27,9 +27,11 @@ jobs:
           nix build .#viewer
           mkdir site
           cp result/index.html site/index.html
-          # Graph of the synthetic demo configuration (demo/flake.nix, checked by
-          # checks.demo); the page loads ./demo.json by itself
-          cp demo/graph.json site/demo.json
+      # Graph of the synthetic demo configuration (demo/flake.nix, checked by
+      # checks.demo), generated at deploy time so it always matches the code;
+      # the page loads ./demo.json by itself.
+      - name: Extract the demo graph
+        run: nix run . -- ./demo#nixosConfigurations.demo -o site/demo.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

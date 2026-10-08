@@ -22,6 +22,7 @@ in
     fromInterpolated = str;
     nestedInline = str;
     lazy = lib.mkOption { type = lib.types.attrsOf lib.types.anything; };
+    packageSet = lib.mkOption { type = lib.types.raw; };
     apiToken = str;
     secretEnabled = lib.mkOption { type = lib.types.bool; };
     inlineAttrs = str;

@@ -462,11 +462,15 @@ let
         if includeAllDefinitions then
           indices
         else
-          # A single nixpkgs winner is kept; with several winners (mergeable
-          # types: lists, attrsets) nixpkgs ones are only counted.
+          # The option default (at most one) is always kept. A single nixpkgs
+          # winner is kept; with several winners (mergeable types: lists,
+          # attrsets) nixpkgs ones are only counted.
           filter (
             i:
-            (singleWinner && winnerSet ? ${toString i}) || originOfDef (elemAt recon.definitions i) != "nixpkgs"
+            let
+              d = elemAt recon.definitions i;
+            in
+            d.kind == "default" || (singleWinner && winnerSet ? ${toString i}) || originOfDef d != "nixpkgs"
           ) indices;
       singleWinner = length recon.winners == 1;
       keepSet = listToAttrs (
