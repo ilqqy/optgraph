@@ -53,3 +53,11 @@ function moduleLabel(m) {
 function isUserish(m) {
   return m.origin !== "nixpkgs";
 }
+
+// Short label for graph nodes: the file name, or the inline index.
+function moduleShortLabel(m) {
+  if (!m) return "?";
+  if (m.origin === "user-inline") return m.modulesIndex != null ? `inline #${m.modulesIndex}` : "inline (nested)";
+  const anon = m.id !== m.file;
+  return anon ? `${baseName(m.position || m.file)} (anon)` : baseName(m.file);
+}
