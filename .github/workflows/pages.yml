@@ -27,7 +27,7 @@ jobs:
           nix build .#viewer
           mkdir site
           cp result/index.html site/index.html
-          # Synthetic demo graph (tests/fixture), loaded with ?src=demo.json
+          # Synthetic demo graph (tests/fixture); the page loads ./demo.json by itself
           cp demo/graph.json site/demo.json
       - uses: actions/upload-pages-artifact@v3
         with:

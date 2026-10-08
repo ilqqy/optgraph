@@ -151,7 +151,8 @@ document.addEventListener("drop", (e) => {
 });
 
 // Startup: data embedded by `optgraph --html`, else ?src=<url> (same origin
-// only, enforced by the page's Content-Security-Policy), else the picker.
+// only, enforced by the page's Content-Security-Policy), else on a hosted
+// page ./demo.json, else the picker.
 (function start() {
   const embedded = $("#optgraph-data").textContent.trim();
   const placeholder = "/*OPTGRAPH_" + "DATA*/null"; // split so the embed step can't match it here
@@ -164,5 +165,13 @@ document.addEventListener("drop", (e) => {
     fetch(src)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((t) => loadText(t, src), (e) => showError(`${src}: ${e.message}`));
+    return;
+  }
+  // Hosted page (GitHub Pages): show ./demo.json if the site has one. Same
+  // origin only (CSP connect-src 'self'); file:// pages skip this.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    fetch("demo.json")
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((t) => loadText(t, "demo.json"), () => {}); // no demo: keep the drop zone
   }
 })();
