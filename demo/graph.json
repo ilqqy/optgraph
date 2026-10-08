@@ -2,63 +2,29 @@
   "meta": {
     "attribution": "aligned",
     "complete": true,
-    "generatedAt": "2026-10-08T13:27:07Z",
-    "host": "test",
+    "generatedAt": "2026-10-08T19:25:32Z",
+    "host": "demo",
     "nixpkgsRev": "c59305bab2065cfecc4944690d9eedbb56f3a9fa",
     "nixpkgsVersion": "26.11.20261001.c59305b",
     "scope": "user",
-    "toolVersion": "0.1.0+0901d76-dirty",
-    "warnings": [
-      {
-        "code": "eval-crash",
-        "message": "uncatchable crash while reconstructing definitions; option excluded:\nerror: evaluation aborted with the following error message: 'fixture: this definition aborts'",
-        "subject": "fixture.aborting"
-      },
-      {
-        "code": "selfcheck-skipped",
-        "message": "the module system's highestPrio/files threw (throw/assert)",
-        "subject": "fixture.conditionalError"
-      },
-      {
-        "code": "selfcheck-skipped",
-        "message": "the module system's highestPrio/files threw (throw/assert)",
-        "subject": "fixture.throws"
-      },
-      {
-        "code": "preview-crash",
-        "message": "uncatchable crash while previewing; previews disabled for this option:\nerror: evaluation aborted with the following error message: 'fixture: aborts when forced to WHNF'",
-        "subject": "fixture.whnfAbort"
-      },
-      {
-        "code": "selfcheck-crash",
-        "message": "uncatchable crash in the self-check; self-check skipped for this option:\nerror: evaluation aborted with the following error message: 'fixture: aborts when forced to WHNF'",
-        "subject": "fixture.whnfAbort"
-      }
-    ]
+    "toolVersion": "0.1.0+5f8395c",
+    "warnings": []
   },
   "modules": [
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
       "imports": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/broken.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabled.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabler.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/empty.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/layers.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lazy.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lists.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-default.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-force.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-plain.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/secrets.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/services.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users-force.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users.nix",
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix"
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/local.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix"
       ],
       "modulesIndex": null,
       "origin": "user",
@@ -66,11 +32,11 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/extra/module.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/extra/module.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
       "imports": [],
       "modulesIndex": null,
-      "origin": "input:extra",
+      "origin": "input:shared",
       "position": null
     },
     {
@@ -78,43 +44,25 @@
       "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/flake.nix",
       "id": ":anon-2118:anon-1",
       "imports": [],
-      "modulesIndex": null,
-      "origin": "input:extra",
-      "position": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/extra/flake.nix:10"
+      "modulesIndex": 2,
+      "origin": "user-inline",
+      "position": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/flake.nix:25"
     },
     {
       "disabled": false,
-      "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/flake.nix",
-      "id": ":anon-2119:anon-1",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
       "imports": [
-        ":anon-2119:anon-1:anon-1"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/installer/scan/not-detected.nix"
       ],
-      "modulesIndex": 3,
-      "origin": "user-inline",
-      "position": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/flake.nix:19"
-    },
-    {
-      "disabled": false,
-      "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/flake.nix",
-      "id": ":anon-2120:anon-1",
-      "imports": [],
-      "modulesIndex": 4,
-      "origin": "user-inline",
-      "position": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/flake.nix:23"
-    },
-    {
-      "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/./extra/interpolated.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/./extra/interpolated.nix",
-      "imports": [],
       "modulesIndex": null,
-      "origin": "input:extra",
+      "origin": "user",
       "position": null
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -122,8 +70,42 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-default.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-default.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core.nix",
+      "imports": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/users.nix"
+      ],
+      "modulesIndex": null,
+      "origin": "user",
+      "position": null
+    },
+    {
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+      "imports": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/apps.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix"
+      ],
+      "modulesIndex": null,
+      "origin": "user",
+      "position": null
+    },
+    {
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -131,8 +113,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-plain.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-plain.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -140,8 +122,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-force.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-force.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -149,8 +131,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -158,8 +140,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/empty.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/empty.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/local.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/local.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -167,8 +149,17 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users.nix",
+      "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/installer/scan/not-detected.nix",
+      "id": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/installer/scan/not-detected.nix",
+      "imports": [],
+      "modulesIndex": null,
+      "origin": "nixpkgs",
+      "position": null
+    },
+    {
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -176,8 +167,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users-force.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users-force.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -185,8 +176,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/services.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/services.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -194,8 +185,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/broken.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/broken.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -203,8 +194,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabler.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabler.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/users.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/users.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -212,8 +203,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/layers.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/layers.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -221,8 +212,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -230,8 +221,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lazy.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lazy.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -239,8 +230,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/secrets.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/secrets.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -248,8 +239,8 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lists.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lists.nix",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -257,17 +248,35 @@
     },
     {
       "disabled": false,
-      "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/flake.nix",
-      "id": ":anon-2119:anon-1:anon-1",
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
       "imports": [],
       "modulesIndex": null,
-      "origin": "user-inline",
-      "position": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/flake.nix:20"
+      "origin": "user",
+      "position": null
     },
     {
-      "disabled": true,
-      "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabled.nix",
-      "id": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/disabled.nix",
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+      "imports": [],
+      "modulesIndex": null,
+      "origin": "user",
+      "position": null
+    },
+    {
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+      "imports": [],
+      "modulesIndex": null,
+      "origin": "user",
+      "position": null
+    },
+    {
+      "disabled": false,
+      "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/apps.nix",
+      "id": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/apps.nix",
       "imports": [],
       "modulesIndex": null,
       "origin": "user",
@@ -277,43 +286,262 @@
   "options": [
     {
       "declaredIn": [
-        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/lib/modules/generic/assertions.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/kernel.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lazy.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
           "priority": 100,
-          "valuePreview": null
+          "valuePreview": "3"
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "assertions"
+        "boot",
+        "consoleLogLevel"
       ],
       "omitted": {
-        "nixpkgsActive": 907,
-        "nixpkgsInactive": 610
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
       },
-      "path": "assertions",
-      "type": "list of unspecified value",
+      "path": "boot.consoleLogLevel",
+      "type": "signed integer",
       "winners": [
         0
       ]
     },
     {
       "declaredIn": [
-        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/grub/grub.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/kernel.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
+          "priority": 100,
+          "valuePreview": "[ \"nvme\" \"xhci_pci\" \"usb_storage\" \"sd_mod\" ]"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "initrd",
+        "availableKernelModules"
+      ],
+      "omitted": {
+        "nixpkgsActive": 5,
+        "nixpkgsInactive": 28
+      },
+      "path": "boot.initrd.availableKernelModules",
+      "type": "(attribute set of boolean) or (list of string) convertible to it",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/systemd/initrd.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "initrd",
+        "systemd",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.initrd.systemd.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/stage-1.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "initrd",
+        "verbose"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.initrd.verbose",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/kernel.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
+          "priority": 100,
+          "valuePreview": "[ \"kvm-amd\" ]"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "kernelModules"
+      ],
+      "omitted": {
+        "nixpkgsActive": 7,
+        "nixpkgsInactive": 88
+      },
+      "path": "boot.kernelModules",
+      "type": "(attribute set of boolean) or (list of string) convertible to it",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/kernel.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "[ \"quiet\" \"splash\" ]"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "kernelParams"
+      ],
+      "omitted": {
+        "nixpkgsActive": 8,
+        "nixpkgsInactive": 23
+      },
+      "path": "boot.kernelParams",
+      "type": "list of string, with spaces inside double quotes",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/efi.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "loader",
+        "efi",
+        "canTouchEfiVariables"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.loader.efi.canTouchEfiVariables",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/systemd-boot/systemd-boot.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "10"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "loader",
+        "systemd-boot",
+        "configurationLimit"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.loader.systemd-boot.configurationLimit",
+      "type": "null or signed integer",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/systemd-boot/systemd-boot.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
           "priority": 100,
           "valuePreview": "false"
         }
@@ -323,15 +551,390 @@
       "loc": [
         "boot",
         "loader",
-        "grub",
+        "systemd-boot",
+        "editor"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.loader.systemd-boot.editor",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/systemd-boot/systemd-boot.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "loader",
+        "systemd-boot",
         "enable"
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 2
       },
-      "path": "boot.loader.grub.enable",
+      "path": "boot.loader.systemd-boot.enable",
       "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/loader/loader.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "2"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "loader",
+        "timeout"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "boot.loader.timeout",
+      "type": "null or signed integer",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/plymouth.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/boot.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "boot",
+        "plymouth",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "boot.plymouth.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/console.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
+          "priority": 100,
+          "valuePreview": "\"us\""
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "console",
+        "keyMap"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "console.keyMap",
+      "type": "string or absolute path",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "demo",
+        "features",
+        "gaming"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 0
+      },
+      "path": "demo.features.gaming",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "demo",
+        "features",
+        "laptop"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 0
+      },
+      "path": "demo.features.laptop",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
+          "priority": 100,
+          "valuePreview": "false"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "demo",
+        "features",
+        "printing"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 0
+      },
+      "path": "demo.features.printing",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
+          "priority": 100,
+          "valuePreview": "false"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/options.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "demo",
+        "features",
+        "virtualisation"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 0
+      },
+      "path": "demo.features.virtualisation",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/misc/documentation.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "documentation",
+        "dev",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "documentation.dev.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/system-environment.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "{ NIXOS_OZONE_WL = \"1\"; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "environment",
+        "sessionVariables"
+      ],
+      "omitted": {
+        "nixpkgsActive": 14,
+        "nixpkgsInactive": 30
+      },
+      "path": "environment.sessionVariables",
+      "type": "attribute set of (null or (list of (signed integer or string or absolute path)) or signed integer or string or absolute path)",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/shells-environment.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "{ ll = \"eza -l\"; ls = \"eza\"; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "environment",
+        "shellAliases"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "environment.shellAliases",
+      "type": "attribute set of (null or string or absolute path)",
       "winners": [
         0
       ]
@@ -345,25 +948,78 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lists.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
           "priority": 100,
-          "valuePreview": "[ \"/share/fixture\" ]"
+          "valuePreview": "[ <drv ripgrep-15.2.0> <drv fd-10.5.0> <drv jq-1.8.2> <drv neovim-0.12.5> <drv gnumake-4.4.1> ]"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "[ <drv mangohud-0.8.4> <drv protonup-qt-2.15.1> ]"
+        },
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "[ <drv eza-0.23.5> <drv bat-0.26.1> <drv fzf-0.74.4> <drv zoxide-0.10.0> ]"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "[ <drv waybar-0.15.0> <drv fuzzel-1.15.0> <drv mako-1.11.0> <drv grim-1.5.0> <drv slurp-1.5.0> <drv wl-clipboard-2.3.0> <drv brightnessctl-0.5.1> <drv hyprpolkitagent-0.1.3> ]"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "[ <drv pavucontrol-6.2> ]"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/apps.nix",
+          "priority": 100,
+          "valuePreview": "[ <drv kitty-0.49.1> <drv nautilus-50.2.2> <drv mpv-with-scripts-0.41.0> <drv imv-5.0.1> <drv zathura-with-plugins-2026.05.20> ]"
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
         "environment",
-        "pathsToLink"
+        "systemPackages"
       ],
       "omitted": {
-        "nixpkgsActive": 16,
-        "nixpkgsInactive": 44
+        "nixpkgsActive": 70,
+        "nixpkgsInactive": 892
       },
-      "path": "environment.pathsToLink",
-      "type": "list of string",
+      "path": "environment.systemPackages",
+      "type": "list of package",
       "winners": [
-        0
+        0,
+        1,
+        3,
+        4,
+        5,
+        6
       ]
     },
     {
@@ -378,9 +1034,9 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
           "priority": 100,
-          "valuePreview": "{ \"/\" = { device, fsType }; }"
+          "valuePreview": "{ \"/\" = { device, fsType }; \"/boot\" = { device, fsType, options }; }"
         }
       ],
       "error": null,
@@ -399,546 +1055,141 @@
       ]
     },
     {
-      "declaredIn": [],
-      "definitions": [],
-      "error": "excluded after an uncatchable crash during reconstruct (see meta.warnings)",
-      "highestPrio": null,
-      "loc": [
-        "fixture",
-        "aborting"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.aborting",
-      "type": null,
-      "winners": []
-    },
-    {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/fonts/fontconfig.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/secrets.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
           "priority": 100,
-          "valuePreview": "<redacted>"
+          "valuePreview": "[ \"Noto Color Emoji\" ]"
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "fixture",
-        "apiToken"
+        "fonts",
+        "fontconfig",
+        "defaultFonts",
+        "emoji"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
+        "nixpkgsActive": 1,
         "nixpkgsInactive": 0
       },
-      "path": "fixture.apiToken",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": false,
-          "condition": "mkIf-false",
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-          "priority": null,
-          "valuePreview": null
-        },
-        {
-          "active": true,
-          "condition": null,
-          "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix",
-          "kind": "default",
-          "module": null,
-          "priority": 1500,
-          "valuePreview": "0"
-        }
-      ],
-      "error": null,
-      "highestPrio": 1500,
-      "loc": [
-        "fixture",
-        "conditional"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.conditional",
-      "type": "signed integer",
-      "winners": [
-        1
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": false,
-          "condition": "mkIf-error",
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-          "priority": null,
-          "valuePreview": null
-        }
-      ],
-      "error": "definition 0: an mkIf condition threw or is not a bool; winner unknown: a definition could not be classified",
-      "highestPrio": null,
-      "loc": [
-        "fixture",
-        "conditionalError"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.conditionalError",
-      "type": "string",
-      "winners": []
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-          "priority": 100,
-          "valuePreview": "\"yes\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "conditionalTrue"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.conditionalTrue",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/extra/module.nix",
-          "priority": 100,
-          "valuePreview": "\"from the extra input\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "fromExtra"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.fromExtra",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": ":anon-2118:anon-1",
-          "priority": 1000,
-          "valuePreview": "\"from an inline module of the extra input\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 1000,
-      "loc": [
-        "fixture",
-        "fromExtraInline"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.fromExtraInline",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/./extra/interpolated.nix",
-          "priority": 100,
-          "valuePreview": "\"from a string-interpolated import\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "fromInterpolated"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.fromInterpolated",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": ":anon-2119:anon-1",
-          "priority": 100,
-          "valuePreview": "\"from an inline attrset module\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "inlineAttrs"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.inlineAttrs",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": ":anon-2120:anon-1",
-          "priority": 1000,
-          "valuePreview": "\"from an inline function module\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 1000,
-      "loc": [
-        "fixture",
-        "inlineFunction"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.inlineFunction",
-      "type": "string",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-plain.nix",
-          "priority": 100,
-          "valuePreview": "\"plain\""
-        },
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/layers.nix",
-          "priority": 50,
-          "valuePreview": "\"forced block\""
-        }
-      ],
-      "error": null,
-      "highestPrio": 50,
-      "loc": [
-        "fixture",
-        "layered"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.layered",
-      "type": "string",
-      "winners": [
-        1
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/lazy.nix",
-          "priority": 100,
-          "valuePreview": "{ nested = { boom, fine }; }"
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "lazy"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.lazy",
-      "type": "attribute set of anything",
-      "winners": [
-        0
-      ]
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
-          "priority": 1000,
-          "valuePreview": "[ \"a\" ]"
-        },
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
-          "priority": 100,
-          "valuePreview": "[ \"b\" ]"
-        },
-        {
-          "active": false,
-          "condition": "mkIf-false",
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
-          "priority": null,
-          "valuePreview": null
-        }
-      ],
-      "error": null,
-      "highestPrio": 100,
-      "loc": [
-        "fixture",
-        "merged"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.merged",
+      "path": "fonts.fontconfig.defaultFonts.emoji",
       "type": "list of string",
       "winners": [
-        1
+        0
       ]
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/fonts/fontconfig.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": ":anon-2119:anon-1:anon-1",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
           "priority": 100,
-          "valuePreview": "\"from an anonymous module inside an inline one\""
+          "valuePreview": "[ \"JetBrainsMono Nerd Font\" ]"
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "fixture",
-        "nestedInline"
+        "fonts",
+        "fontconfig",
+        "defaultFonts",
+        "monospace"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 3
       },
-      "path": "fixture.nestedInline",
-      "type": "string",
+      "path": "fonts.fontconfig.defaultFonts.monospace",
+      "type": "list of string",
       "winners": [
         0
       ]
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/fonts/fontconfig.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
           "priority": 100,
-          "valuePreview": "{ drv = <drv hello-2.12.3>; fn = <lambda>; list = [ 1 2 3 4 5 6 7 8 ...(12 more) ]; long = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...\"; }"
+          "valuePreview": "[ \"Inter\" ]"
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "fixture",
-        "previews"
+        "fonts",
+        "fontconfig",
+        "defaultFonts",
+        "sansSerif"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 3
       },
-      "path": "fixture.previews",
-      "type": "attribute set of anything",
+      "path": "fonts.fontconfig.defaultFonts.sansSerif",
+      "type": "list of string",
       "winners": [
         0
       ]
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/fonts/packages.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-default.nix",
-          "priority": 1000,
-          "valuePreview": "\"mkDefault\""
-        },
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-plain.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/fonts.nix",
           "priority": 100,
-          "valuePreview": "\"plain\""
-        },
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/prio-force.nix",
-          "priority": 50,
-          "valuePreview": "\"mkForce\""
-        },
-        {
-          "active": false,
-          "condition": "mkIf-false",
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/conditional.nix",
-          "priority": null,
-          "valuePreview": null
-        },
-        {
-          "active": true,
-          "condition": null,
-          "file": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix",
-          "kind": "default",
-          "module": null,
-          "priority": 1500,
-          "valuePreview": "\"from the option default\""
+          "valuePreview": "[ <drv inter-4.1> <drv noto-fonts-2026.09.01> <drv noto-fonts-color-emoji-2.051> <drv nerd-fonts-jetbrains-mono-3.5.0+2.304> ]"
         }
       ],
       "error": null,
-      "highestPrio": 50,
+      "highestPrio": 100,
       "loc": [
-        "fixture",
-        "prio"
+        "fonts",
+        "packages"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 17
       },
-      "path": "fixture.prio",
-      "type": "string",
+      "path": "fonts.packages",
+      "type": "list of absolute path",
       "winners": [
-        2
+        0
       ]
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/bluetooth.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/secrets.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
           "priority": 100,
           "valuePreview": "true"
         }
@@ -946,14 +1197,15 @@
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "fixture",
-        "secretEnabled"
+        "hardware",
+        "bluetooth",
+        "enable"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 9
       },
-      "path": "fixture.secretEnabled",
+      "path": "hardware.bluetooth.enable",
       "type": "boolean",
       "winners": [
         0
@@ -961,58 +1213,153 @@
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/bluetooth.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/broken.nix",
-          "priority": null,
-          "valuePreview": null
-        }
-      ],
-      "error": "definition 0: throw/assert while reading its value; winner unknown: a definition could not be classified",
-      "highestPrio": null,
-      "loc": [
-        "fixture",
-        "throws"
-      ],
-      "omitted": {
-        "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
-      },
-      "path": "fixture.throws",
-      "type": "string",
-      "winners": []
-    },
-    {
-      "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
-      ],
-      "definitions": [
-        {
-          "active": true,
-          "condition": null,
-          "file": "/virtual/defined-here.nix",
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/wrappers.nix",
-          "priority": 50,
-          "valuePreview": "\"via mkDefinition\""
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
+          "priority": 100,
+          "valuePreview": "false"
         }
       ],
       "error": null,
-      "highestPrio": 50,
+      "highestPrio": 100,
       "loc": [
-        "fixture",
-        "viaDefinition"
+        "hardware",
+        "bluetooth",
+        "powerOnBoot"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
+        "nixpkgsActive": 1,
         "nixpkgsInactive": 0
       },
-      "path": "fixture.viaDefinition",
+      "path": "hardware.bluetooth.powerOnBoot",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/bluetooth.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
+          "priority": 100,
+          "valuePreview": "{ General = { Experimental }; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "hardware",
+        "bluetooth",
+        "settings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 1
+      },
+      "path": "hardware.bluetooth.settings",
+      "type": "attribute set of section of an INI file (attrs of INI atom (null, bool, int, float or string))",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/hardware/graphics.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "hardware",
+        "graphics",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 3,
+        "nixpkgsInactive": 16
+      },
+      "path": "hardware.graphics.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/hardware/graphics.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "hardware",
+        "graphics",
+        "enable32Bit"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 2
+      },
+      "path": "hardware.graphics.enable32Bit",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/i18n.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
+          "priority": 100,
+          "valuePreview": "\"en_GB.UTF-8\""
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "i18n",
+        "defaultLocale"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "i18n.defaultLocale",
       "type": "string",
       "winners": [
         0
@@ -1020,32 +1367,71 @@
     },
     {
       "declaredIn": [
-        "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/options.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/i18n.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/broken.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
+          "priority": 100,
+          "valuePreview": "{ LC_TIME = \"en_GB.UTF-8\"; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "i18n",
+        "extraLocaleSettings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "i18n.extraLocaleSettings",
+      "type": "attribute set of string",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/firewall.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+          "priority": 1000,
+          "valuePreview": "false"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
           "priority": 50,
-          "valuePreview": null
+          "valuePreview": "true"
         }
       ],
       "error": null,
       "highestPrio": 50,
       "loc": [
-        "fixture",
-        "whnfAbort"
+        "networking",
+        "firewall",
+        "enable"
       ],
       "omitted": {
-        "nixpkgsActive": 0,
+        "nixpkgsActive": 1,
         "nixpkgsInactive": 0
       },
-      "path": "fixture.whnfAbort",
-      "type": "string",
+      "path": "networking.firewall.enable",
+      "type": "boolean",
       "winners": [
-        0
+        1
       ]
     },
     {
@@ -1057,17 +1443,9 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+          "module": ":anon-2118:anon-1",
           "priority": 100,
-          "valuePreview": "\"fixture\""
-        },
-        {
-          "active": true,
-          "condition": null,
-          "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/extra/module.nix",
-          "priority": 1000,
-          "valuePreview": "\"extra-default\""
+          "valuePreview": "\"demo\""
         }
       ],
       "error": null,
@@ -1088,6 +1466,202 @@
     },
     {
       "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/networkmanager.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "networking",
+        "networkmanager",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 8
+      },
+      "path": "networking.networkmanager.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/networkmanager.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
+          "priority": 100,
+          "valuePreview": "\"iwd\""
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "networking",
+        "networkmanager",
+        "wifi",
+        "backend"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "networking.networkmanager.wifi.backend",
+      "type": "one of \"wpa_supplicant\", \"iwd\"",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/misc/nix-gc.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "nix",
+        "gc",
+        "automatic"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "nix.gc.automatic",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/misc/nix-gc.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+          "priority": 100,
+          "valuePreview": "\"weekly\""
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "nix",
+        "gc",
+        "dates"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "nix.gc.dates",
+      "type": "(optionally newline-terminated) single-line string or list of string",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/misc/nix-gc.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+          "priority": 100,
+          "valuePreview": "\"--delete-older-than 14d\""
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "nix",
+        "gc",
+        "options"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "nix.gc.options",
+      "type": "(optionally newline-terminated) single-line string",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/nix.nix",
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/nix-channel.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
+          "priority": 100,
+          "valuePreview": "{ experimental-features = [ \"nix-command\" \"flakes\" ]; }"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/nix-settings.nix",
+          "priority": 100,
+          "valuePreview": "{ auto-optimise-store = true; trusted-users = [ \"@wheel\" ]; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "nix",
+        "settings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 4,
+        "nixpkgsInactive": 24
+      },
+      "path": "nix.settings",
+      "type": "open submodule of attribute set of (Nix config atom (null, bool, int, float, str, path or package) or list of (Nix config atom (null, bool, int, float, str, path or package)))",
+      "winners": [
+        0,
+        1
+      ]
+    },
+    {
+      "declaredIn": [
         "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/misc/nixpkgs.nix"
       ],
       "definitions": [
@@ -1095,7 +1669,37 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "{ allowUnfreePredicate = <lambda>; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "nixpkgs",
+        "config"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 1
+      },
+      "path": "nixpkgs.config",
+      "type": "nixpkgs config",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/misc/nixpkgs.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
           "priority": 100,
           "valuePreview": "\"x86_64-linux\""
         }
@@ -1118,6 +1722,848 @@
     },
     {
       "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/direnv.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "direnv",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.direnv.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/firefox.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/apps.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "firefox",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.firefox.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/gamemode.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "gamemode",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.gamemode.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/git.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/dev-tools.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "git",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.git.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/wayland/hyprland.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "hyprland",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.hyprland.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/wayland/hyprlock.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "hyprlock",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.hyprlock.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/starship.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "starship",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.starship.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/steam.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "steam",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.steam.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/zsh/zsh-autosuggestions.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "zsh",
+        "autosuggestions",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 1
+      },
+      "path": "programs.zsh.autosuggestions.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/zsh/zsh.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "zsh",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "programs.zsh.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/programs/zsh/zsh-syntax-highlighting.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/shell.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "programs",
+        "zsh",
+        "syntaxHighlighting",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "programs.zsh.syntaxHighlighting.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/security/polkit.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "security",
+        "polkit",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 8,
+        "nixpkgsInactive": 30
+      },
+      "path": "security.polkit.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/security/misc.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
+          "priority": 1000,
+          "valuePreview": "true"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+          "priority": 50,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 50,
+      "loc": [
+        "security",
+        "protectKernelImage"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "security.protectKernelImage",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/security/rtkit.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "security",
+        "rtkit",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 3
+      },
+      "path": "security.rtkit.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/security/sudo.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "security",
+        "sudo",
+        "execWheelOnly"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "security.sudo.execWheelOnly",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "services",
+        "avahi",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 10
+      },
+      "path": "services.avahi.enable",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "services",
+        "avahi",
+        "nssmdns4"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 1
+      },
+      "path": "services.avahi.nssmdns4",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/avahi-daemon.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "services",
+        "avahi",
+        "openFirewall"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 1
+      },
+      "path": "services.avahi.openFirewall",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/blueman.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/bluetooth.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "blueman",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 1
+      },
+      "path": "services.blueman.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/misc/fstrim.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "fstrim",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.fstrim.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/fwupd.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "fwupd",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "services.fwupd.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/display-managers/greetd.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "greetd",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 4
+      },
+      "path": "services.greetd.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/display-managers/greetd.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "{ default_session = { command }; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "greetd",
+        "settings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 4
+      },
+      "path": "services.greetd.settings",
+      "type": "TOML value",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/gvfs.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "gvfs",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 8
+      },
+      "path": "services.gvfs.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/wayland/hypridle.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/hyprland.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "hypridle",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.hypridle.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/libinput.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "libinput",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 13
+      },
+      "path": "services.libinput.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
         "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/ssh/sshd.nix"
       ],
       "definitions": [
@@ -1125,9 +2571,48 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/services.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
+          "priority": 1000,
+          "valuePreview": "true"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/hardening.nix",
+          "priority": 50,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 50,
+      "loc": [
+        "services",
+        "openssh",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "services.openssh.enable",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/networking/ssh/sshd.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
           "priority": 100,
-          "valuePreview": "{ ClientAliveInterval = 60; }"
+          "valuePreview": "{ PasswordAuthentication = false; }"
         }
       ],
       "error": null,
@@ -1149,6 +2634,500 @@
     },
     {
       "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/pipewire/pipewire.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pipewire",
+        "alsa",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.pipewire.alsa.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/pipewire/pipewire.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pipewire",
+        "alsa",
+        "support32Bit"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 1
+      },
+      "path": "services.pipewire.alsa.support32Bit",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/pipewire/pipewire.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pipewire",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 3
+      },
+      "path": "services.pipewire.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/pipewire/pipewire.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pipewire",
+        "pulse",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.pipewire.pulse.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/desktops/pipewire/wireplumber.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pipewire",
+        "wireplumber",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.pipewire.wireplumber.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/power-profiles-daemon.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+          "priority": 1000,
+          "valuePreview": "true"
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+          "priority": 50,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 50,
+      "loc": [
+        "services",
+        "power-profiles-daemon",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 6
+      },
+      "path": "services.power-profiles-daemon.enable",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/printing/cupsd.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/printing/cupsd.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "[ ]"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "services",
+        "printing",
+        "drivers"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 2
+      },
+      "path": "services.printing.drivers",
+      "type": "list of absolute path",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/printing/cupsd.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/printing.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/printing/cupsd.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "services",
+        "printing",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 3
+      },
+      "path": "services.printing.enable",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/audio/pulseaudio.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/audio.nix",
+          "priority": 100,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "pulseaudio",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 2
+      },
+      "path": "services.pulseaudio.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/resolved.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/networking.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "resolved",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 5
+      },
+      "path": "services.resolved.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/tlp.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "tlp",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.tlp.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/tlp.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+          "priority": 100,
+          "valuePreview": "{ CPU_ENERGY_PERF_POLICY_ON_BAT = \"power\"; START_CHARGE_THRESH_BAT0 = 75; STOP_CHARGE_THRESH_BAT0 = 80; }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "tlp",
+        "settings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 2,
+        "nixpkgsInactive": 0
+      },
+      "path": "services.tlp.settings",
+      "type": "attribute set of (boolean or signed integer or floating point number or string or list of string)",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/udisks2.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "udisks2",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 3,
+        "nixpkgsInactive": 9
+      },
+      "path": "services.udisks2.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/services/hardware/upower.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/desktop/power.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "services",
+        "upower",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 16
+      },
+      "path": "services.upower.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/tasks/encrypted-devices.nix",
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/swap.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/hardware-configuration.nix",
+          "priority": 100,
+          "valuePreview": "[ ]"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "swapDevices"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "swapDevices",
+      "type": "list of (submodule)",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
         "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/misc/version.nix"
       ],
       "definitions": [
@@ -1156,7 +3135,7 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/configuration.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/configuration.nix",
           "priority": 100,
           "valuePreview": "\"25.11\""
         }
@@ -1179,34 +3158,40 @@
     },
     {
       "declaredIn": [
-        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/testing/service-runner.nix",
-        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/system/boot/systemd.nix",
-        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/security/systemd-confinement.nix"
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/locale.nix"
       ],
       "definitions": [
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/services.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/shared/base.nix",
+          "priority": 1000,
+          "valuePreview": "\"UTC\""
+        },
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/locale.nix",
           "priority": 100,
-          "valuePreview": "{ fixture-hello = { description, script }; }"
+          "valuePreview": "\"Europe/Berlin\""
         }
       ],
       "error": null,
       "highestPrio": 100,
       "loc": [
-        "systemd",
-        "services"
+        "time",
+        "timeZone"
       ],
       "omitted": {
-        "nixpkgsActive": 47,
-        "nixpkgsInactive": 1618
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 5
       },
-      "path": "systemd.services",
-      "type": "attribute set of (submodule)",
+      "path": "time.timeZone",
+      "type": "null or string without spaces",
       "winners": [
-        0
+        1
       ]
     },
     {
@@ -1219,17 +3204,25 @@
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/gaming.nix",
           "priority": 100,
-          "valuePreview": "{ alice = { description, isNormalUser }; }"
+          "valuePreview": "{ demo = { extraGroups }; }"
+        },
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+          "priority": null,
+          "valuePreview": null
         },
         {
           "active": true,
           "condition": null,
           "kind": "definition",
-          "module": "/nix/store/iz10bfyy0m2xr6ryxcwndliy8h14c1jq-source/tests/fixture/modules/users-force.nix",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/core/users.nix",
           "priority": 100,
-          "valuePreview": "{ alice = { description }; }"
+          "valuePreview": "{ demo = { description, extraGroups, isNormalUser, shell }; }"
         }
       ],
       "error": null,
@@ -1239,14 +3232,195 @@
         "users"
       ],
       "omitted": {
-        "nixpkgsActive": 12,
-        "nixpkgsInactive": 722
+        "nixpkgsActive": 18,
+        "nixpkgsInactive": 716
       },
       "path": "users.users",
       "type": "attribute set of (submodule)",
       "winners": [
         0,
+        2
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "{ }"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "virtualisation",
+        "podman",
+        "defaultNetwork",
+        "settings"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 1
+      },
+      "path": "virtualisation.podman.defaultNetwork.settings",
+      "type": "JSON value",
+      "winners": [
         1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "virtualisation",
+        "podman",
+        "dockerCompat"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 0
+      },
+      "path": "virtualisation.podman.dockerCompat",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix"
+      ],
+      "definitions": [
+        {
+          "active": false,
+          "condition": "mkIf-false",
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/virtualisation.nix",
+          "priority": null,
+          "valuePreview": null
+        },
+        {
+          "active": true,
+          "condition": null,
+          "file": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/virtualisation/podman/default.nix",
+          "kind": "default",
+          "module": null,
+          "priority": 1500,
+          "valuePreview": "false"
+        }
+      ],
+      "error": null,
+      "highestPrio": 1500,
+      "loc": [
+        "virtualisation",
+        "podman",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 0,
+        "nixpkgsInactive": 1
+      },
+      "path": "virtualisation.podman.enable",
+      "type": "boolean",
+      "winners": [
+        1
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/zram.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+          "priority": 100,
+          "valuePreview": "true"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "zramSwap",
+        "enable"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "zramSwap.enable",
+      "type": "boolean",
+      "winners": [
+        0
+      ]
+    },
+    {
+      "declaredIn": [
+        "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/nixos/modules/config/zram.nix"
+      ],
+      "definitions": [
+        {
+          "active": true,
+          "condition": null,
+          "kind": "definition",
+          "module": "/nix/store/f0jn9yj3hh4zd98bhx82q1y84s87i3w3-source/demo/modules/maintenance.nix",
+          "priority": 100,
+          "valuePreview": "25"
+        }
+      ],
+      "error": null,
+      "highestPrio": 100,
+      "loc": [
+        "zramSwap",
+        "memoryPercent"
+      ],
+      "omitted": {
+        "nixpkgsActive": 1,
+        "nixpkgsInactive": 0
+      },
+      "path": "zramSwap.memoryPercent",
+      "type": "positive integer, meaning >0",
+      "winners": [
+        0
       ]
     }
   ]

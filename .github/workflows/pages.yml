@@ -27,7 +27,8 @@ jobs:
           nix build .#viewer
           mkdir site
           cp result/index.html site/index.html
-          # Synthetic demo graph (tests/fixture); the page loads ./demo.json by itself
+          # Graph of the synthetic demo configuration (demo/flake.nix, checked by
+          # checks.demo); the page loads ./demo.json by itself
           cp demo/graph.json site/demo.json
       - uses: actions/upload-pages-artifact@v3
         with:

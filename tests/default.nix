@@ -47,6 +47,42 @@ let
   };
 
   graphJson = pkgs.writeText "graph.json" (builtins.toJSON graph);
+
+  # The demo configuration (demo/), built the same way with this flake's nixpkgs.
+  shared = (import ../demo/shared/flake.nix).outputs { self = shared; } // {
+    outPath = "${self}/demo/shared";
+  };
+  demo = (import ../demo/flake.nix).outputs {
+    self = demo;
+    inherit nixpkgs shared;
+  };
+  demoConfig = demo.nixosConfigurations.demo;
+
+  demoGraphJson = pkgs.writeText "demo-graph.json" (
+    builtins.toJSON (
+      self.lib.extract {
+        config = demoConfig;
+        selfRoot = "${self}/demo";
+        inputs = {
+          nixpkgs = nixpkgs.outPath;
+          shared = "${self}/demo/shared";
+        };
+        host = "demo";
+        generatedAt = "1970-01-01T00:00:00Z";
+      }
+    )
+  );
+
+  # The demo is clean, and the options the README links to tell their story.
+  demoAssertions = pkgs.writeText "demo-assertions.jq" ''
+    def opt($p): first(.options[] | select(.path == $p));
+    .meta.complete
+    and .meta.warnings == []
+    and all(.options[]; .error == null)
+    and (opt("networking.firewall.enable") | .highestPrio == 50 and ([.definitions[].priority] | sort) == [50, 1000])
+    and (opt("services.printing.enable") | any(.definitions[]; .condition == "mkIf-false"))
+    and (opt("environment.systemPackages") | (.winners | length) > 1 and .omitted.nixpkgsActive > 0)
+  '';
 in
 {
   fixture =
@@ -62,6 +98,32 @@ in
         jq -r -f ${./assertions.jq} ${graphJson}
         jq '{modules: (.modules | length), options: (.options | length), warnings: [.meta.warnings[].code]}' ${graphJson}
         cp ${graphJson} $out
+      '';
+
+  # The demo system evaluates (its toplevel derivation is instantiated, not
+  # built), and both a fresh extraction and the committed demo/graph.json (the
+  # live demo's demo.json) validate, with no warnings and no option errors.
+  demo =
+    pkgs.runCommand "optgraph-demo-check"
+      {
+        nativeBuildInputs = [
+          pkgs.check-jsonschema
+          pkgs.jq
+        ];
+        toplevel = builtins.unsafeDiscardStringContext demoConfig.config.system.build.toplevel.drvPath;
+      }
+      ''
+        echo "demo: system $toplevel"
+        for g in ${demoGraphJson} ${../demo/graph.json}; do
+          check-jsonschema --schemafile ${../schema/graph.schema.json} "$g"
+          jq -e -f ${demoAssertions} "$g" > /dev/null || {
+            echo "$g: warnings, option errors or a broken demo story:"
+            jq -c '{warnings: .meta.warnings, errors: [.options[] | select(.error != null) | {path, error}]}' "$g"
+            exit 1
+          }
+        done
+        jq '{modules: (.modules | length), options: (.options | length)}' ${demoGraphJson}
+        cp ${demoGraphJson} $out
       '';
 
   # The viewer is one self-contained file: no external scripts or styles.
