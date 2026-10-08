@@ -75,7 +75,11 @@ function renderOption(model, oi, onModule) {
           );
     const preview =
       d.valuePreview == null
-        ? h("div", { class: "muted", style: "font-size:12px;margin-top:2px" }, !d.active ? "not evaluated (inactive)" : "no preview")
+        ? h(
+            "div",
+            { class: "muted", style: "font-size:12px;margin-top:2px" },
+            !d.active ? "not evaluated (inactive)" : d.priority == null ? "value threw (see error)" : "no preview",
+          )
         : h("pre", { class: d.valuePreview === "<redacted>" ? "muted" : null }, d.valuePreview);
     return h(
       "li",
@@ -95,7 +99,7 @@ function renderOption(model, oi, onModule) {
   return [
     ...head,
     items.length ? h("ol", { class: "ladder" }, ...items) : h("p", { class: "muted" }, "No definitions listed."),
-  ];
+  ].filter(Boolean);
 }
 
 function renderModule(model, m, onOption) {
@@ -109,7 +113,7 @@ function renderModule(model, m, onOption) {
     m.position ? h("div", { class: "kv" }, "position ", h("code", {}, m.position)) : null,
     h("div", { class: "kv" }, `imports ${m.imports.length}; sets ${plural(opts.length, "listed option")}`),
     list,
-  ];
+  ].filter(Boolean);
   // The list is attached after the caller inserts `head`.
   queueMicrotask(() => {
     const vl = new VirtualList(list, (oi) => h("div", { onclick: () => onOption(oi) }, h("span", { class: "path" }, model.options[oi].path)));

@@ -46,7 +46,7 @@ const PRIORITY_NAMES = {
 };
 
 function priorityLabel(p) {
-  if (p == null) return "?";
+  if (p == null) return "? unknown";
   return PRIORITY_NAMES[p] ? `${p} ${PRIORITY_NAMES[p]}` : `${p} mkOverride`;
 }
 

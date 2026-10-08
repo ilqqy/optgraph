@@ -52,7 +52,7 @@ class ModuleGraph {
     }
     const byId = new Map();
     this.nodes = shown.map((m) => {
-      const n = { id: m.id, m, label: moduleLabel(m), cls: originClass(m.origin), r: isUserish(m) ? 6 : 3.5 };
+      const n = { id: m.id, m, label: moduleShortLabel(m), cls: originClass(m.origin), r: isUserish(m) ? 6 : 3.5 };
       byId.set(m.id, n);
       return n;
     });
@@ -67,14 +67,48 @@ class ModuleGraph {
     this.selected = null;
     this.t = { x: this.width() / 2, y: this.height() / 2, k: 1 };
     const big = this.nodes.length > 500;
+    this.fitted = false;
+    this.userMoved = false;
     this.sim = d3
       .forceSimulation(this.nodes)
-      .force("link", d3.forceLink(this.links).id((d) => d.id).distance(big ? 18 : 40).strength(0.6))
-      .force("charge", d3.forceManyBody().strength(big ? -12 : -90).theta(0.9).distanceMax(400))
-      .force("x", d3.forceX(0).strength(0.04))
-      .force("y", d3.forceY(0).strength(0.04))
+      .force("link", d3.forceLink(this.links).id((d) => d.id).distance(big ? 18 : 70).strength(0.5))
+      .force("charge", d3.forceManyBody().strength(big ? -12 : -260).theta(0.9).distanceMax(big ? 300 : 220))
+      .force("collide", d3.forceCollide((d) => d.r + (big ? 2 : 14)))
+      // Pull disconnected roots (e.g. inline modules) in, so they don't drift off.
+      .force("x", d3.forceX(0).strength(big ? 0.04 : 0.12))
+      .force("y", d3.forceY(0).strength(big ? 0.04 : 0.12))
       .alphaDecay(big ? 0.05 : 0.03)
-      .on("tick", () => this.requestDraw());
+      .on("tick", () => {
+        // Fit the view once the layout has mostly settled, unless the user moved it.
+        if (!this.fitted && this.sim.alpha() < 0.12) this.fit();
+        this.requestDraw();
+      })
+      .on("end", () => this.userMoved || this.fit());
+    if (!big) {
+      // Small graphs: settle synchronously (a few ms) and show the final layout.
+      this.sim.stop();
+      this.sim.tick(300);
+      this.fit();
+    }
+  }
+
+  // Scale and centre the view on the current node positions.
+  fit() {
+    this.fitted = true;
+    if (!this.nodes.length) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of this.nodes) {
+      x0 = Math.min(x0, n.x);
+      y0 = Math.min(y0, n.y);
+      x1 = Math.max(x1, n.x + 90); // room for the label
+      y1 = Math.max(y1, n.y);
+    }
+    const pad = 40;
+    const w = this.width() - 2 * pad;
+    const hgt = this.height() - 2 * pad - 30; // legend
+    const k = Math.min(2, w / Math.max(1, x1 - x0), hgt / Math.max(1, y1 - y0));
+    this.t = { k, x: pad + (w - (x1 - x0) * k) / 2 - x0 * k, y: pad + (hgt - (y1 - y0) * k) / 2 - y0 * k };
+    this.requestDraw();
   }
 
   setHighlight(ids) {
@@ -197,6 +231,7 @@ class ModuleGraph {
     const c = this.canvas;
     let drag = null;
     c.addEventListener("pointerdown", (e) => {
+      this.fitted = this.userMoved = true;
       drag = { x: e.offsetX, y: e.offsetY, tx: this.t.x, ty: this.t.y, moved: false };
       c.setPointerCapture(e.pointerId);
     });
@@ -225,6 +260,7 @@ class ModuleGraph {
       "wheel",
       (e) => {
         e.preventDefault();
+        this.fitted = this.userMoved = true;
         const k = Math.min(8, Math.max(0.05, this.t.k * Math.exp(-e.deltaY * 0.0015)));
         const [wx, wy] = this.toWorld(e.offsetX, e.offsetY);
         this.t.k = k;

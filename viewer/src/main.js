@@ -74,6 +74,33 @@ function load(doc, source) {
   $("#detail").replaceChildren(h("p", { class: "muted" }, "Select an option to see who set it, at what priority, and why the others lost. Click a module in the graph to see what it sets."));
   runSearch();
   $("#search").focus();
+  applyDeepLink();
+}
+
+// ?opt=<option path> selects an option; ?module=<index or id> a module.
+// Works the same for embedded data and ?src=.
+function applyDeepLink() {
+  const params = new URLSearchParams(location.search);
+  if (params.has("warnings")) $("#warnings-panel").hidden = false;
+  const optPath = params.get("opt");
+  const modRef = params.get("module");
+  if (optPath != null) {
+    const oi = model.options.findIndex((o) => o.path === optPath);
+    if (oi < 0) {
+      $("#detail").replaceChildren(h("p", { class: "error" }, `No option ${optPath} in this graph.`));
+      return;
+    }
+    const row = results.findIndex((r) => r.index === oi);
+    showOption(oi, row >= 0 ? row : null);
+    if (row >= 0) $("#results").scrollTop = Math.max(0, row * resultList.rowHeight - 60);
+  } else if (modRef != null) {
+    const m = /^\d+$/.test(modRef) ? model.modules[Number(modRef)] : model.modById.get(modRef);
+    if (!m) {
+      $("#detail").replaceChildren(h("p", { class: "error" }, `No module ${modRef} in this graph.`));
+      return;
+    }
+    showModule(m);
+  }
 }
 
 function showError(msg) {
