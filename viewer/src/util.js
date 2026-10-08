@@ -50,6 +50,35 @@ function priorityLabel(p) {
   return PRIORITY_NAMES[p] ? `${p} ${PRIORITY_NAMES[p]}` : `${p} mkOverride`;
 }
 
+// Name only: "mkForce", "normal", "mkOverride 75".
+function prioName(p) {
+  if (p == null) return "unknown";
+  return PRIORITY_NAMES[p] || `mkOverride ${p}`;
+}
+
+// Clipboard API where allowed (https, localhost), else the selection fallback
+// (file:// pages). Resolves to whether it worked.
+function copyText(text) {
+  const fallback = () => {
+    const ta = h("textarea", { style: "position:fixed;opacity:0" });
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch (e) {
+      ok = false;
+    }
+    ta.remove();
+    return ok;
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true, () => fallback());
+  }
+  return Promise.resolve(fallback());
+}
+
 // "input:foo/bar" -> "input"; used for colours and CSS classes.
 function originClass(origin) {
   if (!origin) return "unknown";

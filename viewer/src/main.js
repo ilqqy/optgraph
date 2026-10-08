@@ -5,12 +5,13 @@ let results = [];
 let selectedOption = -1;
 
 const graph = new ModuleGraph($("#graph"), $("#graph-banner"), (m) => (m ? showModule(m) : null));
-const resultList = new VirtualList($("#results"), (r, i) => {
+const resultList = new VirtualList($("#results"), (r) => {
+  if (r.header) return h("div", { class: "section" }, r.header);
   const o = model.options[r.index];
   const n = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
   return h(
     "div",
-    { onclick: () => showOption(r.index, i) },
+    { onclick: () => showOption(r.index) },
     h("span", { class: "path" }, ...highlighted(o.path, r.hits)),
     n ? h("span", { class: "badge", title: "nixpkgs definitions not listed" }, `+${n}`) : null,
     o.error ? h("span", { class: "badge cond", title: o.error }, "error") : null,
@@ -26,8 +27,23 @@ function renderLegend() {
     ["unknown", "unknown"],
   ];
   $("#legend").replaceChildren(
-    ...kinds.map(([cls, label]) => h("span", {}, h("span", { class: "dot", style: `background:var(--o-${cls})` }), label)),
-    h("span", { class: "muted" }, "dashed: disabled"),
+    h(
+      "div",
+      {},
+      ...kinds.map(([cls, label]) => {
+        const shape = { input: " shape-diamond", unknown: " shape-square" }[cls] || "";
+        return h("span", {}, h("span", { class: `dot${shape}`, style: `background:var(--o-${cls})` }), label);
+      }),
+      h("span", { class: "muted" }, "dashed: disabled"),
+    ),
+    h(
+      "div",
+      {},
+      h("span", { class: "muted" }, "defining the selected option:"),
+      h("span", {}, h("span", { class: "ring win" }), "winner ✓"),
+      h("span", {}, h("span", { class: "ring lose" }), "lost"),
+      h("span", {}, h("span", { class: "ring off" }), "mkIf false"),
+    ),
   );
 }
 
@@ -38,23 +54,68 @@ function runSearch() {
   resultList.setItems(results, "No option matches.");
 }
 
-function showOption(oi, row) {
+// The selection is mirrored in the URL (?opt= / ?module=), so the address
+// bar is always a deep link. replaceState can fail on file:// pages.
+function setUrl(sel) {
+  const params = new URLSearchParams(location.search);
+  params.delete("opt");
+  params.delete("module");
+  for (const [k, v] of Object.entries(sel)) params.set(k, v);
+  const q = params.toString();
+  try {
+    history.replaceState(null, "", location.pathname + (q ? `?${q}` : "") + location.hash);
+  } catch (e) {
+    // keep the old URL
+  }
+}
+
+// Defining module -> its best definition of the option: win > lose > off.
+function focusOf(o) {
+  const winners = new Set(o.winners);
+  const map = new Map();
+  o.definitions.forEach((d, i) => {
+    if (d.module == null) return;
+    const status = !d.active ? "off" : winners.has(i) ? "win" : "lose";
+    const cur = map.get(d.module);
+    if (!cur || RING_RANK[status] > RING_RANK[cur.status]) map.set(d.module, { status, priority: d.priority, condition: d.condition });
+  });
+  return map;
+}
+
+function showOption(oi, reveal = false) {
   selectedOption = oi;
-  if (row != null) resultList.setSelected(row);
-  $("#detail").replaceChildren(...renderOption(model, oi, showModule));
-  const ids = new Set(model.options[oi].definitions.map((d) => d.module).filter((x) => x != null));
-  graph.setHighlight(ids);
+  const row = results.findIndex((r) => r.index === oi);
+  resultList.setSelected(row);
+  if (reveal && row >= 0) resultList.reveal(row);
+  graph.select(null);
+  graph.setFocus(focusOf(model.options[oi]));
+  $("#detail").replaceChildren(...renderOption(model, oi, showModule, () => copyText(location.href)));
+  $("#detail").scrollTop = 0;
+  setUrl({ opt: model.options[oi].path });
 }
 
 function showModule(m) {
+  selectedOption = -1;
+  resultList.setSelected(-1);
   graph.select(m.id);
   graph.setHighlight(new Set([m.id]));
-  $("#detail").replaceChildren(
-    ...renderModule(model, m, (oi) => {
-      const row = results.findIndex((r) => r.index === oi);
-      showOption(oi, row >= 0 ? row : null);
-    }),
-  );
+  $("#detail").replaceChildren(...renderModule(model, m, (oi) => showOption(oi, true)));
+  $("#detail").scrollTop = 0;
+  setUrl({ module: String(model.modIndex.get(m.id)) });
+}
+
+function showStart() {
+  $("#detail").replaceChildren(...renderStart(model, (oi) => showOption(oi, true)));
+  $("#detail").scrollTop = 0;
+}
+
+function clearSelection() {
+  selectedOption = -1;
+  resultList.setSelected(-1);
+  graph.select(null);
+  graph.setFocus(null);
+  showStart();
+  setUrl({});
 }
 
 function load(doc, source) {
@@ -71,7 +132,7 @@ function load(doc, source) {
   graph.setModel(model);
   $("#search").disabled = false;
   selectedOption = -1;
-  $("#detail").replaceChildren(h("p", { class: "muted" }, "Select an option to see who set it, at what priority, and why the others lost. Click a module in the graph to see what it sets."));
+  showStart();
   runSearch();
   $("#search").focus();
   applyDeepLink();
@@ -90,9 +151,7 @@ function applyDeepLink() {
       $("#detail").replaceChildren(h("p", { class: "error" }, `No option ${optPath} in this graph.`));
       return;
     }
-    const row = results.findIndex((r) => r.index === oi);
-    showOption(oi, row >= 0 ? row : null);
-    if (row >= 0) $("#results").scrollTop = Math.max(0, row * resultList.rowHeight - 60);
+    showOption(oi, true);
   } else if (modRef != null) {
     const m = /^\d+$/.test(modRef) ? model.modules[Number(modRef)] : model.modById.get(modRef);
     if (!m) {
@@ -129,8 +188,18 @@ $("#search").addEventListener("input", () => requestAnimationFrame(runSearch));
 $("#file-input").addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
 $("#warnings-btn").addEventListener("click", () => ($("#warnings-panel").hidden = !$("#warnings-panel").hidden));
 $("#warnings-close").addEventListener("click", () => ($("#warnings-panel").hidden = true));
+// Esc: close the warnings panel, else clear the search text (when typing),
+// else clear the selection.
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") $("#warnings-panel").hidden = true;
+  if (e.key === "Escape") {
+    const search = $("#search");
+    if (!$("#warnings-panel").hidden) $("#warnings-panel").hidden = true;
+    else if (document.activeElement === search && search.value) {
+      e.preventDefault();
+      search.value = "";
+      runSearch();
+    } else if (model) clearSelection();
+  }
   if (e.key === "/" && document.activeElement !== $("#search")) {
     e.preventDefault();
     $("#search").focus();
