@@ -43,6 +43,15 @@ jq_check "full: selfcheck-crash message carries the abort" "$out/graph.json" \
   'any(.meta.warnings[]; .code == "selfcheck-crash" and .subject == "fixture.whnfAbort" and (.message | contains("aborts when forced to WHNF")))'
 echo "     full: $(evaluations full)"
 
+# 1a. --html: the same graph embedded into the viewer, -o still written.
+expect_exit 0 html "$optgraph" "$fixture" -o "$out/html.json" --html "$out/graph.html"
+tr -d '\n' <"$out/graph.html" | sed -n 's#.*<script type="application/json" id="optgraph-data">\([^<]*\)</script>.*#\1#p' >"$out/embedded.json"
+if [ "$(jq -S 'del(.meta.generatedAt)' "$out/embedded.json" 2>/dev/null)" = "$(jq -S 'del(.meta.generatedAt)' "$out/html.json")" ]; then
+  pass "html: embedded JSON equals the -o output"
+else
+  fail "html: embedded JSON differs from the -o output"
+fi
+
 # 1b. --include-all-definitions: nothing omitted, more definitions listed.
 expect_exit 0 include-all "$optgraph" "$fixture" -o "$out/include-all.json" --include-all-definitions
 check-jsonschema --schemafile schema/graph.schema.json "$out/include-all.json" && pass "include-all: schema" || fail "include-all: schema"
