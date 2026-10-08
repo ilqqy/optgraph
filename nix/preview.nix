@@ -128,9 +128,12 @@ let
       in
       if n == 0 then
         ok "{ }"
-      else if depth >= 1 then
+      else if depth >= 1 || s ? __unfix__ then
         # Below the top level only the names: attribute values are often lazy
-        # by design (e.g. assertion messages) and must not be forced.
+        # by design (e.g. assertion messages) and must not be forced. The same
+        # for fixpoint package sets (lib.makeExtensible / makeScope, e.g.
+        # boot.kernelPackages) at any level: their attributes include aliases
+        # of removed packages that throw when forced.
         ok ("{ " + concatStringsSep ", " (map showKey (take shown names) ++ more n shown) + " }")
       else
         join "{ " " }" (genList item shown) (more n shown);

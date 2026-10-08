@@ -79,9 +79,10 @@ let
     .meta.complete
     and .meta.warnings == []
     and all(.options[]; .error == null)
-    and (opt("networking.firewall.enable") | .highestPrio == 50 and ([.definitions[].priority] | sort) == [50, 1000])
+    and (opt("networking.firewall.enable") | .highestPrio == 50 and ([.definitions[] | select(.kind == "definition") | .priority] | sort) == [50, 1000])
     and (opt("services.printing.enable") | any(.definitions[]; .condition == "mkIf-false"))
     and (opt("environment.systemPackages") | (.winners | length) > 1 and .omitted.nixpkgsActive > 0)
+    and (opt("i18n.defaultLocale") | .definitions[-1].kind == "default" and .winners == [0])
   '';
 in
 {
@@ -101,8 +102,8 @@ in
       '';
 
   # The demo system evaluates (its toplevel derivation is instantiated, not
-  # built), and both a fresh extraction and the committed demo/graph.json (the
-  # live demo's demo.json) validate, with no warnings and no option errors.
+  # built), and its extraction validates, with no warnings and no option
+  # errors. pages.yml publishes the same extraction (by the CLI) as demo.json.
   demo =
     pkgs.runCommand "optgraph-demo-check"
       {
@@ -114,14 +115,12 @@ in
       }
       ''
         echo "demo: system $toplevel"
-        for g in ${demoGraphJson} ${../demo/graph.json}; do
-          check-jsonschema --schemafile ${../schema/graph.schema.json} "$g"
-          jq -e -f ${demoAssertions} "$g" > /dev/null || {
-            echo "$g: warnings, option errors or a broken demo story:"
-            jq -c '{warnings: .meta.warnings, errors: [.options[] | select(.error != null) | {path, error}]}' "$g"
-            exit 1
-          }
-        done
+        check-jsonschema --schemafile ${../schema/graph.schema.json} ${demoGraphJson}
+        jq -e -f ${demoAssertions} ${demoGraphJson} > /dev/null || {
+          echo "demo graph: warnings, option errors or a broken demo story:"
+          jq -c '{warnings: .meta.warnings, errors: [.options[] | select(.error != null) | {path, error}]}' ${demoGraphJson}
+          exit 1
+        }
         jq '{modules: (.modules | length), options: (.options | length)}' ${demoGraphJson}
         cp ${demoGraphJson} $out
       '';

@@ -131,7 +131,7 @@
         },
         "highestPrio": { "type": ["integer", "null"] },
         "omitted": {
-          "description": "nixpkgs definitions that neither win nor come from a non-nixpkgs module, counted instead of listed (zero with --include-all-definitions)",
+          "description": "nixpkgs definitions that neither win nor come from a non-nixpkgs module, counted instead of listed (zero with --include-all-definitions); never the option default, which is always listed",
           "type": "object",
           "additionalProperties": false,
           "required": ["nixpkgsActive", "nixpkgsInactive"],
