@@ -49,9 +49,22 @@ function renderLegend() {
 
 function runSearch() {
   if (!model) return;
-  results = searchOptions(model, $("#search").value);
+  const q = $("#search").value.trim();
+  $("#results").hidden = !q;
+  $("#lists").hidden = !!q;
+  results = q ? searchOptions(model, q) : [];
   resultList.selected = results.findIndex((r) => r.index === selectedOption);
   resultList.setItems(results, "No option matches.");
+}
+
+// Sidebar rows of the selected option are marked.
+function markLists() {
+  for (const li of $("#lists").querySelectorAll("li[data-oi]")) li.classList.toggle("sel", Number(li.dataset.oi) === selectedOption);
+}
+
+function showErrorsList() {
+  const sec = $("#lists").querySelector('[data-list="errors"]');
+  if (sec) sec.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 // The selection is mirrored in the URL (?opt= / ?module=), so the address
@@ -90,7 +103,8 @@ function showOption(oi, reveal = false) {
   graph.select(null);
   graph.setFocus(focusOf(model.options[oi]));
   $("#detail").replaceChildren(...renderOption(model, oi, showModule, () => copyText(location.href)));
-  $("#detail").scrollTop = 0;
+  $("#inspector").scrollTop = 0;
+  markLists();
   setUrl({ opt: model.options[oi].path });
 }
 
@@ -100,13 +114,15 @@ function showModule(m) {
   graph.select(m.id);
   graph.setHighlight(new Set([m.id]));
   $("#detail").replaceChildren(...renderModule(model, m, (oi) => showOption(oi, true)));
-  $("#detail").scrollTop = 0;
+  $("#inspector").scrollTop = 0;
+  markLists();
   setUrl({ module: String(model.modIndex.get(m.id)) });
 }
 
 function showStart() {
   $("#detail").replaceChildren(...renderStart(model, (oi) => showOption(oi, true)));
-  $("#detail").scrollTop = 0;
+  $("#inspector").scrollTop = 0;
+  markLists();
 }
 
 function clearSelection() {
@@ -127,14 +143,14 @@ function load(doc, source) {
   }
   $("#empty").classList.add("hidden");
   document.title = `optgraph: ${model.meta.host ?? "graph"}`;
-  renderMeta(model);
+  renderMeta(model, showErrorsList);
+  $("#lists").replaceChildren(...renderLists(model, (oi) => showOption(oi, true)));
   renderLegend();
   graph.setModel(model);
   $("#search").disabled = false;
   selectedOption = -1;
   showStart();
   runSearch();
-  $("#search").focus();
   applyDeepLink();
   if (new URLSearchParams(location.search).has("tour")) startTour();
 }
@@ -186,8 +202,7 @@ function loadFile(file) {
 }
 
 $("#search").addEventListener("input", () => requestAnimationFrame(runSearch));
-$("#file-input").addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
-$("#warnings-btn").addEventListener("click", () => ($("#warnings-panel").hidden = !$("#warnings-panel").hidden));
+for (const id of ["#file-input", "#file-input-empty"]) $(id).addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
 $("#warnings-close").addEventListener("click", () => ($("#warnings-panel").hidden = true));
 // Esc: close the warnings panel, else clear the search text (when typing),
 // else clear the selection.
@@ -219,6 +234,8 @@ document.addEventListener("drop", (e) => {
   const f = e.dataTransfer.files[0];
   if (f) loadFile(f);
 });
+
+for (const el of document.querySelectorAll(".ico-slot")) el.replaceWith(icon(el.dataset.icon));
 
 // Startup: data embedded by `optgraph --html`, else ?src=<url> (same origin
 // only, enforced by the page's Content-Security-Policy), else on a hosted

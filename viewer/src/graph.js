@@ -41,15 +41,15 @@ class ModuleGraph {
       nixpkgs: v("--o-nixpkgs"),
       unknown: v("--o-unknown"),
       edge: v("--edge"),
-      fg: v("--fg"),
-      muted: v("--muted"),
+      fg: v("--text"),
+      muted: v("--text-3"),
       accent: v("--accent"),
       bg: v("--bg"),
-      panel: v("--panel"),
-      border: v("--border"),
-      win: v("--ring-win"),
-      lose: v("--ring-lose"),
-      off: v("--ring-off"),
+      panel: v("--s1"),
+      border: v("--line"),
+      win: v("--win"),
+      lose: v("--lose"),
+      off: v("--off"),
     };
   }
 
