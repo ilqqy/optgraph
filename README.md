@@ -2,11 +2,11 @@
 
 Shows how a NixOS flake configuration is put together: the module import graph, and for every option who sets it, at what priority, and why one definition won over the others.
 
+![The viewer on the demo configuration: searching an option, its priority ladder, and the modules that define it ringed in the import graph](docs/demo.gif)
+
 `optgraph` evaluates a `nixosConfigurations.<host>` of your flake and writes `graph.json`: the modules and where they come from (your files, inline modules, flake inputs, nixpkgs), and all definitions of each option you touch, including the ones that lost and the ones switched off by `mkIf`. With `--html` it also writes a single-file interactive viewer of the same data.
 
-<!-- demo.gif -->
-
-Live demo: https://ilqqy.github.io/optgraph/
+Live demo: https://ilqqy.github.io/optgraph/ ([Watch the tour](https://ilqqy.github.io/optgraph/?tour): the animation above, played by the viewer itself)
 
 It shows the graph of [`demo/`](demo/), a synthetic Hyprland desktop configuration (no real machine, the only user is `demo`). Options worth opening:
 
@@ -132,6 +132,7 @@ The demo has no warnings (`jq '.meta.warnings | length' graph.json` prints `0`).
 - Top bar: host, nixpkgs version, attribution, `complete`, and the warnings (click to list them). Light and dark follow the system setting.
 - Keys: `/` focuses the search; `Esc` closes the warnings panel, else clears the search text, else clears the selection (back to the start summary).
 - Deep links, for embedded data and `?src=` alike: `?opt=<option path>` opens that option's ladder and highlights its modules, `?module=<index or id>` opens a module (index into `modules`, or its `id`), `?warnings` opens the warnings panel. The address bar follows the selection (`history.replaceState`), so it is always a link to what you see. Example: `graph.html?opt=networking.hostName`, `https://ilqqy.github.io/optgraph/?module=0`.
+- Tour: `?tour` plays a 16-second scripted walk through the viewer (the GIF at the top), driving the real search, lists and panels with a drawn cursor and captions; Pause/Play/Restart and *Exit tour* sit at the bottom right of the graph, and any real click or key hands the page back. With `prefers-reduced-motion` it waits for *Play* and jumps instead of moving. It shows the demo's `networking.firewall.enable`, `services.printing.enable`, `i18n.defaultLocale` and `environment.systemPackages`; on another graph it takes the first options that fit each scene, and does not start if one is missing. Captions take module names and priorities from the graph. `?tour&t=<ms>` renders the single frame at that time, which is how the GIF is made.
 - Local only: no analytics and no external requests. The page's Content-Security-Policy allows inline code only and limits `fetch` (`?src=`) to the page's own origin. d3-force and its dependencies are vendored in `viewer/vendor/` (ISC licence, pinned in `viewer/vendor/VERSIONS`).
 
 ## Scope and support
@@ -181,7 +182,7 @@ With `OPTGRAPH_LOCALIZE=bisect` the default run takes 17 evaluations and 2 crash
 ## Development
 
 ```sh
-nix develop            # shell with gh, jq, nixfmt, check-jsonschema
+nix develop            # shell with gh, jq, nixfmt, check-jsonschema, ffmpeg
 nix flake check -L     # lib checks on the fixture and the demo, schema validation, CLI build (a few minutes)
 nix fmt                # nixfmt (RFC style); CI runs: nix fmt -- --check .
 nix develop -c tests/e2e.sh [OUTDIR]   # CLI end to end: crash recovery, bisection, budget, exit codes, --html
@@ -191,7 +192,17 @@ nix run . -- ./demo#nixosConfigurations.demo -o demo.json   # the live demo's gr
 
 `nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-09). `tests/assertions.jq` has 88 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
-Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/`), `demo/` the demo flake (a synthetic desktop configuration; `pages.yml` extracts its graph at deploy time as the live demo's `demo.json`, and `checks.demo` keeps it free of warnings and option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/`), `tools/` the tour renderer, `demo/` the demo flake (a synthetic desktop configuration; `pages.yml` extracts its graph at deploy time as the live demo's `demo.json`, and `checks.demo` keeps it free of warnings and option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+
+### Regenerating the tour
+
+`docs/demo.gif` (README) and `docs/demo.webm` (1280x720, for the site) are rendered from the viewer's own tour, not recorded, so after a UI change one command rebuilds them:
+
+```sh
+tools/render-tour.sh [WORKDIR]   # default WORKDIR: /tmp/optgraph-tour
+```
+
+It builds the viewer and the demo's graph, serves both on `127.0.0.1`, and has headless Chromium (one long-lived instance, DevTools protocol over a pipe; `tools/tour-capture.py`, Python standard library only) open `?tour&t=<ms>` for each of the 240 frames at 15 fps, dark theme, 1280x720. Any console error or uncaught exception fails the run. Then the dev shell's ffmpeg encodes the GIF (one palette, 960 px wide, lanczos; it steps down in frame rate and width if the GIF reaches 5 MB) and the WebM (VP9). Frames stay in `WORKDIR/frames`. Needs `chromium` (or `CHROMIUM=<browser>`) and `python3` on `PATH`. On this checkout (2026-10-09): 52 s, GIF 1.6 MB, WebM 458 KB; a second run gave byte-identical frames, GIF and WebM. The timeline itself is `viewer/src/tour.js`.
 
 ## License
 
