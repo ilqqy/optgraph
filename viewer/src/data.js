@@ -51,7 +51,7 @@ function analyse(model) {
         loser = d;
       }
     });
-    if (!loser) return { hasUser, override: false, userVsUser: false, beats: null, off };
+    if (!loser) return { hasUser, override: false, userVsUser: false, beats: null, beatsParts: null, off };
     const winner = o.definitions[o.winners[0]];
     const wo = defOrigin(model, winner);
     const lo = defOrigin(model, loser);
@@ -61,6 +61,8 @@ function analyse(model) {
       userVsUser: wo !== "nixpkgs" && lo !== "nixpkgs",
       // "mkForce (user) beats mkDefault (input:shared)"
       beats: `${prioName(o.highestPrio)} (${wo}) beats ${prioName(loser.priority)} (${lo})`,
+      // "mkForce" in "hardening.nix" beats "mkDefault" in "dev-tools.nix"
+      beatsParts: { win: prioName(o.highestPrio), winWho: defWho(model, winner), lose: prioName(loser.priority), loseWho: defWho(model, loser) },
       off,
     };
   });
@@ -95,6 +97,13 @@ function defFile(model, d) {
   if (d.file != null) return d.file;
   const m = d.module != null ? model.modById.get(d.module) : null;
   return m ? m.file : null;
+}
+
+// Short name of who made a definition: the module's short label, or "the default".
+function defWho(model, d) {
+  if (d.kind === "default") return "the default";
+  const m = d.module != null ? model.modById.get(d.module) : null;
+  return m ? moduleShortLabel(m) : baseName(defFile(model, d));
 }
 
 function defOrigin(model, d) {

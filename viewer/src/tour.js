@@ -214,7 +214,7 @@ function tourTimeline(story) {
 class TourRun {
   constructor(reduced) {
     this.reduced = reduced;
-    const pane = $("#graph-pane").getBoundingClientRect();
+    const pane = $("#stage").getBoundingClientRect();
     const p = { x: pane.left + pane.width * 0.86, y: pane.top + pane.height * 0.8 };
     this.cursor = { from: p, to: p, at: 0, dur: 0 };
     this.clicks = [];
@@ -313,7 +313,7 @@ class TourOverlay {
     const show = (el, on) => (el.style.display = on ? "" : "none");
     const place = (el, x, y, extra = "") => (el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)${extra}`);
     const fade = (from, to, ms = 220) => (reduced ? 1 : clamp01(Math.min((t - from) / ms, (to - t) / ms)));
-    const pane = $("#graph-pane").getBoundingClientRect();
+    const pane = $("#stage").getBoundingClientRect();
     const c = run.cursorAt(t);
 
     const pressed = run.clicks.some((k) => t >= k.at && t - k.at < 130);

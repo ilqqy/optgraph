@@ -1,22 +1,32 @@
-// Top bar, warnings panel, option detail (priority ladder), module panel.
+// Top bar, sidebar lists, warnings panel, start summary, option detail
+// (priority ladder), module panel.
 
-function renderMeta(model) {
+// Status chip: a mark (✓ or !) and text, so the state never depends on colour.
+function statusChip(ok, text, title, onclick) {
+  return h(
+    onclick ? "button" : "span",
+    { class: `status-chip ${ok ? "ok" : "bad"}`, title, type: onclick ? "button" : null, onclick },
+    h("span", { class: "mark", "aria-hidden": "true" }, ok ? "✓" : "!"),
+    text,
+  );
+}
+
+function renderMeta(model, onErrors) {
   const m = model.meta;
-  const items = [
-    h("span", {}, "host ", h("b", {}, m.host ?? "?")),
-    h("span", {}, "nixpkgs ", h("b", {}, m.nixpkgsVersion ?? "?")),
-    h("span", { title: "aligned: modules lined up with nixosSystem's module lists; file-based: fallback attribution" }, "attribution ", h("b", { class: m.attribution === "aligned" ? null : "flag-bad" }, m.attribution)),
-    h("span", { title: "false when optgraph ran out of retries or time: partial output" }, "complete ", h("b", { class: m.complete ? null : "flag-bad" }, String(m.complete))),
-    h("span", {}, "scope ", h("b", {}, m.scope)),
-    h("span", {}, `${model.modules.length} modules, ${model.options.length} options`),
-  ];
-  $("#meta").replaceChildren(...items);
-
-  const btn = $("#warnings-btn");
+  $("#crumb").replaceChildren(
+    h("b", { class: "host", title: "nixosConfigurations.<host>" }, m.host ?? "?"),
+    h("span", { class: "sep", "aria-hidden": "true" }, "/"),
+    h("span", { class: "ver", title: `nixpkgs ${m.nixpkgsRev ?? ""}`.trim() }, "nixpkgs ", m.nixpkgsVersion ?? "?"),
+  );
   const n = m.warnings.length;
-  btn.hidden = false;
-  btn.textContent = plural(n, "warning");
-  btn.classList.toggle("has", n > 0);
+  const errs = model.analysis.errors.length;
+  $("#status").replaceChildren(
+    statusChip(m.attribution === "aligned", m.attribution, "aligned: modules lined up with nixosSystem's module lists; file-based: fallback attribution"),
+    statusChip(m.complete, m.complete ? "complete" : "partial", "complete: false when optgraph ran out of retries or time (partial output)"),
+    statusChip(n === 0, plural(n, "warning"), "meta.warnings: click to list them", () => ($("#warnings-panel").hidden = !$("#warnings-panel").hidden)),
+    statusChip(errs === 0, plural(errs, "option error"), "options whose value or mkIf condition threw", errs ? onErrors : null),
+  );
+  $("#counts").textContent = `${model.modules.length.toLocaleString("en")} modules · ${model.options.length.toLocaleString("en")} options · scope ${m.scope}`;
   $("#warnings-list").replaceChildren(
     ...(n
       ? m.warnings.map((w) =>
@@ -33,66 +43,91 @@ function ladderOrder(defs) {
     .sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
 }
 
-// Start state (nothing selected): summary and the options worth a look.
-const START_LIST_LIMIT = 200;
+// Sidebar: the options worth a look, as three lists with counts.
+const SIDE_LIST_LIMIT = 200;
 
-function renderStart(model, onOption) {
+function renderLists(model, onOption) {
   const a = model.analysis;
-  const s = a.stats;
-  const tile = (n, label, title) => h("div", { class: "tile", title }, h("b", {}, n.toLocaleString("en")), h("span", {}, label));
-  const row = (oi, extra, title) =>
-    h("li", { onclick: () => onOption(oi), title }, h("span", { class: "path" }, model.options[oi].path), extra);
-  // Two lines: the path, then a note (long notes would squeeze the path).
-  const row2 = (oi, note, cls) =>
-    h("li", { class: "two", onclick: () => onOption(oi), title: note }, h("span", { class: "path" }, model.options[oi].path), h("span", { class: `note ${cls || ""}` }, note));
-  const list = (title, hint, items, render, emptyText) => [
-    h("h3", {}, title, h("span", { class: "count" }, String(items.length)), hint ? h("span", { class: "hint" }, hint) : null),
-    items.length
-      ? h(
-          "ul",
-          { class: "picklist" },
-          ...items.slice(0, START_LIST_LIMIT).map(render),
-          items.length > START_LIST_LIMIT ? h("li", { class: "more" }, `${items.length - START_LIST_LIMIT} more: use the search`) : null,
-        )
-      : h("p", { class: "muted" }, emptyText),
-  ];
-  return [
+  const section = (key, title, ico, items, render, emptyText) =>
     h(
-      "div",
-      { class: "tiles" },
-      tile(s.modules, "modules"),
-      tile(s.options, "options"),
-      tile(s.definitions, "definitions", "listed definitions, without option defaults and without the nixpkgs definitions counted as +N"),
-      tile(s.overrides, "overrides", "options where a listed definition lost to a stronger one (the option default losing does not count)"),
-      tile(s.switchedOff, "switched off", "definitions from non-nixpkgs modules under a false mkIf"),
-      tile(s.errors, "errors", "options with an error (a value or condition threw)"),
-    ),
-    h("p", { class: "muted intro" }, "Select an option to see who set it, at what priority, and why the others lost. Click a module in the graph to see what it sets."),
-    ...list(
-      "Overrides",
-      "between your modules first",
-      a.overrides,
-      (oi) => row2(oi, a.info[oi].beats),
-      "No listed definition lost.",
-    ),
-    ...list(
+      "section",
+      { class: `side-list l-${key}`, "data-list": key },
+      h("h2", {}, icon(ico, `i-${key}`), h("span", {}, title), h("span", { class: "count" }, items.length.toLocaleString("en"))),
+      items.length
+        ? h(
+            "ul",
+            {},
+            ...items.slice(0, SIDE_LIST_LIMIT).map(render),
+            items.length > SIDE_LIST_LIMIT ? h("li", { class: "more" }, `${(items.length - SIDE_LIST_LIMIT).toLocaleString("en")} more: use the search`) : null,
+          )
+        : h("p", { class: "empty-note" }, emptyText),
+    );
+  const row = (oi, title, data) =>
+    h("li", { title, "data-oi": oi, ...data }, h("button", { type: "button", onclick: () => onOption(oi) }, h("span", { class: "path" }, model.options[oi].path)));
+  return [
+    section("overrides", "Overrides", "override", a.overrides, (oi) => row(oi, a.info[oi].beats), "No listed definition lost."),
+    section(
+      "off",
       "Switched off",
-      "mkIf false",
+      "off",
       a.switchedOff,
       ({ oi, di }) => {
         const m = model.modById.get(model.options[oi].definitions[di].module);
-        return row(oi, h("span", { class: "aside" }, moduleShortLabel(m)), moduleLabel(m));
+        return row(oi, `mkIf false in ${moduleLabel(m)}`, { "data-di": di });
       },
       "No definition is switched off.",
     ),
-    ...list(
-      "Errors",
-      null,
-      a.errors,
-      (oi) => row2(oi, model.options[oi].error, "error"),
-      "No option has an error.",
-    ),
+    section("errors", "Errors", "error", a.errors, (oi) => row(oi, model.options[oi].error), "No option threw."),
   ];
+}
+
+// Start state (nothing selected): summary, the priority scale and the first
+// overrides.
+function renderStart(model, onOption) {
+  const a = model.analysis;
+  const s = a.stats;
+  const tile = (n, label, title, cls) => h("div", { class: `stat${cls ? " " + cls : ""}`, title }, h("b", {}, n.toLocaleString("en")), h("span", {}, label));
+  const tick = (p) => h("div", {}, h("b", {}, String(p)), h("span", {}, PRIORITY_NAMES[p]));
+  const first = a.overrides.slice(0, 4);
+  return [
+    h("div", { class: "overline" }, "Overview"),
+    h("h1", { class: "hello" }, "Who set what, and why it won."),
+    h("p", { class: "lede" }, "Pick an option to see every definition stacked by priority, or click a module in the graph to see what it sets."),
+    h(
+      "div",
+      { class: "stats" },
+      tile(s.modules, "modules"),
+      tile(s.options, "options"),
+      tile(s.definitions, "definitions", "listed definitions, without option defaults and without the nixpkgs definitions counted as +N"),
+      tile(s.overrides, "overrides", "options where a listed definition lost to a stronger one (the option default losing does not count)", s.overrides ? "lose" : null),
+      tile(s.switchedOff, "switched off", "definitions from non-nixpkgs modules under a false mkIf"),
+      tile(s.errors, "errors", "options with an error (a value or condition threw)", s.errors ? "err" : null),
+    ),
+    h("h2", { class: "subhead" }, "Priority: lowest number wins"),
+    h(
+      "div",
+      { class: "scale", role: "img", "aria-label": "Priorities from strongest to weakest: 50 mkForce, 100 normal, 1000 mkDefault, 1500 default" },
+      h("div", { class: "scale-cap" }, h("span", {}, "stronger"), h("span", {}, "weaker")),
+      h("div", { class: "scale-bar" }),
+      h("div", { class: "scale-ticks" }, tick(50), tick(100), tick(1000), tick(1500)),
+    ),
+    first.length ? h("h2", { class: "subhead" }, a.info[first[0]].userVsUser ? "Overrides between your modules" : "Overrides") : null,
+    ...first.map((oi) => {
+      const b = a.info[oi].beatsParts;
+      return h(
+        "button",
+        { type: "button", class: "override-card", onclick: () => onOption(oi) },
+        h("span", { class: "path" }, model.options[oi].path),
+        h("span", { class: "beats" }, h("code", { class: "t-win" }, b.win), ` in ${b.winWho} beats `, h("code", { class: "t-lose" }, b.lose), ` in ${b.loseWho}`),
+      );
+    }),
+    h(
+      "div",
+      { class: "keys" },
+      h("span", {}, h("kbd", {}, "/"), "search"),
+      h("span", {}, h("kbd", {}, "Esc"), "clear"),
+    ),
+  ].filter(Boolean);
 }
 
 function renderOption(model, oi, onModule, onCopyLink) {
