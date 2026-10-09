@@ -1,27 +1,55 @@
-// Module import graph on a <canvas>: d3-force layout, own pan/zoom.
-// Canvas instead of SVG keeps a few thousand nodes responsive.
+// Module import graph on a <canvas>: layered left-to-right layout
+// (layout.js), modules as pills, curved edges, own pan/zoom and an eased
+// camera. Canvas instead of SVG keeps a few hundred pills responsive.
 
-const GRAPH_LIMIT = 1500; // above this many modules only non-nixpkgs ones are drawn
+const GRAPH_LIMIT = 300; // above this many modules only non-nixpkgs ones are drawn
 
 // Rings around the modules that define the selected option.
 const RING_RANK = { win: 3, lose: 2, off: 1 };
 
+const PILL_H = 28;
+const PILL_PAD = 12;
+const PILL_FONT = '500 12px "Geist", ui-sans-serif, system-ui, sans-serif';
+const CHIP_FONT = '600 11px "Geist Mono", ui-monospace, monospace';
+const CHIP_H = 20;
+const CAMERA_MS = 450;
+const FADE_MS = 200;
+
+// The clock of camera moves and fades: performance.now(), unless the tour
+// drives it (then they are a function of the tour's time).
+const ui = {
+  now: () => performance.now(),
+  reducedMotion: () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+};
+
+const easeCamera = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
+
 class ModuleGraph {
-  constructor(canvas, banner, onSelect) {
+  constructor(stage, canvas, banner, tip, onSelect) {
+    this.stage = stage;
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.banner = banner;
+    this.tip = tip;
     this.onSelect = onSelect;
     this.t = { x: 0, y: 0, k: 1 };
+    this.cam = null; // { from, to, at, dur }
     this.nodes = [];
     this.links = [];
+    this.byId = new Map();
+    this.parents = new Map();
     this.highlight = null; // Set of module ids (a selected module), or null
-    this.focus = null; // Map module id -> { status, priority } (a selected option), or null
+    this.lit = null; // the selected module and its neighbours
+    this.focus = null; // Map module id -> { status, priority, condition } (a selected option), or null
+    this.path = null; // Set of link indices leading to the lit modules
+    this.via = null; // Set of module ids on those paths (half lit)
+    this.fadeAt = -1e9;
+    this.fade = 1;
     this.selected = null;
     this.hover = null;
     this.colors = {};
     this.pending = false;
-    this.reserveTop = 0; // pixels kept free above the fitted graph (tour captions)
+    this.reserve = { top: 0, bottom: 44 }; // pixels kept free when fitting (legend, tour captions, mobile sheet)
     this.readColors();
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
       this.readColors();
@@ -41,106 +69,172 @@ class ModuleGraph {
       nixpkgs: v("--o-nixpkgs"),
       unknown: v("--o-unknown"),
       edge: v("--edge"),
-      fg: v("--text"),
-      muted: v("--text-3"),
+      text: v("--text"),
+      text2: v("--text-2"),
+      text3: v("--text-3"),
       accent: v("--accent"),
-      bg: v("--bg"),
-      panel: v("--s1"),
-      border: v("--line"),
+      s1: v("--s1"),
+      s2: v("--s2"),
+      s3: v("--s3"),
+      line2: v("--line-2"),
       win: v("--win"),
+      onWin: v("--on-win"),
       lose: v("--lose"),
       off: v("--off"),
     };
   }
 
   setModel(model) {
-    if (this.sim) this.sim.stop();
+    this.model = model;
     const all = model.modules;
     const tooMany = all.length > GRAPH_LIMIT;
     const shown = tooMany ? all.filter(isUserish) : all;
     this.banner.hidden = !tooMany;
     if (tooMany) {
-      this.banner.textContent = `Too large to draw ${all.length} modules: showing the ${shown.length} non-nixpkgs modules only. Search and option details cover everything.`;
+      this.banner.textContent = `${all.length.toLocaleString("en")} modules are too many to draw: showing the ${shown.length.toLocaleString("en")} non-nixpkgs modules only. Search and option details cover everything.`;
     }
+    const ctx = this.ctx;
+    ctx.font = PILL_FONT;
     const byId = new Map();
-    this.nodes = shown.map((m) => {
-      const n = { id: m.id, m, label: moduleShortLabel(m), cls: originClass(m.origin), r: isUserish(m) ? 6 : 3.5, deg: 0, labelW: null };
+    this.nodes = shown.map((m, i) => {
+      const label = moduleShortLabel(m);
+      const n = { i, id: m.id, m, label, cls: originClass(m.origin), w: Math.ceil(ctx.measureText(label).width) + 2 * PILL_PAD + 14, h: PILL_H, x: 0, y: 0, chipW: 0 };
       byId.set(m.id, n);
       return n;
     });
     this.links = [];
     for (const m of shown) {
       for (const t of m.imports) {
-        if (byId.has(t)) {
-          this.links.push({ source: m.id, target: t, dashed: byId.get(t).m.disabled });
-          byId.get(m.id).deg++;
-          byId.get(t).deg++;
-        }
+        if (byId.has(t)) this.links.push({ source: byId.get(m.id), target: byId.get(t), dashed: byId.get(t).m.disabled });
       }
     }
+    const lay = layeredLayout(
+      this.nodes.map((n) => ({ w: n.w, h: n.h })),
+      this.links.map((l) => [l.source.i, l.target.i]),
+    );
+    this.nodes.forEach((n, i) => {
+      n.x = lay.x[i] - n.w / 2; // left edge
+      n.y = lay.y[i]; // centre line
+    });
+    this.links.forEach((l, k) => (l.pts = lay.paths[k]));
     this.byId = byId;
-    this.highlight = null;
-    this.focus = null;
+    // Importers of each module, for the import paths to what is selected.
+    this.parents = new Map(this.nodes.map((n) => [n.id, []]));
+    this.links.forEach((l, k) => this.parents.get(l.target.id).push(k));
+    this.highlight = this.lit = this.focus = this.path = this.via = null;
     this.selected = null;
-    this.hover = null;
-    this.t = { x: this.width() / 2, y: this.height() / 2, k: 1 };
-    const big = this.nodes.length > 500;
-    this.fitted = false;
-    this.userMoved = false;
-    this.sim = d3
-      .forceSimulation(this.nodes)
-      .force("link", d3.forceLink(this.links).id((d) => d.id).distance(big ? 18 : 70).strength(0.5))
-      .force("charge", d3.forceManyBody().strength(big ? -12 : -260).theta(0.9).distanceMax(big ? 300 : 220))
-      .force("collide", d3.forceCollide((d) => d.r + (big ? 2 : 14)))
-      // Pull disconnected roots (e.g. inline modules) in, so they don't drift off.
-      .force("x", d3.forceX(0).strength(big ? 0.04 : 0.12))
-      .force("y", d3.forceY(0).strength(big ? 0.04 : 0.12))
-      .alphaDecay(big ? 0.05 : 0.03)
-      .on("tick", () => {
-        // Fit the view once the layout has mostly settled, unless the user moved it.
-        if (!this.fitted && this.sim.alpha() < 0.12) this.fit();
-        this.requestDraw();
-      })
-      .on("end", () => this.userMoved || this.fit());
-    if (!big) {
-      // Small graphs: settle synchronously (a few ms) and show the final layout.
-      this.sim.stop();
-      this.sim.tick(300);
-      this.fit();
-    }
+    this.setHover(null);
+    this.fit(false);
   }
 
-  // Scale and centre the view on the current node positions.
-  fit() {
-    this.fitted = true;
-    if (!this.nodes.length) return;
+  bounds(nodes) {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const n of this.nodes) {
+    for (const n of nodes) {
       x0 = Math.min(x0, n.x);
-      y0 = Math.min(y0, n.y);
-      x1 = Math.max(x1, n.x + 90); // room for the label
-      y1 = Math.max(y1, n.y);
+      y0 = Math.min(y0, n.y - n.h / 2);
+      x1 = Math.max(x1, n.x + n.w + (n.chipW ? n.chipW + 8 : 0));
+      y1 = Math.max(y1, n.y + n.h / 2);
     }
-    const pad = 40;
-    const w = this.width() - 2 * pad;
-    const hgt = this.height() - 2 * pad - 50 - this.reserveTop; // legend
-    const k = Math.min(2, w / Math.max(1, x1 - x0), hgt / Math.max(1, y1 - y0));
-    this.t = { k, x: pad + (w - (x1 - x0) * k) / 2 - x0 * k, y: pad + this.reserveTop + (hgt - (y1 - y0) * k) / 2 - y0 * k };
+    return { x0, y0, x1, y1 };
+  }
+
+  // Camera that shows `nodes`, zoomed in at most to maxK.
+  view(nodes, maxK) {
+    if (!nodes.length) return { ...this.t };
+    const b = this.bounds(nodes);
+    const pad = Math.max(16, Math.min(56, this.width() * 0.07));
+    const W = this.width() - 2 * pad;
+    const top = this.reserve.top + (this.banner.hidden ? 0 : this.banner.offsetHeight + 8);
+    const H = this.height() - 2 * pad - top - this.reserve.bottom;
+    const k = Math.max(0.12, Math.min(maxK, W / Math.max(1, b.x1 - b.x0), H / Math.max(1, b.y1 - b.y0)));
+    return {
+      k,
+      x: pad + (W - (b.x1 - b.x0) * k) / 2 - b.x0 * k,
+      y: pad + top + (H - (b.y1 - b.y0) * k) / 2 - b.y0 * k,
+    };
+  }
+
+  moveTo(target, animate = true) {
+    const dur = animate && !ui.reducedMotion() ? CAMERA_MS : 0;
+    this.cam = dur ? { from: { ...this.t }, to: target, at: ui.now(), dur } : null;
+    if (!dur) this.t = target;
     this.requestDraw();
   }
 
-  // A selected module: it is lit, everything else dims.
+  fit(animate = true) {
+    this.moveTo(this.view(this.nodes, 1.3), animate);
+  }
+
+  // Zoom by a factor around the centre of the stage.
+  zoomBy(f) {
+    const t = this.cam ? this.cam.to : this.t;
+    const k = Math.min(4, Math.max(0.12, t.k * f));
+    const cx = this.width() / 2;
+    const cy = this.height() / 2;
+    this.moveTo({ k, x: cx - ((cx - t.x) / t.k) * k, y: cy - ((cy - t.y) / t.k) * k });
+  }
+
+  // A selected module: it and its direct imports and importers are lit.
   setHighlight(ids) {
     this.highlight = ids && ids.size ? ids : null;
-    this.focus = null;
+    this.focus = this.lit = this.path = this.via = null;
+    for (const n of this.nodes) n.chipW = 0;
+    if (this.highlight) {
+      const lit = new Set(this.highlight);
+      const path = new Set();
+      this.links.forEach((l, k) => {
+        if (this.highlight.has(l.source.id) || this.highlight.has(l.target.id)) {
+          lit.add(l.source.id);
+          lit.add(l.target.id);
+          path.add(k);
+        }
+      });
+      this.lit = lit;
+      this.path = path;
+      const nodes = [...lit].map((id) => this.byId.get(id)).filter(Boolean);
+      if (nodes.length) this.moveTo(this.view(nodes, 1.3));
+    }
+    this.fadeAt = ui.now();
     this.requestDraw();
   }
 
   // A selected option: per defining module its best definition status
-  // (win > lose > off) and that definition's priority.
+  // (win > lose > off) and that definition's priority. The camera eases to
+  // the defining modules that are drawn; the import paths leading to them
+  // stay lit.
   setFocus(map) {
     this.focus = map && map.size ? map : null;
-    this.highlight = null;
+    this.highlight = this.lit = this.path = this.via = null;
+    for (const n of this.nodes) n.chipW = 0;
+    if (this.focus) {
+      const ctx = this.ctx;
+      ctx.font = CHIP_FONT;
+      const nodes = [];
+      for (const [id, f] of this.focus) {
+        const n = this.byId.get(id);
+        if (!n) continue;
+        n.chip = ringText(f);
+        n.chipW = Math.ceil(ctx.measureText(n.chip).width) + 16;
+        nodes.push(n);
+      }
+      const path = new Set();
+      const todo = nodes.map((n) => n.id);
+      const done = new Set(todo);
+      while (todo.length) {
+        for (const k of this.parents.get(todo.pop()) || []) {
+          path.add(k);
+          const p = this.links[k].source.id;
+          if (!done.has(p)) {
+            done.add(p);
+            todo.push(p);
+          }
+        }
+      }
+      this.path = path;
+      this.via = done;
+      if (nodes.length) this.moveTo(this.view(nodes, 1.5));
+    }
+    this.fadeAt = ui.now();
     this.requestDraw();
   }
 
@@ -168,203 +262,190 @@ class ModuleGraph {
   }
 
   isLit(n) {
-    if (this.focus) return this.focus.has(n.id) || n === this.selected;
-    if (this.highlight) return this.highlight.has(n.id) || n === this.selected;
+    if (this.focus) return this.focus.has(n.id);
+    if (this.lit) return this.lit.has(n.id);
     return true;
   }
 
-  // Drawn radius in world units: lit nodes grow while something is selected.
-  radius(n) {
-    return (this.focus || this.highlight) && this.isLit(n) ? n.r + 3 : n.r;
+  // Camera and fade at the clock's current time; true while either moves.
+  step() {
+    const now = ui.now();
+    let moving = false;
+    if (this.cam) {
+      const p = Math.max(0, Math.min(1, (now - this.cam.at) / this.cam.dur));
+      const e = easeCamera(p);
+      const { from, to } = this.cam;
+      // Zoom interpolates geometrically; the world point at the centre follows.
+      const k = from.k * (to.k / from.k) ** e;
+      const cx = this.width() / 2;
+      const cy = this.height() / 2;
+      const fx = (cx - from.x) / from.k;
+      const fy = (cy - from.y) / from.k;
+      const wx = fx + ((cx - to.x) / to.k - fx) * e;
+      const wy = fy + ((cy - to.y) / to.k - fy) * e;
+      this.t = p >= 1 ? to : { k, x: cx - wx * k, y: cy - wy * k };
+      if (p >= 1) this.cam = null;
+      else moving = true;
+    }
+    this.fade = ui.reducedMotion() ? 1 : Math.max(0, Math.min(1, (now - this.fadeAt) / FADE_MS));
+    return moving || this.fade < 1;
   }
 
   draw() {
+    const moving = this.step();
     const { ctx, t, colors } = this;
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, this.width(), this.height());
+
+    // The stage's dot grid moves with the camera.
+    let g = 24 * t.k;
+    while (g < 14) g *= 2;
+    this.stage.style.backgroundSize = `${g}px ${g}px`;
+    this.stage.style.backgroundPosition = `${(t.x % g).toFixed(1)}px ${(t.y % g).toFixed(1)}px`;
+
+    const dimming = !!(this.focus || this.lit);
+    const dimA = 1 - 0.8 * (dimming ? this.fade : 0);
+    const viaA = 1 - 0.45 * (dimming ? this.fade : 0);
     ctx.save();
     ctx.translate(t.x, t.y);
     ctx.scale(t.k, t.k);
+    const px = 1 / t.k; // one screen pixel in world units
 
-    ctx.lineWidth = 1 / t.k;
-    ctx.strokeStyle = colors.edge;
-    ctx.beginPath();
-    for (const l of this.links) {
-      if (l.dashed) continue;
-      ctx.moveTo(l.source.x, l.source.y);
-      ctx.lineTo(l.target.x, l.target.y);
+    // Edges: the rest first, then the import paths to what is selected.
+    ctx.lineCap = "round";
+    const edge = (l) => {
+      const p = l.pts;
+      ctx.moveTo(p[0].x, p[0].y);
+      for (let i = 1; i < p.length; i++) {
+        const a = p[i - 1];
+        const b = p[i];
+        if (i % 2 === 0) ctx.lineTo(b.x, b.y); // straight through a dummy's column
+        else {
+          const mx = (a.x + b.x) / 2;
+          ctx.bezierCurveTo(mx, a.y, mx, b.y, b.x, b.y);
+        }
+      }
+    };
+    for (const dashed of [false, true]) {
+      ctx.setLineDash(dashed ? [5 * px, 4 * px] : []);
+      ctx.beginPath();
+      this.links.forEach((l, k) => l.dashed === dashed && !(this.path && this.path.has(k)) && edge(l));
+      ctx.strokeStyle = colors.edge;
+      ctx.globalAlpha = this.path ? dimA : 1;
+      ctx.lineWidth = Math.max(1.25, px);
+      ctx.stroke();
+      if (this.path) {
+        ctx.beginPath();
+        for (const k of this.path) if (this.links[k].dashed === dashed) edge(this.links[k]);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = colors.text3;
+        ctx.lineWidth = Math.max(1.6, 1.2 * px);
+        ctx.stroke();
+      }
     }
-    ctx.stroke();
-    ctx.setLineDash([4 / t.k, 3 / t.k]);
-    ctx.beginPath();
-    for (const l of this.links) {
-      if (!l.dashed) continue;
-      ctx.moveTo(l.source.x, l.source.y);
-      ctx.lineTo(l.target.x, l.target.y);
-    }
-    ctx.stroke();
     ctx.setLineDash([]);
 
+    // Pills (labels only where readable), lit ones on top.
+    const showText = t.k >= 0.42;
+    const lit = [];
     for (const n of this.nodes) {
-      const lit = this.isLit(n);
-      ctx.globalAlpha = lit ? 1 : 0.16;
-      const r = this.radius(n);
-      ctx.beginPath();
-      nodePath(ctx, n, r);
-      if (n.m.disabled) {
-        ctx.setLineDash([2 / t.k, 2 / t.k]);
-        ctx.strokeStyle = colors[n.cls];
-        ctx.lineWidth = 1.5 / t.k;
-        ctx.stroke();
-        ctx.setLineDash([]);
-      } else {
-        ctx.fillStyle = colors[n.cls];
-        ctx.fill();
+      if (dimming && this.isLit(n)) {
+        lit.push(n);
+        continue;
       }
-      const f = this.focus && this.focus.get(n.id);
-      if (f) {
-        // Status ring; winners also get a second, inner ring, so the status
-        // never depends on colour alone (lost: single ring, off: dashed).
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = colors[f.status];
-        ctx.lineWidth = (f.status === "win" ? 3 : 2) / t.k;
-        if (f.status === "off") ctx.setLineDash([3 / t.k, 2.5 / t.k]);
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, r + 3.5 / t.k, 0, 2 * Math.PI);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        if (f.status === "win") {
-          ctx.lineWidth = 1.5 / t.k;
-          ctx.strokeStyle = colors.bg;
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, r + 0.75 / t.k, 0, 2 * Math.PI);
-          ctx.stroke();
-        }
-      } else if (n === this.selected || (this.highlight && lit)) {
-        ctx.strokeStyle = colors.accent;
-        ctx.lineWidth = 2 / t.k;
-        ctx.stroke();
-      }
+      ctx.globalAlpha = !dimming ? 1 : this.via && this.via.has(n.id) ? viaA : dimA;
+      this.drawPill(n, showText, px);
     }
     ctx.globalAlpha = 1;
+    for (const n of lit) this.drawPill(n, true, px);
+    for (const n of lit) this.drawStatus(n, px);
+    if (this.selected && !this.focus) this.drawRing(this.selected, colors.accent, 2 * Math.max(px, 0.9), px);
     ctx.restore();
-    this.drawLabels();
+    if (moving) this.requestDraw();
   }
 
-  // Labels in screen space. Candidates in priority order (selected, hovered
-  // and defining modules first, then by number of import edges); each takes
-  // the first free spot right, left, below or above its node, or is hidden.
-  // Forced labels are always drawn. The hovered node shows its full label.
-  drawLabels() {
-    const { ctx, t, colors } = this;
-    const W = this.width();
-    const H = this.height();
-    const dimming = !!(this.focus || this.highlight);
-    const font = "11px system-ui, sans-serif";
-    const subFont = "600 10.5px system-ui, sans-serif";
-    ctx.font = font;
-    const screen = (n) => [t.x + n.x * t.k, t.y + n.y * t.k];
-    const onScreen = (sx, sy) => sx > -150 && sx < W + 20 && sy > -20 && sy < H + 20;
+  drawPill(n, showText, px) {
+    const { ctx, colors } = this;
+    const hover = n === this.hover;
+    ctx.beginPath();
+    ctx.roundRect(n.x, n.y - n.h / 2, n.w, n.h, n.h / 2);
+    ctx.fillStyle = hover ? colors.s3 : colors.s2;
+    ctx.fill();
+    ctx.lineWidth = px;
+    ctx.strokeStyle = hover ? colors.text3 : colors.line2;
+    if (n.m.disabled) ctx.setLineDash([4 * px, 3 * px]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    originMark(ctx, n.cls, n.x + 15, n.y, colors[n.cls], px);
+    if (!showText) return;
+    ctx.font = PILL_FONT;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = n.m.disabled ? colors.text3 : n.cls === "nixpkgs" ? colors.text2 : colors.text;
+    ctx.fillText(n.label, n.x + 25, n.y + 0.5);
+  }
 
-    // Occupied screen boxes (node discs and placed labels) in a uniform grid,
-    // so collision checks stay cheap with many nodes.
-    const CELL = 64;
-    const grid = new Map();
-    const cells = (b, f) => {
-      for (let cx = Math.floor(b.x0 / CELL); cx <= Math.floor(b.x1 / CELL); cx++)
-        for (let cy = Math.floor(b.y0 / CELL); cy <= Math.floor(b.y1 / CELL); cy++) f(`${cx},${cy}`);
-    };
-    const occupy = (b) => cells(b, (key) => (grid.get(key) || grid.set(key, []).get(key)).push(b));
-    const hits = (b) => {
-      let hit = false;
-      cells(b, (key) => {
-        if (!hit) hit = (grid.get(key) || []).some((o) => o.n !== b.n && b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
-      });
-      return hit;
-    };
-    const cands = [];
-    for (const n of this.nodes) {
-      const [sx, sy] = screen(n);
-      if (!onScreen(sx, sy)) continue;
-      const R = this.radius(n) * t.k + (this.focus && this.focus.has(n.id) ? 4 : 0);
-      occupy({ n, x0: sx - R, y0: sy - R, x1: sx + R, y1: sy + R });
-      const forced = n === this.selected || (dimming && this.isLit(n));
-      const zoomOk = n.cls === "nixpkgs" ? t.k > 2.5 : t.k > 0.35;
-      if (!forced && (dimming || !zoomOk)) continue;
-      cands.push({ n, sx, sy, R, forced, rank: forced ? Infinity : n.deg + (n.cls === "nixpkgs" ? 0 : 1000) });
-    }
-    cands.sort((a, b) => b.rank - a.rank);
+  drawRing(n, color, width, px, dash) {
+    const { ctx } = this;
+    const o = 3.5 * px + width / 2;
+    ctx.beginPath();
+    ctx.roundRect(n.x - o, n.y - n.h / 2 - o, n.w + 2 * o, n.h + 2 * o, n.h / 2 + o);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash || []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
-    const placed = [];
-    for (const c of cands) {
-      const { n, sx, sy, R } = c;
-      if (n.labelW == null) n.labelW = ctx.measureText(n.label).width;
-      const f = this.focus && this.focus.get(n.id);
-      const sub = f ? ringText(f) : null;
-      let w = n.labelW;
-      if (sub) {
-        ctx.font = subFont;
-        w = Math.max(w, ctx.measureText(sub).width);
-        ctx.font = font;
-      }
-      const hgt = sub ? 26 : 13;
-      const spots = [
-        [sx + R + 4, sy - (sub ? 7 : 6.5)], // right
-        [sx - R - 4 - w, sy - (sub ? 7 : 6.5)], // left
-        [sx - w / 2, sy + R + 2], // below
-        [sx - w / 2, sy - R - 2 - hgt], // above
-      ];
-      let box = null;
-      for (const [x, y] of spots) {
-        const b = { n, x0: x, y0: y, x1: x + w, y1: y + hgt };
-        if (!hits(b)) {
-          box = b;
-          break;
-        }
-      }
-      if (!box && c.forced) box = { n, x0: spots[0][0], y0: spots[0][1], x1: spots[0][0] + w, y1: spots[0][1] + hgt };
-      if (!box) continue;
-      occupy(box);
-      placed.push(box);
-      box.sub = sub;
-      box.status = f ? f.status : null;
-    }
-    this.labelBoxes = placed; // read by the tour, to point next to a label
-
-    ctx.textBaseline = "top";
-    for (const b of placed) {
-      ctx.font = font;
-      ctx.fillStyle = colors.fg;
-      ctx.fillText(b.n.label, b.x0, b.y0);
-      if (b.sub) {
-        ctx.font = subFont;
-        ctx.fillStyle = colors[b.status];
-        ctx.fillText(b.sub, b.x0, b.y0 + 13);
-      }
-    }
-
-    if (this.hover) {
-      const n = this.hover;
-      const [sx, sy] = screen(n);
-      const text = `${moduleLabel(n.m)}  ·  ${n.m.origin}`;
-      ctx.font = font;
-      const w = ctx.measureText(text).width + 12;
-      const R = this.radius(n) * t.k + 6;
-      let x = sx + R;
-      if (x + w > W - 4) x = Math.max(4, sx - R - w);
-      const y = Math.min(Math.max(4, sy - 10), H - 24);
-      ctx.fillStyle = colors.panel;
-      ctx.strokeStyle = colors.border;
-      ctx.lineWidth = 1;
+  // Ring and trailing priority chip of a module that defines the selected
+  // option. Winner: solid ring with a glow and a filled "✓" chip; lost: thin
+  // ring, outlined chip; off: dashed ring and chip. Shape and text differ,
+  // not only the colour.
+  drawStatus(n, px) {
+    const f = this.focus && this.focus.get(n.id);
+    if (!f) return;
+    const { ctx, colors } = this;
+    ctx.globalAlpha = this.fade;
+    const color = colors[f.status];
+    const lw = Math.max(px, 0.9);
+    if (f.status === "win") {
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14 * this.t.k;
+      this.drawRing(n, color, 2 * lw, px);
+      ctx.restore();
+    } else this.drawRing(n, color, 1.5 * lw, px, f.status === "off" ? [4 * px, 3 * px] : null);
+    if (n.chipW) {
+      const x = n.x + n.w + 8;
       ctx.beginPath();
-      ctx.roundRect(x, y, w, 20, 5);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = colors.fg;
-      ctx.fillText(text, x + 6, y + 4);
+      ctx.roundRect(x, n.y - CHIP_H / 2, n.chipW, CHIP_H, CHIP_H / 2);
+      if (f.status === "win") {
+        ctx.fillStyle = color;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = colors.s1;
+        ctx.fill();
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = color;
+        if (f.status === "off") ctx.setLineDash([3 * px, 2.5 * px]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.font = CHIP_FONT;
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = f.status === "win" ? colors.onWin : color;
+      ctx.fillText(n.chip, x + 8, n.y + 0.5);
     }
-    ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+  }
+
+  // Screen rectangle of a module's pill (client coordinates), or null.
+  nodeRect(id) {
+    const n = this.byId.get(id);
+    if (!n) return null;
+    const c = this.canvas.getBoundingClientRect();
+    const { t } = this;
+    return { x: c.left + t.x + n.x * t.k, y: c.top + t.y + (n.y - n.h / 2) * t.k, w: n.w * t.k, h: n.h * t.k, chipW: n.chipW * t.k };
   }
 
   toWorld(px, py) {
@@ -373,18 +454,12 @@ class ModuleGraph {
 
   nodeAt(px, py) {
     const [x, y] = this.toWorld(px, py);
-    // Nearest node within max(its radius, 6 screen pixels).
-    let best = null;
-    let bestD = Infinity;
-    for (const n of this.nodes) {
-      const d = (n.x - x) ** 2 + (n.y - y) ** 2;
-      const reach = Math.max(this.radius(n), 6 / this.t.k);
-      if (d <= reach * reach && d < bestD) {
-        best = n;
-        bestD = d;
-      }
+    const slack = 3 / this.t.k;
+    for (let i = this.nodes.length - 1; i >= 0; i--) {
+      const n = this.nodes[i];
+      if (x >= n.x - slack && x <= n.x + n.w + slack && Math.abs(y - n.y) <= n.h / 2 + slack) return n;
     }
-    return best;
+    return null;
   }
 
   select(id) {
@@ -396,53 +471,114 @@ class ModuleGraph {
     if (n === this.hover) return;
     this.hover = n;
     this.canvas.classList.toggle("on-node", !!n);
+    this.showTip(n);
     this.requestDraw();
+  }
+
+  // Tooltip: full path, origin, how many options the module sets.
+  showTip(n) {
+    const tip = this.tip;
+    if (!n) {
+      tip.hidden = true;
+      return;
+    }
+    const m = n.m;
+    const sets = (this.model.modOptions.get(m.id) || []).length;
+    const importers = (this.parents.get(m.id) || []).length;
+    tip.replaceChildren(
+      h("div", { class: "tip-title" }, originDot(m.origin), h("b", {}, n.label), chip(m.origin)),
+      h("div", { class: "tip-path" }, moduleLabel(m)),
+      h(
+        "div",
+        { class: "tip-facts" },
+        h("span", {}, h("b", {}, String(sets)), sets === 1 ? " option set" : " options set"),
+        h("span", {}, h("b", {}, String(m.imports.length)), " imports"),
+        h("span", {}, h("b", {}, String(importers)), importers === 1 ? " importer" : " importers"),
+      ),
+      m.disabled ? h("div", { class: "tip-note" }, "disabled (disabledModules): not evaluated") : null,
+    );
+    tip.hidden = false;
+    const r = this.nodeRect(n.id);
+    const c = this.canvas.getBoundingClientRect();
+    let x = r.x - c.left;
+    let y = r.y - c.top - tip.offsetHeight - 10;
+    if (y < 8) y = r.y - c.top + r.h + 10;
+    x = Math.max(8, Math.min(x, this.width() - tip.offsetWidth - 8));
+    tip.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
   }
 
   bindPointer() {
     const c = this.canvas;
+    const pointers = new Map();
     let drag = null;
+    let pinch = null;
+    const stopCamera = () => {
+      if (!this.cam) return;
+      this.step();
+      this.cam = null;
+    };
     c.addEventListener("pointerdown", (e) => {
-      this.fitted = this.userMoved = true;
-      drag = { x: e.offsetX, y: e.offsetY, tx: this.t.x, ty: this.t.y, moved: false };
+      stopCamera();
+      pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
       c.setPointerCapture(e.pointerId);
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), t: { ...this.t }, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+        drag = null;
+      } else drag = { x: e.offsetX, y: e.offsetY, tx: this.t.x, ty: this.t.y, moved: false };
     });
     c.addEventListener("pointermove", (e) => {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+      if (pinch && pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const k = Math.min(4, Math.max(0.12, (pinch.t.k * Math.hypot(a.x - b.x, a.y - b.y)) / Math.max(1, pinch.d)));
+        const wx = (pinch.mx - pinch.t.x) / pinch.t.k;
+        const wy = (pinch.my - pinch.t.y) / pinch.t.k;
+        this.t = { k, x: (a.x + b.x) / 2 - wx * k, y: (a.y + b.y) / 2 - wy * k };
+        this.requestDraw();
+        return;
+      }
       if (!drag) {
-        this.setHover(this.nodeAt(e.offsetX, e.offsetY));
+        if (e.pointerType === "mouse") this.setHover(this.nodeAt(e.offsetX, e.offsetY));
         return;
       }
       const dx = e.offsetX - drag.x;
       const dy = e.offsetY - drag.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) {
+      if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 4) {
         drag.moved = true;
         c.classList.add("panning");
         this.setHover(null);
       }
-      this.t.x = drag.tx + dx;
-      this.t.y = drag.ty + dy;
-      this.requestDraw();
+      if (drag.moved) {
+        this.t = { ...this.t, x: drag.tx + dx, y: drag.ty + dy };
+        this.requestDraw();
+      }
     });
-    c.addEventListener("pointerleave", () => this.setHover(null));
-    c.addEventListener("pointerup", (e) => {
+    const end = (e) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = null;
       c.classList.remove("panning");
-      if (drag && !drag.moved) {
+      if (drag && !drag.moved && e.type === "pointerup") {
         const n = this.nodeAt(e.offsetX, e.offsetY);
-        this.select(n ? n.id : null);
-        this.onSelect(n ? n.m : null);
+        if (n) {
+          this.select(n.id);
+          this.onSelect(n.m);
+        }
       }
       drag = null;
-    });
+    };
+    c.addEventListener("pointerup", end);
+    c.addEventListener("pointercancel", end);
+    c.addEventListener("pointerleave", () => this.setHover(null));
     c.addEventListener(
       "wheel",
       (e) => {
         e.preventDefault();
-        this.fitted = this.userMoved = true;
-        const k = Math.min(8, Math.max(0.05, this.t.k * Math.exp(-e.deltaY * 0.0015)));
+        stopCamera();
+        const k = Math.min(4, Math.max(0.12, this.t.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))));
         const [wx, wy] = this.toWorld(e.offsetX, e.offsetY);
-        this.t.k = k;
-        this.t.x = e.offsetX - wx * k;
-        this.t.y = e.offsetY - wy * k;
+        this.t = { k, x: e.offsetX - wx * k, y: e.offsetY - wy * k };
+        this.setHover(null);
         this.requestDraw();
       },
       { passive: false },
@@ -450,25 +586,36 @@ class ModuleGraph {
   }
 }
 
-// Node outline: input modules are diamonds, unknown ones squares, the rest
-// circles, so origins never depend on colour alone.
-function nodePath(ctx, n, r) {
-  if (n.cls === "input") {
-    const d = r * 1.3;
-    ctx.moveTo(n.x, n.y - d);
-    ctx.lineTo(n.x + d, n.y);
-    ctx.lineTo(n.x, n.y + d);
-    ctx.lineTo(n.x - d, n.y);
+// Origin mark at the start of a pill: user a disc, user-inline a ring,
+// input a diamond, unknown a square, nixpkgs a small disc. Shape and colour
+// both differ.
+function originMark(ctx, cls, x, y, color, px) {
+  ctx.beginPath();
+  if (cls === "input") {
+    const d = 4.6;
+    ctx.moveTo(x, y - d);
+    ctx.lineTo(x + d, y);
+    ctx.lineTo(x, y + d);
+    ctx.lineTo(x - d, y);
     ctx.closePath();
-  } else if (n.cls === "unknown") {
-    const d = r * 0.9;
-    ctx.rect(n.x - d, n.y - d, 2 * d, 2 * d);
+  } else if (cls === "unknown") ctx.rect(x - 3.6, y - 3.6, 7.2, 7.2);
+  else ctx.arc(x, y, cls === "nixpkgs" ? 3 : cls === "user-inline" ? 3.3 : 4, 0, 2 * Math.PI);
+  if (cls === "user-inline") {
+    ctx.lineWidth = Math.max(1.8, 1.5 * px);
+    ctx.strokeStyle = color;
+    ctx.stroke();
   } else {
-    ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
   }
 }
 
-// Second label line of a defining module: "✓ 50 mkForce", "1000 mkDefault", "mkIf false".
+// The same marks in HTML (legend, tooltip, ladder pills).
+function originDot(origin) {
+  return h("span", { class: `odot o-${originClass(origin)}`, "aria-hidden": "true" });
+}
+
+// Chip text of a defining module: "✓ 50 mkForce", "1000 mkDefault", "mkIf false".
 function ringText(f) {
   if (f.status === "off") return f.condition === "mkIf-error" ? "mkIf error" : "mkIf false";
   return `${f.status === "win" ? "✓ " : ""}${priorityLabel(f.priority)}`;

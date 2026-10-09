@@ -32,9 +32,15 @@
     <label class="btn file-btn" title="Open a graph.json made by optgraph"><span class="ico-slot" data-icon="open"></span><span>Open graph.json</span><input id="file-input" type="file" accept=".json,application/json"></label>
   </header>
   <main id="stage">
-    <canvas id="graph"></canvas>
+    <canvas id="graph" aria-label="Module import graph"></canvas>
     <div id="graph-banner" hidden></div>
+    <div id="graph-tip" role="tooltip" hidden></div>
     <div id="legend"></div>
+    <div id="zoom" role="group" aria-label="Zoom">
+      <button id="zoom-in" class="icon-btn" type="button" title="Zoom in" aria-label="Zoom in"><span class="ico-slot" data-icon="plus"></span></button>
+      <button id="zoom-out" class="icon-btn" type="button" title="Zoom out" aria-label="Zoom out"><span class="ico-slot" data-icon="minus"></span></button>
+      <button id="zoom-fit" class="icon-btn" type="button" title="Fit the graph" aria-label="Fit the graph"><span class="ico-slot" data-icon="fit"></span></button>
+    </div>
   </main>
   <aside id="inspector" aria-label="Details">
     <div id="detail"></div>

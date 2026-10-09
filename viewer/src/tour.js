@@ -389,7 +389,7 @@ class TourPlayer {
     this.captions = captions;
     this.reduced = reduced;
     this.overlay = new TourOverlay(live);
-    graph.reserveTop = 50; // room for the captions
+    graph.reserve.top = 50; // room for the captions
     graph.fit();
     this.reset();
   }
@@ -481,7 +481,7 @@ function startTour() {
   const exit = () => {
     playing = false;
     ov.remove();
-    graph.reserveTop = 0; // the current view stays; the next fit uses the full height
+    graph.reserve.top = 0; // the current view stays; the next fit uses the full height
     events.forEach((ev) => document.removeEventListener(ev, takeover, true));
     const p = new URLSearchParams(location.search);
     p.delete("tour");

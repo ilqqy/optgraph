@@ -4,7 +4,7 @@ let model = null;
 let results = [];
 let selectedOption = -1;
 
-const graph = new ModuleGraph($("#graph"), $("#graph-banner"), (m) => (m ? showModule(m) : null));
+const graph = new ModuleGraph($("#stage"), $("#graph"), $("#graph-banner"), $("#graph-tip"), (m) => (m ? showModule(m) : null));
 const resultList = new VirtualList($("#results"), (r) => {
   if (r.header) return h("div", { class: "section" }, r.header);
   const o = model.options[r.index];
@@ -18,31 +18,30 @@ const resultList = new VirtualList($("#results"), (r) => {
   );
 });
 
+// Legend: origins (mark shape and colour), and while an option is selected
+// the statuses of its defining modules.
 function renderLegend() {
   const kinds = [
     ["user", "user"],
-    ["user-inline", "user-inline"],
-    ["input", "input:*"],
+    ["user-inline", "inline"],
+    ["input", "input"],
     ["nixpkgs", "nixpkgs"],
     ["unknown", "unknown"],
   ];
   $("#legend").replaceChildren(
     h(
       "div",
-      {},
-      ...kinds.map(([cls, label]) => {
-        const shape = { input: " shape-diamond", unknown: " shape-square" }[cls] || "";
-        return h("span", {}, h("span", { class: `dot${shape}`, style: `background:var(--o-${cls})` }), label);
-      }),
-      h("span", { class: "muted" }, "dashed: disabled"),
+      { class: "legend-origins" },
+      ...kinds.map(([cls, label]) => h("span", {}, originDot(cls === "input" ? "input:x" : cls), label)),
+      h("span", {}, h("span", { class: "dash-sample", "aria-hidden": "true" }), "disabled"),
     ),
     h(
       "div",
-      {},
-      h("span", { class: "muted" }, "defining the selected option:"),
+      { class: "legend-status" },
       h("span", {}, h("span", { class: "ring win" }), "winner ✓"),
       h("span", {}, h("span", { class: "ring lose" }), "lost"),
       h("span", {}, h("span", { class: "ring off" }), "mkIf false"),
+      h("span", { class: "muted" }, "import path"),
     ),
   );
 }
@@ -102,6 +101,7 @@ function showOption(oi, reveal = false) {
   if (reveal && row >= 0) resultList.reveal(row);
   graph.select(null);
   graph.setFocus(focusOf(model.options[oi]));
+  $("#legend").classList.add("focused");
   $("#detail").replaceChildren(...renderOption(model, oi, showModule, () => copyText(location.href)));
   $("#inspector").scrollTop = 0;
   markLists();
@@ -113,6 +113,7 @@ function showModule(m) {
   resultList.setSelected(-1);
   graph.select(m.id);
   graph.setHighlight(new Set([m.id]));
+  $("#legend").classList.remove("focused");
   $("#detail").replaceChildren(...renderModule(model, m, (oi) => showOption(oi, true)));
   $("#inspector").scrollTop = 0;
   markLists();
@@ -130,6 +131,8 @@ function clearSelection() {
   resultList.setSelected(-1);
   graph.select(null);
   graph.setFocus(null);
+  $("#legend").classList.remove("focused");
+  graph.fit();
   showStart();
   setUrl({});
 }
@@ -202,6 +205,9 @@ function loadFile(file) {
 }
 
 $("#search").addEventListener("input", () => requestAnimationFrame(runSearch));
+$("#zoom-in").addEventListener("click", () => graph.zoomBy(1.3));
+$("#zoom-out").addEventListener("click", () => graph.zoomBy(1 / 1.3));
+$("#zoom-fit").addEventListener("click", () => graph.fit());
 for (const id of ["#file-input", "#file-input-empty"]) $(id).addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
 $("#warnings-close").addEventListener("click", () => ($("#warnings-panel").hidden = true));
 // Esc: close the warnings panel, else clear the search text (when typing),
