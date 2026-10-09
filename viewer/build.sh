@@ -9,7 +9,7 @@ out=$2
 mkdir -p "$out"
 
 vendor=(d3-dispatch d3-quadtree d3-timer d3-force) # dependency order
-app=(util data search vlist graph panels main)
+app=(util data search vlist graph panels tour main)
 
 for f in "${vendor[@]/#/$src/vendor/}" "${app[@]/#/$src/src/}"; do
   case $f in */vendor/*) f=$f.min.js ;; *) f=$f.js ;; esac

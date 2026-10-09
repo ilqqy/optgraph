@@ -136,6 +136,7 @@ function load(doc, source) {
   runSearch();
   $("#search").focus();
   applyDeepLink();
+  if (new URLSearchParams(location.search).has("tour")) startTour();
 }
 
 // ?opt=<option path> selects an option; ?module=<index or id> a module.
