@@ -55,10 +55,25 @@ function renderLists(model, onOption) {
           )
         : h("p", { class: "empty-note" }, emptyText),
     );
-  const row = (oi, title, data) =>
-    h("li", { title, "data-oi": oi, ...data }, h("button", { type: "button", onclick: () => onOption(oi) }, h("span", { class: "path" }, model.options[oi].path)));
+  // The note (shown on touch screens, a title elsewhere) says why it is listed.
+  const row = (oi, note, data) =>
+    h(
+      "li",
+      { title: note, "data-oi": oi, ...data },
+      h("button", { type: "button", onclick: () => onOption(oi) }, h("span", { class: "path" }, model.options[oi].path), h("span", { class: "note" }, note)),
+    );
   return [
-    section("overrides", "Overrides", "override", a.overrides, (oi) => row(oi, a.info[oi].beats), "No listed definition lost."),
+    section(
+      "overrides",
+      "Overrides",
+      "override",
+      a.overrides,
+      (oi) => {
+        const b = a.info[oi].beatsParts;
+        return row(oi, `${b.win} in ${b.winWho} beats ${b.lose} in ${b.loseWho}`);
+      },
+      "No listed definition lost.",
+    ),
     section(
       "off",
       "Switched off",
@@ -66,7 +81,7 @@ function renderLists(model, onOption) {
       a.switchedOff,
       ({ oi, di }) => {
         const m = model.modById.get(model.options[oi].definitions[di].module);
-        return row(oi, `mkIf false in ${moduleLabel(m)}`, { "data-di": di });
+        return row(oi, `mkIf false in ${moduleShortLabel(m)}`, { "data-di": di });
       },
       "No definition is switched off.",
     ),

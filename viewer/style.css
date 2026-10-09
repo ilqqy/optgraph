@@ -30,6 +30,7 @@
   --side-w: 248px;
   --top-h: 48px;
   --insp-w: clamp(420px, 34vw, 540px);
+  --tabs-h: 62px;
 
   --bg: #f4f5f8;
   --s1: #ffffff;
@@ -181,11 +182,13 @@ kbd {
 }
 .side-list li button:hover { background: var(--s3); color: var(--text); }
 .side-list li.sel button { background: var(--accent-soft); color: var(--text); box-shadow: inset 2px 0 var(--accent); }
-.side-list .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--fs-sm)/18px var(--font-mono); }
+.side-list li button { flex-direction: column; }
+.side-list .path { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--fs-sm)/18px var(--font-mono); }
+.side-list .note { display: none; max-width: 100%; overflow: hidden; color: var(--text-3); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
 .side-list li.more, .side-list .empty-note { padding: 4px 8px; margin: 0; color: var(--text-3); font-size: var(--fs-sm); }
 
 #topbar {
-  grid-row: 1; grid-column: 2 / 4; min-width: 0; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-4);
+  grid-row: 1; grid-column: 2 / 4; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-4);
   background: var(--s1); border-bottom: 1px solid var(--line);
 }
 #crumb { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; min-width: 0; }
@@ -354,6 +357,7 @@ mark { background: none; color: var(--accent); font-weight: 700; }
 .merged-dots { display: flex; flex-wrap: wrap; gap: 5px; max-width: 56px; margin-left: auto; }
 .ladder-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; color: var(--text-3); font-size: var(--fs-sm); }
 .ladder-head b { color: var(--text); font-size: var(--fs-md); font-weight: 600; }
+.ladder-head > * { white-space: nowrap; }
 .ladder-head .hint { margin-left: auto; }
 
 /* The ladder: a rail of priority badges, one card per definition. */
@@ -533,6 +537,95 @@ body.dragging #empty .drop, body.dragging #stage { outline: 2px dashed var(--acc
 .warning:last-child { border-bottom: 0; }
 .warning code { color: var(--err); }
 .warning pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; color: var(--text-2); }
+
+/* Desktop: the mobile-only parts stay out. */
+.top-brand, .sheet-head, .sheet-handle, #tabs { display: none; }
+
+/* Narrower desktops: slimmer sidebar and inspector. */
+@media (max-width: 1100px) {
+  :root { --side-w: 220px; --insp-w: 400px; }
+  #counts { display: none; }
+}
+
+/* Mobile: graph full screen, tab bar at the bottom, the lists and the
+   inspector as bottom sheets (heights set by src/main.js). */
+@media (max-width: 760px) {
+  #shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--top-h) minmax(0, 1fr) var(--tabs-h); }
+  #topbar { grid-column: 1; gap: var(--sp-2); padding: 0 var(--sp-3); }
+  .top-brand { display: inline-flex; flex: none; }
+  #crumb .sep, #crumb .ver, #counts, #topbar .file-btn > span:not(.ico) { display: none; }
+  #crumb .host { font-size: var(--fs-md); }
+  #status { flex: 1; min-width: 0; overflow-x: auto; margin-left: 2px; scrollbar-width: none; }
+  #status::-webkit-scrollbar { display: none; }
+  #topbar .spacer { display: none; }
+  #topbar .file-btn { flex: none; width: 32px; padding: 0; justify-content: center; }
+  #stage { grid-column: 1; grid-row: 2; }
+  #legend, #zoom { display: none; }
+  #graph-banner { font-size: var(--fs-sm); }
+
+  #tabs {
+    grid-row: 3; grid-column: 1; z-index: 12; display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 4px 4px max(4px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--s1);
+  }
+  #tabs button {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border: 0; border-radius: var(--r-md); background: none; color: var(--text-3); font-size: 10.5px; font-weight: 500; cursor: pointer;
+  }
+  #tabs button .ico svg { width: 18px; height: 18px; }
+  #tabs button.on { color: var(--accent); background: var(--accent-soft); }
+  #tabs .tab-count {
+    position: absolute; top: 3px; left: calc(50% + 6px); min-width: 16px; padding: 0 4px; border-radius: var(--r-pill);
+    background: var(--s3); color: var(--text-2); font: 600 10px/16px var(--font-mono); text-align: center;
+  }
+  #tabs .tab-count:empty { display: none; }
+
+  /* Sheets. */
+  #sidebar, #inspector {
+    position: fixed; left: 0; right: 0; bottom: var(--tabs-h); z-index: 10; border: 1px solid var(--line); border-bottom: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0; background: var(--s1); box-shadow: var(--shadow-3);
+  }
+  #sidebar {
+    z-index: 11; height: min(64vh, calc(100% - var(--top-h) - var(--tabs-h) - 12px)); grid-row: auto;
+    transform: translateY(calc(100% + var(--tabs-h))); transition: transform 220ms var(--ease);
+  }
+  body.m-lists #sidebar { transform: none; }
+  #sidebar .brand, #sidebar .search-trigger { display: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 4px 18px; font-size: var(--fs-lg); }
+  #sidebar[data-tab="overrides"] .side-list:not(.l-overrides),
+  #sidebar[data-tab="off"] .side-list:not(.l-off),
+  #sidebar[data-tab="errors"] .side-list:not(.l-errors) { display: none; }
+  #sidebar .side-list h2 { display: none; }
+  #sidebar .side-list li button { padding: 8px 10px; }
+  #sidebar .side-list .note { display: block; }
+  #sidebar .side-list .path { font-size: var(--fs-md); }
+  #inspector {
+    grid-row: auto; grid-column: auto; height: 132px; display: flex; flex-direction: column; overflow: hidden;
+    transition: height 220ms var(--ease);
+  }
+  #inspector.dragging { transition: none; }
+  .sheet-handle {
+    display: flex; flex: none; justify-content: center; align-items: center; height: 22px; padding: 0; border: 0;
+    background: none; cursor: grab; touch-action: none;
+  }
+  .sheet-handle span { width: 40px; height: 4px; border-radius: 2px; background: var(--line-2); }
+  #detail { flex: 1; min-height: 0; overflow: auto; padding: 2px var(--sp-4) var(--sp-6); overscroll-behavior: contain; }
+  .hello { font-size: var(--fs-xl); }
+  .stats { gap: 6px; }
+  .stat { padding: 9px 10px 7px; }
+  .stat b { font-size: var(--fs-xl); }
+  .card { grid-template-columns: 60px minmax(0, 1fr); padding-right: 12px; }
+  .ladder::before { left: 30px; }
+  .card .nm { font-size: 10px; }
+  .status-chip.ok:not(button) { display: none; }
+  .palette-foot > span:not(#palette-count) { display: none; }
+  .card .num { min-width: 42px; font-size: var(--fs-md); }
+  .opt-path { font-size: var(--fs-lg); }
+  .keys, .ladder-head .hint { display: none; }
+  #palette { padding: 8px; }
+  .palette-box { max-height: calc(100% - 16px); }
+  .pal-meta { display: none; }
+  .popover { top: calc(var(--top-h) + 6px); }
+}
 
 /* Scripted tour (?tour, src/tour.js): an overlay that takes no pointer
    events except its controls. Nothing here animates by itself: every frame

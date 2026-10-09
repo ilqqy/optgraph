@@ -9,6 +9,99 @@ const palette = new Palette(
   (m) => showModule(m),
 );
 
+// Mobile (max-width 760px): the graph fills the screen, the sidebar's lists
+// and the inspector are bottom sheets over it, and a tab bar replaces the
+// sidebar. The inspector sheet peeks (its title), sits at half height (an
+// option or module was picked) or is full; its handle toggles or drags
+// between them. The graph keeps what it fits above the sheet.
+const mobile = matchMedia("(max-width: 760px)");
+const SHEET_PEEK = 132;
+
+function sheetPx(state) {
+  const room = $("#stage").clientHeight;
+  return state === "full" ? room - 6 : state === "half" ? Math.round(room * 0.6) : SHEET_PEEK;
+}
+
+function setSheet(state, px) {
+  const insp = $("#inspector");
+  insp.dataset.sheet = state;
+  if (!mobile.matches) {
+    insp.style.height = "";
+    graph.reserve.bottom = 44;
+    return;
+  }
+  const height = px ?? sheetPx(state);
+  insp.style.height = `${height}px`;
+  graph.reserve.bottom = Math.min(height, sheetPx("half")) + 8;
+}
+
+function setTab(key) {
+  for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === key);
+}
+
+function openList(key) {
+  const sb = $("#sidebar");
+  if (document.body.classList.contains("m-lists") && sb.dataset.tab === key) return closeLists();
+  sb.dataset.tab = key;
+  $("#lists-title").textContent = { overrides: "Overrides", off: "Switched off", errors: "Errors" }[key];
+  document.body.classList.add("m-lists");
+  setTab(key);
+}
+
+function closeLists() {
+  document.body.classList.remove("m-lists");
+  setTab("graph");
+}
+
+$("#tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-tab]");
+  if (!b || !model) return;
+  const key = b.dataset.tab;
+  if (key === "search") palette.open();
+  else if (key === "graph") {
+    closeLists();
+    setSheet("peek");
+    graph.fit();
+  } else openList(key);
+});
+$("#lists-close").addEventListener("click", closeLists);
+mobile.addEventListener("change", () => {
+  closeLists();
+  setSheet($("#inspector").dataset.sheet);
+});
+new ResizeObserver(() => mobile.matches && setSheet($("#inspector").dataset.sheet)).observe($("#stage"));
+
+// The sheet handle: a tap toggles half and full, a drag resizes and snaps.
+(() => {
+  const handle = $("#sheet-handle");
+  let drag = null;
+  handle.addEventListener("pointerdown", (e) => {
+    drag = { y: e.clientY, h: $("#inspector").offsetHeight, moved: false };
+    handle.setPointerCapture(e.pointerId);
+    $("#inspector").classList.add("dragging");
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dy) > 5) drag.moved = true;
+    if (drag.moved) $("#inspector").style.height = `${Math.max(SHEET_PEEK, Math.min(sheetPx("full"), drag.h - dy))}px`;
+  });
+  const end = () => {
+    if (!drag) return;
+    $("#inspector").classList.remove("dragging");
+    const cur = $("#inspector").dataset.sheet;
+    if (!drag.moved) setSheet(cur === "full" ? "half" : cur === "half" ? "full" : "half");
+    else {
+      const h = $("#inspector").offsetHeight;
+      const near = ["peek", "half", "full"].map((s) => [s, Math.abs(sheetPx(s) - h)]).sort((a, b) => a[1] - b[1])[0][0];
+      setSheet(near);
+    }
+    drag = null;
+  };
+  handle.addEventListener("pointerup", end);
+  handle.addEventListener("pointercancel", end);
+})();
+
 // Legend: origins (mark shape and colour), and while an option is selected
 // the statuses of its defining modules.
 function renderLegend() {
@@ -77,6 +170,10 @@ function focusOf(o) {
 
 function showOption(oi) {
   selectedOption = oi;
+  if (mobile.matches) {
+    closeLists();
+    setSheet("half");
+  }
   graph.select(null);
   graph.setFocus(focusOf(model.options[oi]));
   $("#legend").classList.add("focused");
@@ -88,6 +185,10 @@ function showOption(oi) {
 
 function showModule(m) {
   selectedOption = -1;
+  if (mobile.matches) {
+    closeLists();
+    setSheet("half");
+  }
   graph.select(m.id);
   graph.setHighlight(new Set([m.id]));
   $("#legend").classList.remove("focused");
@@ -105,6 +206,7 @@ function showStart() {
 
 function clearSelection() {
   selectedOption = -1;
+  setSheet("peek");
   graph.select(null);
   graph.setFocus(null);
   $("#legend").classList.remove("focused");
@@ -122,9 +224,14 @@ function load(doc, source) {
   }
   $("#empty").classList.add("hidden");
   document.title = `optgraph: ${model.meta.host ?? "graph"}`;
-  renderMeta(model, showErrorsList);
+  renderMeta(model, () => (mobile.matches ? openList("errors") : showErrorsList()));
+  const a = model.analysis;
+  for (const [key, n] of [["overrides", a.overrides.length], ["off", a.switchedOff.length], ["errors", a.errors.length]]) {
+    $(`#tabs [data-tab="${key}"] .tab-count`).textContent = n ? n.toLocaleString("en") : "";
+  }
   $("#lists").replaceChildren(...renderLists(model, showOption));
   renderLegend();
+  setSheet("peek");
   graph.setModel(model);
   palette.setModel(model);
   $("#search-trigger").disabled = false;
@@ -200,6 +307,7 @@ document.addEventListener("keydown", (e) => {
     palette.open();
   } else if (e.key === "Escape") {
     if (!$("#warnings-panel").hidden) $("#warnings-panel").hidden = true;
+    else if (document.body.classList.contains("m-lists")) closeLists();
     else if (model) clearSelection();
   }
 });
