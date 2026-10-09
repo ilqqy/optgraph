@@ -17,11 +17,9 @@
       <svg class="logo" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="2" width="20" height="4.2" rx="2.1"/><rect x="5" y="8.9" width="16" height="4.2" rx="2.1" opacity=".62"/><rect x="9" y="15.8" width="12" height="4.2" rx="2.1" opacity=".34"/></svg>
       <span>optgraph</span>
     </div>
-    <div class="search-box">
-      <input id="search" type="search" placeholder="Search options" autocomplete="off" spellcheck="false" disabled>
-      <kbd>/</kbd>
-    </div>
-    <div id="results" class="vlist" hidden></div>
+    <button id="search-trigger" class="search-trigger" type="button" aria-haspopup="dialog" aria-keyshortcuts="/ Control+K" disabled>
+      <span class="ico-slot" data-icon="search"></span><span>Search options, modules</span><kbd>/</kbd>
+    </button>
     <nav id="lists"></nav>
   </aside>
   <header id="topbar">
@@ -54,6 +52,20 @@
     <label class="btn primary file-btn">Open graph.json<input id="file-input-empty" type="file" accept=".json,application/json"></label>
     <p class="muted">Everything stays in this page: nothing is uploaded or fetched from elsewhere.</p>
     <p id="load-error" class="error" hidden></p>
+  </div>
+</div>
+<div id="palette" hidden>
+  <div class="palette-scrim"></div>
+  <div class="palette-box" role="dialog" aria-modal="true" aria-label="Search options and modules">
+    <div class="palette-field">
+      <span class="ico-slot" data-icon="search"></span>
+      <input id="palette-input" type="text" placeholder="Search options and modules" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list">
+      <kbd>Esc</kbd>
+    </div>
+    <div id="palette-list" role="listbox" aria-label="Results"></div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>Esc</kbd> close</span><span id="palette-count"></span>
+    </div>
   </div>
 </div>
 <div id="warnings-panel" class="popover" hidden>
