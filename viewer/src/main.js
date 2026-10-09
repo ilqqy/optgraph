@@ -3,7 +3,7 @@
 let model = null;
 let selectedOption = -1;
 
-const graph = new ModuleGraph($("#stage"), $("#graph"), $("#graph-banner"), $("#graph-tip"), (m) => (m ? showModule(m) : null));
+const graph = new ModuleGraph($("#graph"), $("#graph-banner"), $("#graph-tip"), (m) => (m ? showModule(m) : null));
 const palette = new Palette(
   (oi) => showOption(oi),
   (m) => showModule(m),

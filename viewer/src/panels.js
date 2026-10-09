@@ -245,7 +245,7 @@ function renderOption(model, oi, onModule, onCopyLink) {
         : h("div", { class: `code${d.valuePreview === "<redacted>" ? " redacted" : ""}` }, h("pre", {}, d.valuePreview), copyButton(() => d.valuePreview, "Copy value"));
     return h(
       "li",
-      { class: `card s-${r.status}${isDefault ? " is-default" : ""}`, style: `--i:${Math.min(k, 8)}` },
+      { class: `card s-${r.status}${isDefault ? " is-default" : ""}`, style: `--i:${Math.min(k, 6)}` },
       h(
         "div",
         { class: "prio", title: "override priority: lower wins" },

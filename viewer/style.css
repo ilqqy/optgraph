@@ -217,8 +217,9 @@ button.status-chip:hover { border-color: var(--line-2); background: var(--s3); }
   background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 1.4px);
   background-size: 24px 24px;
 }
-/* A faint accent glow behind the graph (the dot grid is the stage's own
-   background, moved with the camera by graph.js). */
+/* A faint accent glow behind the graph. The dot grid is a texture of the
+   stage and stays put while the graph moves: calmer, and in the tour's GIF
+   unchanged pixels cost next to nothing. */
 #stage::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse 70% 60% at 55% 45%, var(--glow), transparent 70%);
@@ -366,7 +367,7 @@ mark { background: none; color: var(--accent); font-weight: 700; }
 .card {
   position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); padding: 13px 14px 12px 0;
   border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--s2); box-shadow: var(--shadow-2);
-  animation: card-in 200ms var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms);
+  animation: card-in 200ms var(--ease) both; animation-delay: calc(var(--i, 0) * 30ms);
 }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } }
 .card .prio { display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 1px; }
@@ -473,14 +474,11 @@ body.dragging #empty .drop, body.dragging #stage { outline: 2px dashed var(--acc
 /* Command palette. */
 #palette { position: fixed; inset: 0; z-index: 25; display: flex; justify-content: center; align-items: flex-start; padding: 12vh var(--sp-4) var(--sp-4); }
 #palette[hidden] { display: none; }
-.palette-scrim { position: absolute; inset: 0; background: var(--scrim); backdrop-filter: blur(3px); animation: fade-in 160ms var(--ease) both; }
+.palette-scrim { position: absolute; inset: 0; background: var(--scrim); backdrop-filter: blur(3px); }
 .palette-box {
   position: relative; display: flex; flex-direction: column; width: min(680px, 100%); max-height: min(560px, 76vh); overflow: hidden;
   border: 1px solid var(--line-2); border-radius: var(--r-xl); background: var(--s1); box-shadow: var(--shadow-3);
-  animation: pop-in 180ms var(--ease) both;
 }
-@keyframes fade-in { from { opacity: 0; } }
-@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(.985); } }
 .palette-field { display: flex; align-items: center; gap: 10px; padding: 0 var(--sp-4); border-bottom: 1px solid var(--line); color: var(--text-3); }
 .palette-field .ico svg { width: 18px; height: 18px; }
 #palette-input {
@@ -651,7 +649,10 @@ button.mpill.tour-hover { border-color: var(--accent); background: var(--accent-
   font-size: 17px; font-weight: 600; line-height: 1.35; text-align: center; box-shadow: var(--shadow-3);
 }
 .tour-caption code { font-size: 15.5px; color: var(--accent); white-space: nowrap; }
-.tour-end { right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 78%, transparent); }
+.tour-end {
+  right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background-color: var(--bg);
+  background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 1.4px); background-size: 24px 24px;
+}
 .tour-card {
   max-width: 1040px; padding: 30px 40px; border: 1px solid var(--line); border-radius: 16px;
   background: var(--s1); text-align: center; box-shadow: var(--shadow-3);

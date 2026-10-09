@@ -1,9 +1,9 @@
 // Scripted tour (?tour): a fixed timeline drives the real UI (opening the
 // palette by click, `/` and Ctrl+K, typing into it, clicking its rows and the
-// sidebar's lists, Enter and Esc; so the palette, showOption, clearSelection,
-// the ladder and the graph's camera run as for a user) and an overlay draws
-// a cursor, click ripples, key caps, captions and an end card. Option paths,
-// module names and priorities come from the loaded graph.
+// sidebar's lists, Enter; so the palette, showOption, the ladder and the
+// graph's camera run as for a user) and an overlay draws a cursor, click
+// ripples, key caps, captions and an end card. Option paths, module names
+// and priorities come from the loaded graph.
 //
 //   ?tour          plays live (requestAnimationFrame) with Pause/Play/Restart
 //                  and Exit. With prefers-reduced-motion it waits for Play and
@@ -169,8 +169,7 @@ function tourTimeline(story) {
   move(t + 1150, 550, inDetail(".card.s-win .reason", 0.25));
   move(t + 2350, 600, nodePoint(story.forceLose));
 
-  // 6.1-9.7 s: switched off by mkIf, from the sidebar's list.
-  key(6150, "Escape", "Esc");
+  // 6.1-9.7 s: switched off by mkIf, straight from the sidebar's list.
   move(6300, 600, () => centerOf(offRow(), 0.3, 0.3));
   click(7000, offRow);
   caption(7100, 9700, story.captions.off);
@@ -365,10 +364,11 @@ class TourOverlay {
       this.caption.style.opacity = String(a);
     }
 
-    const e = reduced ? (t >= TOUR_END_CARD ? 1 : 0) : clamp01((t - TOUR_END_CARD) / 300);
-    show(this.end, e > 0);
-    this.end.style.opacity = String(e);
-    this.cursor.style.opacity = String(1 - e);
+    // The end card is a cut, not a fade: a cross-fade of the whole page is
+    // the most expensive thing a GIF can show.
+    const end = t >= TOUR_END_CARD;
+    show(this.end, end);
+    show(this.cursor, !end);
 
     if (this.controls) place(this.controls, pane.right - this.controls.offsetWidth - 12, pane.bottom - this.controls.offsetHeight - 12);
   }

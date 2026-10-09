@@ -12,8 +12,8 @@ const PILL_PAD = 12;
 const PILL_FONT = '500 12px "Geist", ui-sans-serif, system-ui, sans-serif';
 const CHIP_FONT = '600 11px "Geist Mono", ui-monospace, monospace';
 const CHIP_H = 20;
-const CAMERA_MS = 450;
-const FADE_MS = 200;
+const CAMERA_MS = 380;
+const FADE_MS = 180;
 
 // The clock of camera moves and fades: performance.now(), unless the tour
 // drives it (then they are a function of the tour's time).
@@ -26,8 +26,7 @@ const ui = {
 const easeCamera = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
 
 class ModuleGraph {
-  constructor(stage, canvas, banner, tip, onSelect) {
-    this.stage = stage;
+  constructor(canvas, banner, tip, onSelect) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
     this.banner = banner;
@@ -157,6 +156,7 @@ class ModuleGraph {
   }
 
   moveTo(target, animate = true) {
+    this.step(); // start from where the camera is now, not where it last drew
     const dur = animate && !ui.reducedMotion() ? CAMERA_MS : 0;
     this.cam = dur ? { from: { ...this.t }, to: target, at: ui.now(), dur } : null;
     if (!dur) this.t = target;
@@ -178,6 +178,7 @@ class ModuleGraph {
 
   // A selected module: it and its direct imports and importers are lit.
   setHighlight(ids) {
+    const wasDim = this.dimming();
     this.highlight = ids && ids.size ? ids : null;
     this.focus = this.lit = this.path = this.via = null;
     for (const n of this.nodes) n.chipW = 0;
@@ -196,7 +197,7 @@ class ModuleGraph {
       const nodes = [...lit].map((id) => this.byId.get(id)).filter(Boolean);
       if (nodes.length) this.moveTo(this.view(nodes, 1.3));
     }
-    this.fadeAt = ui.now();
+    this.startFade(wasDim);
     this.requestDraw();
   }
 
@@ -205,6 +206,7 @@ class ModuleGraph {
   // the defining modules that are drawn; the import paths leading to them
   // stay lit.
   setFocus(map) {
+    const wasDim = this.dimming();
     this.focus = map && map.size ? map : null;
     this.highlight = this.lit = this.path = this.via = null;
     for (const n of this.nodes) n.chipW = 0;
@@ -236,7 +238,7 @@ class ModuleGraph {
       this.via = done;
       if (nodes.length) this.moveTo(this.view(nodes, 1.5));
     }
-    this.fadeAt = ui.now();
+    this.startFade(wasDim);
     this.requestDraw();
   }
 
@@ -261,6 +263,16 @@ class ModuleGraph {
       this.pending = false;
       this.draw();
     });
+  }
+
+  dimming() {
+    return !!(this.focus || this.lit);
+  }
+
+  // The rest dims in over FADE_MS, but only coming from nothing selected:
+  // from one selection to the next it stays dim (no flash in between).
+  startFade(wasDim) {
+    if (!wasDim) this.fadeAt = ui.now();
   }
 
   isLit(n) {
@@ -300,13 +312,7 @@ class ModuleGraph {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, this.width(), this.height());
 
-    // The stage's dot grid moves with the camera.
-    let g = 24 * t.k;
-    while (g < 14) g *= 2;
-    this.stage.style.backgroundSize = `${g}px ${g}px`;
-    this.stage.style.backgroundPosition = `${(t.x % g).toFixed(1)}px ${(t.y % g).toFixed(1)}px`;
-
-    const dimming = !!(this.focus || this.lit);
+    const dimming = this.dimming();
     const dimA = 1 - 0.8 * (dimming ? this.fade : 0);
     const viaA = 1 - 0.45 * (dimming ? this.fade : 0);
     ctx.save();
