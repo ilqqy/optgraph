@@ -92,6 +92,50 @@ function analyse(model) {
   };
 }
 
+// The ladder of an option: its definitions sorted by priority (lowest first,
+// unknown last, then listing order), each with a status and a one-line
+// reason computed from the data:
+//   win   "beats dev-tools.nix: 50 < 1000", "merged with 5 others at 100"
+//   lose  "beaten by hardening.nix: 50 < 1000"
+//   off   "switched off: its mkIf condition is false"
+//   unknown (priority unknown, or no known winner)
+function ladder(model, o) {
+  const winners = new Set(o.winners);
+  const hp = o.highestPrio;
+  const defs = o.definitions.map((d, i) => ({ d, i }));
+  const active = defs.filter(({ d, i }) => d.active && d.priority != null && !winners.has(i));
+  const strongestLoser = active.reduce((best, x) => (best == null || x.d.priority < best.d.priority ? x : best), null);
+  const firstWinner = o.winners.length ? o.definitions[o.winners[0]] : null;
+  const rows = defs.map(({ d, i }) => {
+    let status;
+    let reason;
+    if (winners.has(i)) {
+      status = "win";
+      if (o.winners.length > 1) reason = `merged with ${plural(o.winners.length - 1, "other")} at priority ${hp}`;
+      else if (strongestLoser) reason = `beats ${defWho(model, strongestLoser.d)}: ${hp} < ${strongestLoser.d.priority}`;
+      else if (d.kind === "default") reason = "nothing stronger is set: the default applies";
+      else reason = "the only active definition";
+    } else if (!d.active) {
+      status = "off";
+      reason = d.condition === "mkIf-error" ? "its mkIf condition threw or is not a bool" : "switched off: its mkIf condition is false";
+    } else if (d.priority == null) {
+      status = "unknown";
+      reason = "reading its value threw: priority unknown";
+    } else if (hp == null) {
+      status = "unknown";
+      reason = "the winner is unknown (see the error)";
+    } else {
+      status = "lose";
+      reason =
+        o.winners.length === 1
+          ? `beaten by ${defWho(model, firstWinner)}: ${hp} < ${d.priority}`
+          : `beaten by ${o.winners.length} definitions at ${hp}: ${hp} < ${d.priority}`;
+    }
+    return { d, i, status, reason };
+  });
+  return rows.sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
+}
+
 // A definition's file: its own, else its module's (docs/schema.md).
 function defFile(model, d) {
   if (d.file != null) return d.file;

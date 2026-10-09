@@ -5,7 +5,7 @@
 const GRAPH_LIMIT = 300; // above this many modules only non-nixpkgs ones are drawn
 
 // Rings around the modules that define the selected option.
-const RING_RANK = { win: 3, lose: 2, off: 1 };
+const RING_RANK = { win: 4, lose: 3, unknown: 2, off: 1 };
 
 const PILL_H = 28;
 const PILL_PAD = 12;
@@ -81,6 +81,7 @@ class ModuleGraph {
       onWin: v("--on-win"),
       lose: v("--lose"),
       off: v("--off"),
+      err: v("--err"),
     };
   }
 
@@ -406,7 +407,7 @@ class ModuleGraph {
     if (!f) return;
     const { ctx, colors } = this;
     ctx.globalAlpha = this.fade;
-    const color = colors[f.status];
+    const color = f.status === "unknown" ? colors.err : colors[f.status];
     const lw = Math.max(px, 0.9);
     if (f.status === "win") {
       ctx.save();
@@ -618,5 +619,6 @@ function originDot(origin) {
 // Chip text of a defining module: "✓ 50 mkForce", "1000 mkDefault", "mkIf false".
 function ringText(f) {
   if (f.status === "off") return f.condition === "mkIf-error" ? "mkIf error" : "mkIf false";
+  if (f.status === "unknown") return f.priority == null ? "? priority unknown" : `? ${priorityLabel(f.priority)}`;
   return `${f.status === "win" ? "✓ " : ""}${priorityLabel(f.priority)}`;
 }

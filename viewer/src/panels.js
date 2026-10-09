@@ -36,13 +36,6 @@ function renderMeta(model, onErrors) {
   );
 }
 
-// Sort key for the ladder: known priorities first (lowest wins), unknown last.
-function ladderOrder(defs) {
-  return defs
-    .map((d, i) => ({ d, i }))
-    .sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
-}
-
 // Sidebar: the options worth a look, as three lists with counts.
 const SIDE_LIST_LIMIT = 200;
 
@@ -130,98 +123,226 @@ function renderStart(model, onOption) {
   ].filter(Boolean);
 }
 
+// Copy button: copies text(), shows a check for a moment.
+function copyButton(text, label, cls) {
+  const btn = h("button", { type: "button", class: `copy-btn ${cls || ""}`, title: label, "aria-label": label }, icon("copy"));
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    Promise.resolve(copyText(text())).then((ok) => {
+      btn.replaceChildren(icon(ok ? "check" : "x"));
+      btn.classList.toggle("done", ok);
+      setTimeout(() => {
+        btn.replaceChildren(icon("copy"));
+        btn.classList.remove("done");
+      }, 1400);
+    });
+  });
+  return btn;
+}
+
+const STATUS_BADGE = {
+  win: ["check", "Winner"],
+  lose: ["x", "Lost"],
+  off: ["off", "Switched off"],
+  unknown: ["error", "Unknown"],
+};
+
+// Path with its last segment emphasised: networking.firewall.<b>enable</b>.
+function pathTitle(path) {
+  const i = path.lastIndexOf(".");
+  return i < 0 ? [h("b", {}, path)] : [h("span", { class: "pre" }, path.slice(0, i + 1)), h("b", {}, path.slice(i + 1))];
+}
+
+// Option detail: header, verdict, the priority ladder as stacked cards.
 function renderOption(model, oi, onModule, onCopyLink) {
   const o = model.options[oi];
-  const winners = new Set(o.winners);
+  const rows = ladder(model, o);
   const omittedN = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
-  const copyBtn = h("button", { type: "button", class: "copy-link", title: "Copy a link to this option" }, "Copy link");
-  copyBtn.addEventListener("click", () =>
+  const multi = o.winners.length > 1;
+  const losers = rows.filter((r) => r.status === "lose").length;
+  const offs = rows.filter((r) => r.status === "off").length;
+  const winner = o.winners.length === 1 ? o.definitions[o.winners[0]] : null;
+
+  const linkBtn = h("button", { type: "button", class: "btn small copy-link", title: "Copy a link to this option" }, icon("link"), h("span", {}, "Copy link"));
+  linkBtn.addEventListener("click", () =>
     onCopyLink().then((ok) => {
-      copyBtn.textContent = ok ? "Copied" : "Copy failed";
-      setTimeout(() => (copyBtn.textContent = "Copy link"), 1500);
+      linkBtn.lastChild.textContent = ok ? "Copied" : "Copy failed";
+      setTimeout(() => (linkBtn.lastChild.textContent = "Copy link"), 1500);
     }),
   );
-  const head = [
-    h("div", { class: "title-row" }, h("h2", {}, o.path), copyBtn),
-    h("div", { class: "kv" }, "type ", h("code", {}, o.type ?? "?")),
-    o.declaredIn.length ? h("div", { class: "kv" }, "declared in ", ...o.declaredIn.map((f) => h("code", { title: f }, shortPath(f), " "))) : null,
-    h(
-      "div",
-      { class: "kv" },
-      o.highestPrio == null ? "no known winner" : `winning priority ${priorityLabel(o.highestPrio)}`,
-      omittedN
-        ? h(
-            "span",
-            {
-              class: "badge",
-              style: "margin-left:8px",
-              title: `${o.omitted.nixpkgsActive} active and ${o.omitted.nixpkgsInactive} inactive nixpkgs definitions are not listed (optgraph --include-all-definitions lists them)`,
-            },
-            `+${omittedN} nixpkgs`,
-          )
-        : null,
-    ),
-    o.error ? h("div", { class: "error" }, o.error) : null,
-  ];
-  const items = ladderOrder(o.definitions).map(({ d, i }) => {
+
+  let verdict;
+  if (o.highestPrio == null) verdict = h("p", { class: "verdict" }, "No known winner: ", o.error ? "an active definition could not be read." : "nothing active defines it.");
+  else if (multi) verdict = null;
+  else if (winner.kind === "default")
+    verdict = h(
+      "p",
+      { class: "verdict" },
+      "The ",
+      h("b", {}, "option default"),
+      " applies",
+      offs ? `: ${plural(offs, "definition is", "definitions are")} switched off.` : ": nothing stronger is set.",
+    );
+  else
+    verdict = h(
+      "p",
+      { class: "verdict" },
+      h("b", {}, defWho(model, winner)),
+      " wins with ",
+      h("code", { class: "t-win" }, `${prioName(winner.priority)} ${winner.priority}`),
+      losers ? `, over ${plural(losers, "weaker definition")}.` : ".",
+    );
+
+  const merged = multi
+    ? h(
+        "div",
+        { class: "merged" },
+        icon("merge"),
+        h(
+          "div",
+          {},
+          h("div", { class: "merged-title" }, `Merged from ${plural(new Set(o.winners.map((i) => o.definitions[i].module ?? "default")).size, "module")}`),
+          h(
+            "div",
+            { class: "merged-sub" },
+            `Every active definition at priority ${o.highestPrio} (${prioName(o.highestPrio)}) is a winner; the values are merged.`,
+            o.omitted.nixpkgsActive ? ` Plus ${plural(o.omitted.nixpkgsActive, "nixpkgs definition")} not listed.` : "",
+          ),
+        ),
+        h("div", { class: "merged-dots", "aria-hidden": "true" }, ...o.winners.slice(0, 8).map((i) => originDot(defOrigin(model, o.definitions[i])))),
+      )
+    : null;
+
+  const cards = rows.map((r, k) => {
+    const { d } = r;
     const mod = d.module != null ? model.modById.get(d.module) : null;
-    const isWinner = winners.has(i);
-    const cls = !d.active ? "inactive" : isWinner ? "winner" : "loser";
     const file = defFile(model, d);
-    const where =
-      d.kind === "default"
-        ? h("div", { class: "where" }, "option default, ", shortPath(file))
-        : h(
-            "div",
-            { class: "where" },
-            mod ? h("span", { class: "linkish", onclick: () => onModule(mod) }, moduleLabel(mod)) : shortPath(file),
-            mod && file && file !== mod.file ? ` (file ${shortPath(file)})` : null,
-          );
-    const preview =
+    const isDefault = d.kind === "default";
+    const [ico, label] = STATUS_BADGE[r.status];
+    const who = isDefault
+      ? h("span", { class: "mpill def", title: file ? shortPath(file) : "option default" }, icon("diamond"), "option default")
+      : mod
+        ? h("button", { type: "button", class: "mpill", title: `${moduleLabel(mod)}: show what this module sets`, onclick: () => onModule(mod) }, originDot(mod.origin), moduleShortLabel(mod))
+        : h("span", { class: "mpill" }, baseName(file));
+    const value =
       d.valuePreview == null
-        ? h(
-            "div",
-            { class: "muted", style: "font-size:12px;margin-top:2px" },
-            !d.active ? "not evaluated (inactive)" : d.priority == null ? "value threw (see error)" : "no preview",
-          )
-        : h("pre", { class: d.valuePreview === "<redacted>" ? "muted" : null }, d.valuePreview);
+        ? h("div", { class: "novalue" }, !d.active ? "not evaluated: switched off" : d.priority == null ? "value threw (see the error)" : "no preview")
+        : h("div", { class: `code${d.valuePreview === "<redacted>" ? " redacted" : ""}` }, h("pre", {}, d.valuePreview), copyButton(() => d.valuePreview, "Copy value"));
     return h(
       "li",
-      { class: cls },
+      { class: `card s-${r.status}${isDefault ? " is-default" : ""}`, style: `--i:${Math.min(k, 8)}` },
       h(
         "div",
-        { class: "top" },
-        h("span", { class: "prio", title: "override priority: lower wins" }, priorityLabel(d.priority)),
-        d.kind === "default" ? h("span", { class: "chip o-nixpkgs" }, "default") : chip(mod ? mod.origin : "unknown"),
-        isWinner ? h("span", { class: "win-tag" }, "winner") : null,
-        d.condition ? h("span", { class: "badge cond", title: "enclosing mkIf condition" }, d.condition) : null,
+        { class: "prio", title: "override priority: lower wins" },
+        h("span", { class: "num" }, d.priority == null ? "—" : String(d.priority)),
+        h("span", { class: "nm" }, d.priority == null ? (d.active ? "unknown" : "off") : prioName(d.priority)),
       ),
-      where,
-      preview,
+      h(
+        "div",
+        { class: "body" },
+        h(
+          "div",
+          { class: "head" },
+          who,
+          isDefault ? null : chip(mod ? mod.origin : "unknown"),
+          h("span", { class: `status st-${r.status}` }, icon(ico), label),
+        ),
+        !isDefault && mod && file && file !== mod.file ? h("div", { class: "where" }, "file ", shortPath(file)) : null,
+        isDefault && file ? h("div", { class: "where", title: shortPath(file) }, "declared in ", tailPath(file)) : null,
+        value,
+        h("div", { class: "reason" }, r.reason),
+      ),
     );
   });
+
+  const facts = [
+    ["type", h("code", {}, o.type ?? "?")],
+    o.declaredIn.length ? ["declared in", h("div", {}, ...o.declaredIn.map((f) => h("code", { title: f }, shortPath(f))))] : null,
+    omittedN
+      ? [
+          "not listed",
+          h("span", {}, `${plural(omittedN, "nixpkgs definition")} (${o.omitted.nixpkgsActive} active, ${o.omitted.nixpkgsInactive} inactive); optgraph --include-all-definitions lists them`),
+        ]
+      : null,
+  ].filter(Boolean);
+
   return [
-    ...head,
-    items.length ? h("ol", { class: "ladder" }, ...items) : h("p", { class: "muted" }, "No definitions listed."),
+    h("div", { class: "opt-head" }, h("div", { class: "overline" }, "Option ", h("span", { class: "type-chip" }, o.type ?? "?")), linkBtn),
+    h("h1", { class: "opt-path" }, ...pathTitle(o.path)),
+    verdict,
+    o.error ? h("div", { class: "opt-error" }, icon("error"), h("span", {}, o.error)) : null,
+    merged,
+    h(
+      "div",
+      { class: "ladder-head" },
+      h("b", {}, "Priority ladder"),
+      h("span", {}, plural(rows.length, "definition")),
+      omittedN ? h("span", { class: "badge", title: "nixpkgs definitions counted, not listed" }, `+${omittedN} nixpkgs`) : null,
+      h("span", { class: "hint" }, "lower number wins"),
+    ),
+    rows.length ? h("ol", { class: `ladder${multi ? " multi" : ""}` }, ...cards) : h("p", { class: "muted" }, "No definitions listed."),
+    h("dl", { class: "facts" }, ...facts.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])),
   ].filter(Boolean);
 }
 
+// This module's best status for option oi (win > lose > off) and its priority.
+function moduleStatus(model, m, oi) {
+  const o = model.options[oi];
+  const winners = new Set(o.winners);
+  let best = null;
+  o.definitions.forEach((d, i) => {
+    if (d.module !== m.id) return;
+    const status = !d.active ? "off" : winners.has(i) ? "win" : o.highestPrio == null ? "unknown" : "lose";
+    const rank = { win: 3, lose: 2, unknown: 1, off: 0 }[status];
+    if (!best || rank > best.rank) best = { status, rank, priority: d.priority };
+  });
+  return best;
+}
+
+// Module detail: what it is, where it sits, what it sets and whether it wins.
 function renderModule(model, m, onOption) {
   const opts = model.modOptions.get(m.id) || [];
-  const list = h("div", { class: "vlist", style: "height:320px;border:1px solid var(--border);border-radius:6px;margin-top:8px" });
-  const head = [
-    h("h2", {}, moduleLabel(m)),
-    h("div", { class: "kv" }, chip(m.origin), m.disabled ? h("span", { class: "badge cond", style: "margin-left:6px" }, "disabled") : null),
-    h("div", { class: "kv" }, "id ", h("code", {}, m.id)),
-    m.id !== m.file ? h("div", { class: "kv" }, "file ", h("code", {}, m.file)) : null,
-    m.position ? h("div", { class: "kv" }, "position ", h("code", {}, m.position)) : null,
-    h("div", { class: "kv" }, `imports ${m.imports.length}; sets ${plural(opts.length, "listed option")}`),
-    list,
+  const importers = model.modules.filter((x) => x.imports.includes(m.id)).length;
+  const list = opts.length ? h("div", { class: "vlist mod-options", style: `height:${Math.min(360, opts.length * 30 + 10)}px` }) : h("p", { class: "muted" }, "This module sets no listed option.");
+  const facts = [
+    ["origin", chip(m.origin)],
+    ["file", h("code", {}, m.file)],
+    m.id !== m.file ? ["id", h("code", {}, m.id)] : null,
+    m.position ? ["position", h("code", {}, m.position)] : null,
   ].filter(Boolean);
+  const head = [
+    h("div", { class: "opt-head" }, h("div", { class: "overline" }, "Module ", m.disabled ? h("span", { class: "type-chip" }, "disabled") : null)),
+    h("h1", { class: "mod-title" }, originDot(m.origin), moduleShortLabel(m)),
+    h("p", { class: "mod-path" }, moduleLabel(m)),
+    h(
+      "div",
+      { class: "stats three" },
+      h("div", { class: "stat" }, h("b", {}, String(opts.length)), h("span", {}, "options set")),
+      h("div", { class: "stat" }, h("b", {}, String(m.imports.length)), h("span", {}, "imports")),
+      h("div", { class: "stat" }, h("b", {}, String(importers)), h("span", {}, "importers")),
+    ),
+    h("dl", { class: "facts top" }, ...facts.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])),
+    h("div", { class: "ladder-head" }, h("b", {}, "Options it sets"), h("span", {}, plural(opts.length, "listed option"))),
+    list,
+  ];
   // The list is attached after the caller inserts `head`.
-  queueMicrotask(() => {
-    const vl = new VirtualList(list, (oi) => h("div", { onclick: () => onOption(oi) }, h("span", { class: "path" }, model.options[oi].path)));
-    vl.setItems(opts, "This module sets no listed option.");
-  });
+  if (opts.length)
+    queueMicrotask(() => {
+      const vl = new VirtualList(
+        list,
+        (oi) => {
+          const st = moduleStatus(model, m, oi);
+          return h(
+            "div",
+            { onclick: () => onOption(oi), title: st ? `${STATUS_BADGE[st.status][1]} at ${priorityLabel(st.priority)}` : null },
+            h("span", { class: `mini st-${st ? st.status : "unknown"}` }, icon(STATUS_BADGE[st ? st.status : "unknown"][0])),
+            h("span", { class: "path" }, model.options[oi].path),
+            st && st.priority != null ? h("span", { class: "mini-prio" }, String(st.priority)) : null,
+          );
+        },
+        30,
+      );
+      vl.setItems(opts);
+    });
   return head;
 }

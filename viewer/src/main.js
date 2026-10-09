@@ -87,7 +87,7 @@ function focusOf(o) {
   const map = new Map();
   o.definitions.forEach((d, i) => {
     if (d.module == null) return;
-    const status = !d.active ? "off" : winners.has(i) ? "win" : "lose";
+    const status = !d.active ? "off" : winners.has(i) ? "win" : d.priority == null || o.highestPrio == null ? "unknown" : "lose";
     const cur = map.get(d.module);
     if (!cur || RING_RANK[status] > RING_RANK[cur.status]) map.set(d.module, { status, priority: d.priority, condition: d.condition });
   });
