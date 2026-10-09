@@ -45,11 +45,13 @@ class Palette {
     this.input.focus();
   }
 
-  close() {
+  // Esc and the scrim give the focus back to where it was; choosing a
+  // result leaves it on the page.
+  close(restore = true) {
     if (!this.isOpen) return;
     this.root.hidden = true;
     document.body.classList.remove("palette-open");
-    if (this.restore && this.restore !== document.body && document.contains(this.restore)) this.restore.focus();
+    if (restore && this.restore && this.restore !== document.body && document.contains(this.restore)) this.restore.focus();
     else this.input.blur();
   }
 
@@ -160,7 +162,7 @@ class Palette {
   choose(n) {
     const it = this.items[n];
     if (!it) return;
-    this.close();
+    this.close(false);
     if (it.kind === "module") this.onModule(this.model.modules[it.index]);
     else this.onOption(it.index);
   }

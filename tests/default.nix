@@ -125,7 +125,8 @@ in
         cp ${demoGraphJson} $out
       '';
 
-  # The viewer is one self-contained file: no external scripts or styles.
+  # The viewer is one self-contained file: no external scripts or styles,
+  # the fonts inlined, at most 250 KB.
   viewer =
     let
       viewer = self.packages.${pkgs.stdenv.hostPlatform.system}.viewer;
@@ -140,7 +141,10 @@ in
         echo "external stylesheet reference in the viewer"; exit 1
       fi
       [ "$(grep -c 'id="optgraph-data">/\*OPTGRAPH_DATA\*/null</script>' index.html)" = 1 ] || { echo "data placeholder missing"; exit 1; }
-      echo "viewer: $(wc -c < index.html) bytes, one file, no external references"
+      grep -q 'const OPTGRAPH_FONTS = \[' index.html || { echo "embedded fonts missing"; exit 1; }
+      size=$(wc -c < index.html)
+      [ "$size" -lt 256000 ] || { echo "viewer: $size bytes, the budget is 250 KB"; exit 1; }
+      echo "viewer: $size bytes, one file, no external references, fonts embedded"
       touch $out
     '';
 
