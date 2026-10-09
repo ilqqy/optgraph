@@ -17,12 +17,14 @@
       <svg class="logo" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="2" width="20" height="4.2" rx="2.1"/><rect x="5" y="8.9" width="16" height="4.2" rx="2.1" opacity=".62"/><rect x="9" y="15.8" width="12" height="4.2" rx="2.1" opacity=".34"/></svg>
       <span>optgraph</span>
     </div>
+    <div class="sheet-head"><b id="lists-title"></b><button id="lists-close" class="icon-btn" type="button" aria-label="Close the list">×</button></div>
     <button id="search-trigger" class="search-trigger" type="button" aria-haspopup="dialog" aria-keyshortcuts="/ Control+K" disabled>
       <span class="ico-slot" data-icon="search"></span><span>Search options, modules</span><kbd>/</kbd>
     </button>
     <nav id="lists"></nav>
   </aside>
   <header id="topbar">
+    <span class="top-brand" title="optgraph"><svg class="logo" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="2" width="20" height="4.2" rx="2.1"/><rect x="5" y="8.9" width="16" height="4.2" rx="2.1" opacity=".62"/><rect x="9" y="15.8" width="12" height="4.2" rx="2.1" opacity=".34"/></svg></span>
     <div id="crumb"></div>
     <div id="status"></div>
     <span class="spacer"></span>
@@ -40,9 +42,17 @@
       <button id="zoom-fit" class="icon-btn" type="button" title="Fit the graph" aria-label="Fit the graph"><span class="ico-slot" data-icon="fit"></span></button>
     </div>
   </main>
-  <aside id="inspector" aria-label="Details">
+  <aside id="inspector" aria-label="Details" data-sheet="peek">
+    <button id="sheet-handle" class="sheet-handle" type="button" aria-label="Resize the details sheet"><span></span></button>
     <div id="detail"></div>
   </aside>
+  <nav id="tabs" aria-label="Views">
+    <button type="button" data-tab="graph" class="on"><span class="ico-slot" data-icon="graph"></span><span>Graph</span></button>
+    <button type="button" data-tab="search"><span class="ico-slot" data-icon="search"></span><span>Search</span></button>
+    <button type="button" data-tab="overrides"><span class="ico-slot" data-icon="override"></span><span>Overrides</span><b class="tab-count"></b></button>
+    <button type="button" data-tab="off"><span class="ico-slot" data-icon="off"></span><span>Off</span><b class="tab-count"></b></button>
+    <button type="button" data-tab="errors"><span class="ico-slot" data-icon="error"></span><span>Errors</span><b class="tab-count"></b></button>
+  </nav>
 </div>
 <div id="empty">
   <div class="drop">
