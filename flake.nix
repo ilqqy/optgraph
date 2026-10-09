@@ -51,6 +51,7 @@
             pkgs.jq
             pkgs.nixfmt # nixfmt-rfc-style is a deprecated alias of it
             pkgs.check-jsonschema
+            pkgs.ffmpeg-headless # tools/render-tour.sh (ffmpeg without SDL/GUI deps)
           ];
         };
       });
