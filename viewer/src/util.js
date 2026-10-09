@@ -30,6 +30,12 @@ function shortPath(p) {
   return rest ? "…" + rest : m[0].slice(44);
 }
 
+// The last n segments: …/networking/firewall.nix
+function tailPath(p, n = 2) {
+  const parts = shortPath(p).split("/");
+  return parts.length > n + 1 ? "…/" + parts.slice(-n).join("/") : shortPath(p);
+}
+
 function baseName(p) {
   const s = shortPath(p);
   const i = s.lastIndexOf("/");
@@ -90,8 +96,9 @@ function chip(origin) {
   return h("span", { class: `chip o-${originClass(origin)}`, title: "module origin" }, origin || "unknown");
 }
 
-function plural(n, word) {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
+// plural(2, "module") -> "2 modules"; plural(2, "is", "are") -> "2 are".
+function plural(n, word, many) {
+  return `${n.toLocaleString("en")} ${n === 1 ? word : many ?? `${word}s`}`;
 }
 
 // 16x16 stroke icons (currentColor).
