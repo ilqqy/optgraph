@@ -236,7 +236,7 @@ class ModuleGraph {
       }
       this.path = path;
       this.via = done;
-      if (nodes.length) this.moveTo(this.view(nodes, 1.5));
+      if (nodes.length) this.moveTo(this.view(nodes, this.width() < 600 ? 1.1 : 1.5));
     }
     this.startFade(wasDim);
     this.requestDraw();
