@@ -19,7 +19,7 @@
 // which they started, and CSS transitions are off.
 
 const TOUR_DURATION = 19400;
-const TOUR_END_CARD = 17900;
+const TOUR_END_CARD = 18100;
 const TOUR_COMMAND = "nix run github:ilqqy/optgraph -- .#nixosConfigurations.<host> --html graph.html";
 const TOUR_DEMO_URL = "https://ilqqy.github.io/optgraph/";
 
@@ -157,38 +157,38 @@ function tourTimeline(story) {
   const aside = () => centerOf($("#lists"), 0.5, 0.75); // clear of the palette
 
   // 0-2.8 s: the start state; the palette opens from the sidebar.
-  caption(150, 2750, ["Why is this option set to that?"]);
-  move(950, 650, () => centerOf(trigger(), 0.3, 0.5));
-  click(1700, trigger);
+  caption(150, 2700, ["Why is this option set to that?"]);
+  move(900, 650, () => centerOf(trigger(), 0.3, 0.5));
+  click(1600, trigger);
 
-  // 2.8-6.2 s: mkForce beats mkDefault.
-  let t = type(1950, tourQuery(story.force, "firewall"));
+  // 2.8-6.1 s: mkForce beats mkDefault.
+  let t = type(1800, tourQuery(story.force, "firewall"));
   move(t + 100, 420, rowPoint(story.force));
-  click(t + 640, palRow(story.force));
-  caption(t + 760, t + 3760, story.captions.force);
-  move(t + 1200, 550, inDetail(".card.s-win .reason", 0.25));
-  move(t + 2450, 600, nodePoint(story.forceLose));
+  click(t + 600, palRow(story.force));
+  caption(t + 720, 6050, story.captions.force);
+  move(t + 1150, 550, inDetail(".card.s-win .reason", 0.25));
+  move(t + 2350, 600, nodePoint(story.forceLose));
 
-  // 6.3-9.9 s: switched off by mkIf, from the sidebar's list.
-  key(6300, "Escape", "Esc");
-  move(6450, 650, () => centerOf(offRow(), 0.3, 0.3));
-  click(7250, offRow);
-  caption(7350, 9950, story.captions.off);
-  move(7900, 650, nodePoint(story.offModule));
+  // 6.1-9.7 s: switched off by mkIf, from the sidebar's list.
+  key(6150, "Escape", "Esc");
+  move(6300, 600, () => centerOf(offRow(), 0.3, 0.3));
+  click(7000, offRow);
+  caption(7100, 9700, story.captions.off);
+  move(7600, 650, nodePoint(story.offModule));
 
-  // 10-13.5 s: your value beats the option default: `/`, type, Enter.
-  move(9650, 350, aside);
-  key(10050, "/", "/");
-  t = type(10250, tourQuery(story.local, "locale"));
+  // 9.7-13.6 s: your value beats the option default: `/`, type, Enter.
+  move(9400, 300, aside);
+  key(9800, "/", "/");
+  t = type(10000, tourQuery(story.local, "locale"));
   move(t + 80, 380, rowPoint(story.local));
   key(t + 560, "Enter", "↵ Enter", { target: "#palette-input" });
   caption(t + 660, t + 3260, story.captions.local);
   move(t + 1100, 600, inDetail(".card.is-default .mpill", 0.5, 0.55));
 
-  // 13.6-17.9 s: lists merge: Ctrl+K, type, click.
-  move(13300, 350, aside);
-  key(13650, "k", "Ctrl K", { ctrlKey: true });
-  t = type(13850, tourQuery(story.list, "packages"));
+  // 13.6-18.1 s: lists merge: Ctrl+K, type, click.
+  move(13300, 300, aside);
+  key(13700, "k", "Ctrl K", { ctrlKey: true });
+  t = type(13900, tourQuery(story.list, "packages"));
   move(t + 80, 360, rowPoint(story.list));
   click(t + 560, palRow(story.list));
   caption(t + 660, TOUR_END_CARD, story.captions.list);
