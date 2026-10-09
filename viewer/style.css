@@ -173,3 +173,38 @@ body.dragging #empty .drop, body.dragging #graph-pane { outline: 3px dashed var(
 .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); }
 .warning { padding: 8px 12px; border-bottom: 1px solid var(--border); }
 .warning pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; color: var(--muted); }
+/* Scripted tour (?tour, src/tour.js): an overlay that takes no pointer
+   events except its controls. Nothing here animates by itself: every frame
+   is computed from the tour's clock. */
+body.touring #search { caret-color: transparent; }
+body.touring #search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.vlist .row.tour-hover, .picklist li.tour-hover { background: var(--panel); }
+.linkish.tour-hover { text-decoration: underline; }
+#tour { position: fixed; inset: 0; z-index: 30; pointer-events: none; overflow: hidden; }
+#tour > * { position: absolute; left: 0; top: 0; }
+.tour-cursor { width: 24px; height: 30px; transform-origin: 3px 2px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
+.tour-cursor svg { display: block; }
+.tour-ripple { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--accent); }
+.tour-key {
+  font: 600 13px var(--mono); padding: 2px 9px; border: 1px solid var(--border); border-bottom-width: 3px;
+  border-radius: 6px; background: var(--panel); color: var(--fg); box-shadow: 0 3px 10px rgba(0, 0, 0, .3);
+}
+.tour-caret { width: 1.5px; height: 17px; background: var(--fg); }
+.tour-caption {
+  padding: 8px 18px; border-radius: 12px; background: var(--panel); border: 1px solid var(--accent); color: var(--fg);
+  font-size: 19px; font-weight: 600; line-height: 1.35; text-align: center; box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+}
+.tour-caption code { font-size: 17px; color: var(--accent); }
+.tour-end { right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 78%, transparent); }
+.tour-card {
+  max-width: 1040px; padding: 30px 40px; border: 1px solid var(--border); border-radius: 16px;
+  background: var(--panel); text-align: center; box-shadow: 0 16px 50px rgba(0, 0, 0, .45);
+}
+.tour-card .tour-brand { font-size: 34px; font-weight: 800; }
+.tour-card p { font-size: 19px; margin: 8px 0 18px; }
+.tour-card pre { font-size: 17px; margin: 0 0 18px; padding: 12px 18px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); text-align: left; white-space: pre; }
+.tour-card pre em { color: var(--accent); }
+.tour-card p.muted { margin-bottom: 0; }
+.tour-card p.muted b { color: var(--accent); }
+.tour-controls { pointer-events: auto; display: flex; gap: 6px; }
+.tour-controls button { box-shadow: 0 3px 12px rgba(0, 0, 0, .25); }

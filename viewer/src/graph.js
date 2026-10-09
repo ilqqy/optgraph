@@ -21,6 +21,7 @@ class ModuleGraph {
     this.hover = null;
     this.colors = {};
     this.pending = false;
+    this.reserveTop = 0; // pixels kept free above the fitted graph (tour captions)
     this.readColors();
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
       this.readColors();
@@ -122,9 +123,9 @@ class ModuleGraph {
     }
     const pad = 40;
     const w = this.width() - 2 * pad;
-    const hgt = this.height() - 2 * pad - 50; // legend
+    const hgt = this.height() - 2 * pad - 50 - this.reserveTop; // legend
     const k = Math.min(2, w / Math.max(1, x1 - x0), hgt / Math.max(1, y1 - y0));
-    this.t = { k, x: pad + (w - (x1 - x0) * k) / 2 - x0 * k, y: pad + (hgt - (y1 - y0) * k) / 2 - y0 * k };
+    this.t = { k, x: pad + (w - (x1 - x0) * k) / 2 - x0 * k, y: pad + this.reserveTop + (hgt - (y1 - y0) * k) / 2 - y0 * k };
     this.requestDraw();
   }
 
@@ -329,6 +330,7 @@ class ModuleGraph {
       box.sub = sub;
       box.status = f ? f.status : null;
     }
+    this.labelBoxes = placed; // read by the tour, to point next to a label
 
     ctx.textBaseline = "top";
     for (const b of placed) {
