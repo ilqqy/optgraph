@@ -52,6 +52,7 @@
             pkgs.nixfmt # nixfmt-rfc-style is a deprecated alias of it
             pkgs.check-jsonschema
             pkgs.ffmpeg-headless # tools/render-tour.sh (ffmpeg without SDL/GUI deps)
+            pkgs.python3 # tools/tour-capture.py (standard library only)
           ];
         };
       });

@@ -32,8 +32,9 @@ function fuzzyMatch(query, text, orig = text) {
 
 // Palette groups for a query: options go to the first group they belong to
 // (Overrides, Switched off, Errors, else Options), modules match their short
-// label or their path. Each group sorted by score, cut to its limit; an
-// empty query lists the start of each group.
+// label or their path. If some path or label contains the query, only those
+// are listed. Each group sorted by score, cut to its limit; an empty query
+// lists the start of each group.
 //   -> [{ key, title, total, items: [{ kind: "option"|"module", index, hits, where }] }]
 const PALETTE_GROUPS = [
   ["overrides", "Overrides", 6],
@@ -75,6 +76,10 @@ function paletteSearch(model, rawQuery) {
       const mp = ml ? null : fuzzyMatch(q, path.toLowerCase(), path);
       if (ml || mp) buckets.modules.push({ kind: "module", index: i, hits: (ml || mp).hits, where: ml ? "label" : "path", score: (ml || mp).score - (ml ? 0 : 20) });
     });
+    // Substring hits (scores near 1000) hide scattered subsequence ones.
+    if (Object.values(buckets).some((list) => list.some((it) => it.score >= 500))) {
+      for (const k of Object.keys(buckets)) buckets[k] = buckets[k].filter((it) => it.score >= 500);
+    }
     for (const list of Object.values(buckets)) list.sort((x, y) => y.score - x.score || x.index - y.index);
   }
   return PALETTE_GROUPS.map(([key, title, limit]) => ({ key, title, total: buckets[key].length, items: buckets[key].slice(0, limit) })).filter((g) => g.items.length);

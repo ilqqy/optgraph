@@ -19,6 +19,7 @@ const FADE_MS = 200;
 // drives it (then they are a function of the tour's time).
 const ui = {
   now: () => performance.now(),
+  frozen: false, // the tour's frame mode: time stands still, no redraw loop
   reducedMotion: () => matchMedia("(prefers-reduced-motion: reduce)").matches,
 };
 
@@ -363,7 +364,7 @@ class ModuleGraph {
     for (const n of lit) this.drawStatus(n, px);
     if (this.selected && !this.focus) this.drawRing(this.selected, colors.accent, 2 * Math.max(px, 0.9), px);
     ctx.restore();
-    if (moving) this.requestDraw();
+    if (moving && !ui.frozen) this.requestDraw();
   }
 
   drawPill(n, showText, px) {

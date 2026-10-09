@@ -1,8 +1,9 @@
-// Scripted tour (?tour): a fixed timeline drives the real UI (typing into
-// the search, clicking result rows and the start lists, Esc; so runSearch,
-// showOption, clearSelection and the graph rings run as for a user) and an
-// overlay draws a cursor, click ripples, key caps, captions and an end card.
-// Option paths, module names and priorities come from the loaded graph.
+// Scripted tour (?tour): a fixed timeline drives the real UI (opening the
+// palette by click, `/` and Ctrl+K, typing into it, clicking its rows and the
+// sidebar's lists, Enter and Esc; so the palette, showOption, clearSelection,
+// the ladder and the graph's camera run as for a user) and an overlay draws
+// a cursor, click ripples, key caps, captions and an end card. Option paths,
+// module names and priorities come from the loaded graph.
 //
 //   ?tour          plays live (requestAnimationFrame) with Pause/Play/Restart
 //                  and Exit. With prefers-reduced-motion it waits for Play and
@@ -11,11 +12,14 @@
 //                  <html data-tour-frame="<ms>"> (tools/render-tour.sh).
 //
 // A step's effect depends only on the UI state at its start time, and
-// continuous steps (typing, scrolling, cursor moves) only on the elapsed
-// time, so live playback and a fresh replay up to t end in the same state.
+// continuous steps (typing, cursor moves) only on the elapsed time, so live
+// playback and a fresh replay up to t end in the same state. The graph's
+// camera and fades run on the tour's clock (ui.now). In frame mode CSS
+// keyframe animations (palette, ladder cards) are seeked to the tour time at
+// which they started, and CSS transitions are off.
 
-const TOUR_DURATION = 16000;
-const TOUR_END_CARD = 14500;
+const TOUR_DURATION = 19400;
+const TOUR_END_CARD = 17900;
 const TOUR_COMMAND = "nix run github:ilqqy/optgraph -- .#nixosConfigurations.<host> --html graph.html";
 const TOUR_DEMO_URL = "https://ilqqy.github.io/optgraph/";
 
@@ -54,7 +58,8 @@ function tourStory() {
     },
     a.overrides,
   );
-  const offs = a.switchedOff.filter(({ oi, di }) => drawn(opts[oi].definitions[di]));
+  // Rows of the sidebar's Switched off list (an option's first definition).
+  const offs = a.switchedOff.filter(({ oi, di }, k) => a.switchedOff.findIndex((x) => x.oi === oi) === k && drawn(opts[oi].definitions[di]));
   const off = offs.find(({ oi }) => opts[oi].path === "services.printing.enable") || offs[0];
   const local = pick("i18n.defaultLocale", (oi) => {
     const o = opts[oi];
@@ -74,7 +79,6 @@ function tourStory() {
   const listModules = new Set(opts[list].winners.map((i) => opts[list].definitions[i].module));
   return {
     force,
-    forceWin: w.module,
     forceLose: l.module,
     off: off.oi,
     offModule: opts[off.oi].definitions[off.di].module,
@@ -89,13 +93,14 @@ function tourStory() {
   };
 }
 
-// A query that lists the option among the first rows: a preferred word, else
-// a path segment, else the whole path.
+// A query that lists the option among the palette's first rows: a preferred
+// word, else a path segment, else the whole path.
 function tourQuery(oi, preferred) {
   const path = model.options[oi].path;
   for (const q of [preferred, ...path.toLowerCase().split(".").reverse(), path]) {
-    const i = searchOptions(model, q).findIndex((r) => r.index === oi);
-    if (i >= 0 && i < 5) return q;
+    const rows = paletteSearch(model, q).flatMap((g) => g.items);
+    const i = rows.findIndex((r) => r.kind === "option" && r.index === oi);
+    if (i >= 0 && i < 4) return q;
   }
   return path;
 }
@@ -104,18 +109,16 @@ function tourQuery(oi, preferred) {
 function tourTimeline(story) {
   const steps = [];
   const captions = [];
-  let query = "";
   const step = (at, dur, start, update) => steps.push({ at, dur, start, update });
   const caption = (from, to, parts) => captions.push([from, to, parts]);
   const move = (at, dur, target) => step(at, dur, (r) => r.moveTo(at, dur, target(r)));
   const click = (at, expect) => step(at, 0, (r) => r.click(at, expect()));
-  // Erases the current query, then types `text`; returns the end time.
+  const key = (at, k, label, opts) => step(at, 0, (r) => r.key(at, k, label, opts));
+  // Types `text` into the open, empty palette; returns the end time.
   const type = (at, text) => {
     const keys = [];
     let t = 0;
-    for (let i = query.length; i > 0; i--) keys.push([(t += 22), query.slice(0, i - 1)]);
-    for (let i = 1; i <= text.length; i++) keys.push([(t += 50 + 16 * Math.sin(i * 2.4)), text.slice(0, i)]);
-    query = text;
+    for (let i = 1; i <= text.length; i++) keys.push([(t += 52 + 16 * Math.sin(i * 2.4)), text.slice(0, i)]);
     step(at, t, null, (r, e) => {
       const done = keys.filter(([k]) => k <= e).pop();
       if (done) r.typeValue(at + done[0], done[1]);
@@ -123,88 +126,73 @@ function tourTimeline(story) {
     return at + t;
   };
 
-  const search = () => $("#search");
-  const searchPoint = () => centerOf(search(), 0.18, 0.55);
-  const row = (oi) => {
-    const i = results.findIndex((r) => r.index === oi);
-    const el = [...$("#results").querySelectorAll(".row")].find((x) => x.style.top === `${i * resultList.rowHeight}px`);
-    if (!el) throw new Error(`tour: ${model.options[oi].path} is not in the result list`);
+  const trigger = () => $("#search-trigger");
+  const palRow = (oi) => () => {
+    const el = palette.rowOf("option", oi);
+    if (!el) throw new Error(`tour: ${model.options[oi].path} is not in the palette`);
     return el;
   };
   const rowPoint = (oi) => () => {
-    const r = row(oi).getBoundingClientRect();
-    return { x: r.left + Math.min(150, r.width * 0.45), y: r.top + r.height / 2 };
+    const r = palRow(oi)().getBoundingClientRect();
+    return { x: r.left + Math.min(170, r.width * 0.4), y: r.top + r.height / 2 };
   };
   const offRow = () => {
-    const head = [...$("#detail").querySelectorAll("h3")].find((x) => x.firstChild.textContent === "Switched off");
-    const li = head && [...head.nextElementSibling.querySelectorAll("li")].find((x) => x.querySelector(".path").textContent === model.options[story.off].path);
-    if (!li) throw new Error("tour: the switched-off option is not in the start list");
-    return li;
+    const li = $(`#lists .side-list[data-list="off"] li[data-oi="${story.off}"]`);
+    if (!li) throw new Error("tour: the switched-off option is not in the sidebar list");
+    return li.querySelector("button");
   };
-  // Just below the module's label (name and priority), so the cursor covers
-  // neither. graph.draw() lays the labels out now, synchronously, so the spot
-  // depends only on the UI state.
+  // Just below a module's pill, near its label's start, so the cursor covers
+  // neither label nor chip. The camera is read at the clock's current time.
   const nodePoint = (id) => () => {
-    graph.draw();
-    const n = graph.byId.get(id);
-    const c = graph.canvas.getBoundingClientRect();
-    const b = (graph.labelBoxes || []).find((x) => x.n === n);
-    if (b) return { x: c.left + b.x0 + Math.min(60, (b.x1 - b.x0) * 0.55), y: c.top + b.y1 + 3 };
-    const R = graph.radius(n) * graph.t.k;
-    return { x: c.left + graph.t.x + n.x * graph.t.k - R * 0.6, y: c.top + graph.t.y + n.y * graph.t.k + R + 5 };
+    graph.step();
+    const r = graph.nodeRect(id);
+    if (!r) throw new Error("tour: a module of the story is not drawn");
+    return { x: r.x + Math.min(54, r.w * 0.45), y: r.y + r.h + 4 };
   };
+  const inDetail = (sel, fx = 0.3, fy = 0.5) => () => {
+    const el = $(`#detail ${sel}`);
+    if (!el) throw new Error(`tour: no ${sel} in the detail panel`);
+    return centerOf(el, fx, fy);
+  };
+  const aside = () => centerOf($("#lists"), 0.5, 0.75); // clear of the palette
 
-  // 0-2 s: start state.
-  caption(150, 1900, ["Why is this option set to that?"]);
-  move(850, 650, searchPoint);
-  click(1550, search);
+  // 0-2.8 s: the start state; the palette opens from the sidebar.
+  caption(150, 2750, ["Why is this option set to that?"]);
+  move(950, 650, () => centerOf(trigger(), 0.3, 0.5));
+  click(1700, trigger);
 
-  // 2-6 s: mkForce beats mkDefault.
-  let t = type(1700, tourQuery(story.force, "firewall"));
-  move(t + 120, 420, rowPoint(story.force));
-  click(t + 640, () => row(story.force));
-  caption(t + 740, 5900, story.captions.force);
-  move(t + 1000, 600, nodePoint(story.forceWin));
-  move(t + 2300, 550, nodePoint(story.forceLose));
+  // 2.8-6.2 s: mkForce beats mkDefault.
+  let t = type(1950, tourQuery(story.force, "firewall"));
+  move(t + 100, 420, rowPoint(story.force));
+  click(t + 640, palRow(story.force));
+  caption(t + 760, t + 3760, story.captions.force);
+  move(t + 1200, 550, inDetail(".card.s-win .reason", 0.25));
+  move(t + 2450, 600, nodePoint(story.forceLose));
 
-  // 6-9 s: switched off by mkIf, from the start panel's list.
-  step(6000, 0, (r) => r.key(6000, "Escape", "Esc"));
-  step(6150, 450, (r) => {
-    const d = $("#detail");
-    const li = offRow().getBoundingClientRect();
-    const box = d.getBoundingClientRect();
-    const from = d.scrollTop;
-    const to = li.bottom <= box.bottom - 12 ? from : Math.min(d.scrollHeight - d.clientHeight, from + li.bottom - box.bottom + 60);
-    r.scroll = { el: d, from, to };
-  }, (r, e) => {
-    const s = r.scroll;
-    s.el.scrollTop = Math.round(s.from + (s.to - s.from) * easeInOut(e / 450));
-  });
-  move(6150, 600, (r) => {
-    const p = centerOf(offRow(), 0.3);
-    return { x: p.x, y: p.y - (r.scroll.to - r.scroll.el.scrollTop) }; // where the row ends up
-  });
-  click(6850, offRow);
-  caption(6950, 8850, story.captions.off);
-  move(7250, 600, nodePoint(story.offModule));
+  // 6.3-9.9 s: switched off by mkIf, from the sidebar's list.
+  key(6300, "Escape", "Esc");
+  move(6450, 650, () => centerOf(offRow(), 0.3, 0.3));
+  click(7250, offRow);
+  caption(7350, 9950, story.captions.off);
+  move(7900, 650, nodePoint(story.offModule));
 
-  // 9-12 s: your value beats the option default.
-  move(8500, 400, searchPoint);
-  click(8950, search);
-  t = type(9050, tourQuery(story.local, "locale"));
-  move(t + 100, 380, rowPoint(story.local));
-  click(t + 560, () => row(story.local));
-  caption(t + 660, 11750, story.captions.local);
-  move(t + 900, 550, () => centerOf($("#detail .ladder li.winner pre"), 0.35, 0.5));
+  // 10-13.5 s: your value beats the option default: `/`, type, Enter.
+  move(9650, 350, aside);
+  key(10050, "/", "/");
+  t = type(10250, tourQuery(story.local, "locale"));
+  move(t + 80, 380, rowPoint(story.local));
+  key(t + 560, "Enter", "↵ Enter", { target: "#palette-input" });
+  caption(t + 660, t + 3260, story.captions.local);
+  move(t + 1100, 600, inDetail(".card.is-default .mpill", 0.5, 0.55));
 
-  // 12-14.5 s: lists merge.
-  move(11600, 350, searchPoint);
-  click(12000, search);
-  t = type(12080, tourQuery(story.list, "packages"));
-  move(t + 80, 330, rowPoint(story.list));
-  click(t + 480, () => row(story.list));
-  caption(t + 580, TOUR_END_CARD, story.captions.list);
-  move(t + 750, 450, () => centerOf($("#detail .kv .badge"), 0.15, 1.15));
+  // 13.6-17.9 s: lists merge: Ctrl+K, type, click.
+  move(13300, 350, aside);
+  key(13650, "k", "Ctrl K", { ctrlKey: true });
+  t = type(13850, tourQuery(story.list, "packages"));
+  move(t + 80, 360, rowPoint(story.list));
+  click(t + 560, palRow(story.list));
+  caption(t + 660, TOUR_END_CARD, story.captions.list);
+  move(t + 1150, 550, inDetail(".merged-title", 0.4, 0.6));
 
   steps.sort((x, y) => x.at - y.at);
   return { steps, captions };
@@ -215,13 +203,12 @@ class TourRun {
   constructor(reduced) {
     this.reduced = reduced;
     const pane = $("#stage").getBoundingClientRect();
-    const p = { x: pane.left + pane.width * 0.86, y: pane.top + pane.height * 0.8 };
+    const p = { x: pane.left + pane.width * 0.82, y: pane.top + pane.height * 0.78 };
     this.cursor = { from: p, to: p, at: 0, dur: 0 };
     this.clicks = [];
     this.keys = [];
     this.focusAt = 0;
     this.typedAt = -1e9;
-    this.scroll = null;
   }
 
   cursorAt(t) {
@@ -244,24 +231,23 @@ class TourRun {
       return;
     }
     const focusable = el.closest("input, button, [tabindex]");
-    if (focusable) {
-      focusable.focus();
-      this.focusAt = at;
-    } else if (document.activeElement) document.activeElement.blur();
+    if (focusable) focusable.focus();
+    else if (document.activeElement) document.activeElement.blur();
     el.click();
+    if (document.activeElement === $("#palette-input")) this.focusAt = at;
     this.clicks.push({ at, ...p });
   }
 
-  key(at, key, label) {
-    document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+  key(at, key, label, opts = {}) {
+    const target = opts.target ? $(opts.target) : document;
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey: !!opts.ctrlKey, bubbles: true, cancelable: true }));
+    if (document.activeElement === $("#palette-input")) this.focusAt = at;
     this.keys.push({ at, label });
   }
 
   typeValue(at, value) {
-    const s = $("#search");
-    if (s.value === value) return;
-    s.value = value;
-    runSearch();
+    if ($("#palette-input").value === value) return;
+    palette.setQuery(value);
     this.typedAt = at;
   }
 }
@@ -277,11 +263,14 @@ class TourOverlay {
     this.caret = div("tour-caret");
     this.caption = div("tour-caption");
     const cmd = TOUR_COMMAND.split("<host>");
+    const logo = $(".brand .logo").cloneNode(true);
+    logo.setAttribute("width", "34");
+    logo.setAttribute("height", "34");
     this.end = div(
       "tour-end",
       div(
         "tour-card",
-        h("div", { class: "tour-brand" }, "optgraph"),
+        h("div", { class: "tour-brand" }, logo, "optgraph"),
         h("p", {}, "Who sets each NixOS option, at what priority, and why it won."),
         h("pre", {}, cmd[0], h("em", {}, "<host>"), cmd[1]),
         h("p", { class: "muted" }, "Live demo: ", h("b", {}, TOUR_DEMO_URL.replace(/^https:\/\/|\/$/g, ""))),
@@ -291,8 +280,8 @@ class TourOverlay {
     this.el.querySelectorAll(".tour-cursor, .tour-ripple, .tour-key, .tour-caret").forEach((x) => x.setAttribute("aria-hidden", "true"));
     this.caption.setAttribute("role", "status");
     if (live) {
-      this.button = h("button", { type: "button" }, "Play");
-      this.exit = h("button", { type: "button" }, "Exit tour");
+      this.button = h("button", { type: "button", class: "btn" }, "Play");
+      this.exit = h("button", { type: "button", class: "btn" }, "Exit tour");
       this.controls = h("div", { class: "tour-controls" }, this.button, this.exit);
       this.el.append(this.controls);
     }
@@ -337,9 +326,12 @@ class TourOverlay {
       this.keycap.style.opacity = String(fade(key.at, key.at + 900, 150));
     }
 
-    // Element under the cursor gets the hover look.
+    // What is under the cursor looks hovered; a palette row becomes the
+    // active one, as on a real mouse move.
     const under = document.elementFromPoint(c.x, c.y);
-    const hover = under && under.closest(".vlist .row, .picklist li, .linkish");
+    const row = under && under.closest(".pal-row");
+    if (row && palette.isOpen && Number(row.dataset.n) !== palette.active) palette.setActive(Number(row.dataset.n), false);
+    const hover = under && under.closest(".side-list li, button.mpill, .search-trigger, .override-card");
     if (hover !== this.hover) {
       if (this.hover) this.hover.classList.remove("tour-hover");
       if (hover) hover.classList.add("tour-hover");
@@ -347,16 +339,16 @@ class TourOverlay {
     }
 
     // Drawn caret (the real one blinks on its own clock).
-    const s = $("#search");
-    const focused = document.activeElement === s && t < TOUR_END_CARD;
+    const s = $("#palette-input");
+    const focused = palette.isOpen && document.activeElement === s && t < TOUR_END_CARD;
     const blinkOn = reduced || t - run.typedAt < 500 || Math.floor((t - run.focusAt) / 530) % 2 === 0;
     show(this.caret, focused && blinkOn);
     if (focused) {
       const cs = getComputedStyle(s);
-      this.measure.font = `${cs.fontSize} ${cs.fontFamily}`;
+      this.measure.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
       const r = s.getBoundingClientRect();
-      const x = r.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft) + this.measure.measureText(s.value).width - s.scrollLeft;
-      place(this.caret, x, r.top + (r.height - 17) / 2);
+      const x = r.left + parseFloat(cs.paddingLeft) + this.measure.measureText(s.value).width - s.scrollLeft;
+      place(this.caret, x + 1, r.top + (r.height - 20) / 2);
     }
 
     const ci = captions.findIndex(([from, to]) => t >= from && t < to);
@@ -368,7 +360,7 @@ class TourOverlay {
     if (ci >= 0) {
       const [from, to] = captions[ci];
       const a = fade(from, to);
-      this.caption.style.maxWidth = `${pane.width - 40}px`;
+      this.caption.style.maxWidth = `${pane.width - 32}px`;
       place(this.caption, pane.left + (pane.width - this.caption.offsetWidth) / 2, pane.top + 14 + (1 - a) * -8);
       this.caption.style.opacity = String(a);
     }
@@ -387,33 +379,55 @@ class TourPlayer {
     const { steps, captions } = tourTimeline(story);
     this.steps = steps;
     this.captions = captions;
+    this.live = live;
     this.reduced = reduced;
+    this.clock = 0;
+    this.anims = new Map(); // frame mode: CSS animation -> tour time it started
+    ui.now = () => this.clock;
+    ui.frozen = !live;
+    if (!live) document.body.classList.add("tour-frame");
     this.overlay = new TourOverlay(live);
-    graph.reserve.top = 50; // room for the captions
-    graph.fit();
+    graph.reserve.top = 78; // room for the captions (up to two lines)
     this.reset();
   }
 
-  // Start state: nothing typed, nothing selected, lists at the top.
+  // Start state: palette closed, nothing selected, lists at the top.
   reset() {
-    const s = $("#search");
-    s.value = "";
-    s.blur();
+    this.clock = 0;
+    palette.close();
+    $("#palette-input").value = "";
     $("#warnings-panel").hidden = true;
-    runSearch();
+    $("#lists").scrollTop = 0;
+    if (document.activeElement) document.activeElement.blur();
     clearSelection();
+    graph.fit(false);
     this.run = new TourRun(this.reduced);
     this.next = 0;
     this.active = [];
     this.t = 0;
+    this.anims.clear();
+  }
+
+  // Frame mode: CSS animations are put where they are at tour time `at`
+  // (new ones started at `at`), so steps and the overlay see the geometry a
+  // live playback would.
+  settle(at) {
+    if (this.live) return;
+    for (const a of document.getAnimations()) {
+      if (!this.anims.has(a)) this.anims.set(a, at);
+      a.pause();
+      a.currentTime = Math.max(0, at - this.anims.get(a));
+    }
   }
 
   advance(t) {
+    this.clock = t;
     this.active = this.active.filter((s) => {
       const e = this.reduced ? s.dur : Math.min(s.dur, t - s.at);
       if (s.update) s.update(this.run, e);
       return e < s.dur;
     });
+    this.settle(t);
   }
 
   seek(t) {
@@ -422,11 +436,14 @@ class TourPlayer {
       const s = this.steps[this.next++];
       this.advance(s.at);
       if (s.start) s.start(this.run);
+      this.settle(s.at);
       if (s.dur) this.active.push(s);
     }
     this.advance(t);
     this.t = t;
     this.overlay.render(t, this.run, this.captions, this.reduced);
+    this.settle(t);
+    graph.requestDraw();
   }
 }
 
@@ -481,12 +498,17 @@ function startTour() {
   const exit = () => {
     playing = false;
     ov.remove();
-    graph.reserve.top = 0; // the current view stays; the next fit uses the full height
+    // Back on the page's own clock: the current view and dimming stay, the
+    // next fit uses the full height.
+    ui.now = () => performance.now();
+    graph.cam = null;
+    graph.fadeAt = -1e9;
+    graph.reserve.top = 0;
     events.forEach((ev) => document.removeEventListener(ev, takeover, true));
     const p = new URLSearchParams(location.search);
     p.delete("tour");
     p.delete("t");
-    const q = p.toString();
+    const q = p.toString().replace(/=(?=&|$)/g, "");
     try {
       history.replaceState(null, "", location.pathname + (q ? `?${q}` : "") + location.hash);
     } catch (e) {
