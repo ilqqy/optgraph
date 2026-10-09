@@ -1,22 +1,13 @@
 // Loading (embedded, ?src=, file picker, drag and drop) and wiring.
 
 let model = null;
-let results = [];
 let selectedOption = -1;
 
 const graph = new ModuleGraph($("#stage"), $("#graph"), $("#graph-banner"), $("#graph-tip"), (m) => (m ? showModule(m) : null));
-const resultList = new VirtualList($("#results"), (r) => {
-  if (r.header) return h("div", { class: "section" }, r.header);
-  const o = model.options[r.index];
-  const n = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
-  return h(
-    "div",
-    { onclick: () => showOption(r.index) },
-    h("span", { class: "path" }, ...highlighted(o.path, r.hits)),
-    n ? h("span", { class: "badge", title: "nixpkgs definitions not listed" }, `+${n}`) : null,
-    o.error ? h("span", { class: "badge cond", title: o.error }, "error") : null,
-  );
-});
+const palette = new Palette(
+  (oi) => showOption(oi),
+  (m) => showModule(m),
+);
 
 // Legend: origins (mark shape and colour), and while an option is selected
 // the statuses of its defining modules.
@@ -46,16 +37,6 @@ function renderLegend() {
   );
 }
 
-function runSearch() {
-  if (!model) return;
-  const q = $("#search").value.trim();
-  $("#results").hidden = !q;
-  $("#lists").hidden = !!q;
-  results = q ? searchOptions(model, q) : [];
-  resultList.selected = results.findIndex((r) => r.index === selectedOption);
-  resultList.setItems(results, "No option matches.");
-}
-
 // Sidebar rows of the selected option are marked.
 function markLists() {
   for (const li of $("#lists").querySelectorAll("li[data-oi]")) li.classList.toggle("sel", Number(li.dataset.oi) === selectedOption);
@@ -73,7 +54,7 @@ function setUrl(sel) {
   params.delete("opt");
   params.delete("module");
   for (const [k, v] of Object.entries(sel)) params.set(k, v);
-  const q = params.toString();
+  const q = params.toString().replace(/=(?=&|$)/g, ""); // ?tour, not ?tour=
   try {
     history.replaceState(null, "", location.pathname + (q ? `?${q}` : "") + location.hash);
   } catch (e) {
@@ -94,11 +75,8 @@ function focusOf(o) {
   return map;
 }
 
-function showOption(oi, reveal = false) {
+function showOption(oi) {
   selectedOption = oi;
-  const row = results.findIndex((r) => r.index === oi);
-  resultList.setSelected(row);
-  if (reveal && row >= 0) resultList.reveal(row);
   graph.select(null);
   graph.setFocus(focusOf(model.options[oi]));
   $("#legend").classList.add("focused");
@@ -110,25 +88,23 @@ function showOption(oi, reveal = false) {
 
 function showModule(m) {
   selectedOption = -1;
-  resultList.setSelected(-1);
   graph.select(m.id);
   graph.setHighlight(new Set([m.id]));
   $("#legend").classList.remove("focused");
-  $("#detail").replaceChildren(...renderModule(model, m, (oi) => showOption(oi, true)));
+  $("#detail").replaceChildren(...renderModule(model, m, showOption));
   $("#inspector").scrollTop = 0;
   markLists();
   setUrl({ module: String(model.modIndex.get(m.id)) });
 }
 
 function showStart() {
-  $("#detail").replaceChildren(...renderStart(model, (oi) => showOption(oi, true)));
+  $("#detail").replaceChildren(...renderStart(model, showOption));
   $("#inspector").scrollTop = 0;
   markLists();
 }
 
 function clearSelection() {
   selectedOption = -1;
-  resultList.setSelected(-1);
   graph.select(null);
   graph.setFocus(null);
   $("#legend").classList.remove("focused");
@@ -147,13 +123,13 @@ function load(doc, source) {
   $("#empty").classList.add("hidden");
   document.title = `optgraph: ${model.meta.host ?? "graph"}`;
   renderMeta(model, showErrorsList);
-  $("#lists").replaceChildren(...renderLists(model, (oi) => showOption(oi, true)));
+  $("#lists").replaceChildren(...renderLists(model, showOption));
   renderLegend();
   graph.setModel(model);
-  $("#search").disabled = false;
+  palette.setModel(model);
+  $("#search-trigger").disabled = false;
   selectedOption = -1;
   showStart();
-  runSearch();
   applyDeepLink();
   if (new URLSearchParams(location.search).has("tour")) startTour();
 }
@@ -171,7 +147,7 @@ function applyDeepLink() {
       $("#detail").replaceChildren(h("p", { class: "error" }, `No option ${optPath} in this graph.`));
       return;
     }
-    showOption(oi, true);
+    showOption(oi);
   } else if (modRef != null) {
     const m = /^\d+$/.test(modRef) ? model.modules[Number(modRef)] : model.modById.get(modRef);
     if (!m) {
@@ -204,27 +180,27 @@ function loadFile(file) {
   file.text().then((t) => loadText(t, file.name), (e) => showError(`${file.name}: ${e.message}`));
 }
 
-$("#search").addEventListener("input", () => requestAnimationFrame(runSearch));
+$("#search-trigger").addEventListener("click", () => palette.open());
 $("#zoom-in").addEventListener("click", () => graph.zoomBy(1.3));
 $("#zoom-out").addEventListener("click", () => graph.zoomBy(1 / 1.3));
 $("#zoom-fit").addEventListener("click", () => graph.fit());
 for (const id of ["#file-input", "#file-input-empty"]) $(id).addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
 $("#warnings-close").addEventListener("click", () => ($("#warnings-panel").hidden = true));
-// Esc: close the warnings panel, else clear the search text (when typing),
-// else clear the selection.
+
+// Keys: `/` and Ctrl+K (⌘K) open the palette (which handles its own keys);
+// Esc closes the warnings panel, else clears the selection.
+const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    const search = $("#search");
-    if (!$("#warnings-panel").hidden) $("#warnings-panel").hidden = true;
-    else if (document.activeElement === search && search.value) {
-      e.preventDefault();
-      search.value = "";
-      runSearch();
-    } else if (model) clearSelection();
-  }
-  if (e.key === "/" && document.activeElement !== $("#search")) {
+  if (palette.isOpen) return;
+  if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey) && !e.altKey) {
     e.preventDefault();
-    $("#search").focus();
+    palette.open();
+  } else if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !typing(document.activeElement)) {
+    e.preventDefault();
+    palette.open();
+  } else if (e.key === "Escape") {
+    if (!$("#warnings-panel").hidden) $("#warnings-panel").hidden = true;
+    else if (model) clearSelection();
   }
 });
 document.addEventListener("dragover", (e) => {

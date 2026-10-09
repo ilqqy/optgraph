@@ -8,7 +8,7 @@ src=$1
 out=$2
 mkdir -p "$out"
 
-app=(util data search layout vlist graph panels tour main)
+app=(util data search layout vlist graph panels palette tour main)
 
 for f in "${app[@]/#/$src/src/}"; do
   f=$f.js
