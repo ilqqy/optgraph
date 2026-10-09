@@ -219,10 +219,28 @@ document.addEventListener("drop", (e) => {
 
 for (const el of document.querySelectorAll(".ico-slot")) el.replaceWith(icon(el.dataset.icon));
 
+// The embedded fonts (OPTGRAPH_FONTS, from viewer/build.sh) are made from
+// their bytes with the FontFace API: nothing is fetched, so the CSP needs no
+// font-src. The graph measures its labels, so data loads after the fonts
+// (or after 1.5 s, falling back to the system fonts).
+function loadFonts() {
+  if (typeof OPTGRAPH_FONTS === "undefined" || !window.FontFace) return Promise.resolve();
+  const faces = OPTGRAPH_FONTS.map(([family, b64]) => {
+    try {
+      const face = new FontFace(family, Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), { weight: "400 700" });
+      document.fonts.add(face);
+      return face.load().catch(() => null);
+    } catch (e) {
+      return null;
+    }
+  });
+  return Promise.race([Promise.all(faces), new Promise((resolve) => setTimeout(resolve, 1500))]);
+}
+
 // Startup: data embedded by `optgraph --html`, else ?src=<url> (same origin
 // only, enforced by the page's Content-Security-Policy), else on a hosted
 // page ./demo.json, else the picker.
-(function start() {
+loadFonts().then(function start() {
   const embedded = $("#optgraph-data").textContent.trim();
   const placeholder = "/*OPTGRAPH_" + "DATA*/null"; // split so the embed step can't match it here
   if (embedded && embedded !== placeholder) {
@@ -243,4 +261,4 @@ for (const el of document.querySelectorAll(".ico-slot")) el.replaceWith(icon(el.
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((t) => loadText(t, "demo.json"), () => {}); // no demo: keep the drop zone
   }
-})();
+});
