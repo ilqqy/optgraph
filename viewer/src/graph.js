@@ -14,6 +14,11 @@ const CHIP_FONT = '600 11px "Geist Mono", ui-monospace, monospace';
 const CHIP_H = 20;
 const CAMERA_MS = 380;
 const FADE_MS = 180;
+// Pinned modules (the ones that define the selected option, or the selected
+// module) are drawn at least at READ_K, so their labels stay 12 px when the
+// camera zooms out; a frame zoomed out below PIN_FLOOR shows too little.
+const READ_K = 1;
+const PIN_FLOOR = 0.2;
 
 // The clock of camera moves and fades: performance.now(), unless the tour
 // drives it (then they are a function of the tour's time).
@@ -41,6 +46,7 @@ class ModuleGraph {
     this.highlight = null; // Set of module ids (a selected module), or null
     this.lit = null; // the selected module and its neighbours
     this.focus = null; // Map module id -> { status, priority, condition } (a selected option), or null
+    this.pins = null; // Set of module ids drawn at least at READ_K
     this.path = null; // Set of link indices leading to the lit modules
     this.via = null; // Set of module ids on those paths (half lit)
     this.fadeAt = -1e9;
@@ -123,37 +129,91 @@ class ModuleGraph {
     // Importers of each module, for the import paths to what is selected.
     this.parents = new Map(this.nodes.map((n) => [n.id, []]));
     this.links.forEach((l, k) => this.parents.get(l.target.id).push(k));
-    this.highlight = this.lit = this.focus = this.path = this.via = null;
+    this.highlight = this.lit = this.focus = this.pins = this.path = this.via = null;
     this.selected = null;
     this.setHover(null);
     this.fit(false);
   }
 
-  bounds(nodes) {
+  // World bounds of `nodes`, those in `pinned` scaled by s about their centre.
+  bounds(nodes, pinned = null, s = 1) {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const n of nodes) {
-      x0 = Math.min(x0, n.x);
-      y0 = Math.min(y0, n.y - n.h / 2);
-      x1 = Math.max(x1, n.x + n.w + (n.chipW ? n.chipW + 8 : 0));
-      y1 = Math.max(y1, n.y + n.h / 2);
+      const f = pinned && pinned.has(n) ? s : 1;
+      const cx = n.x + n.w / 2;
+      x0 = Math.min(x0, cx - (n.w / 2) * f);
+      y0 = Math.min(y0, n.y - (n.h / 2) * f);
+      x1 = Math.max(x1, cx + (n.w / 2 + (n.chipW ? n.chipW + 8 : 0)) * f);
+      y1 = Math.max(y1, n.y + (n.h / 2) * f);
     }
     return { x0, y0, x1, y1 };
   }
 
-  // Camera that shows `nodes`, zoomed in at most to maxK.
-  view(nodes, maxK) {
+  // Camera that shows `nodes`, zoomed in at most to maxK. Below READ_K the
+  // `pinned` ones are drawn larger, so the frame makes room for them.
+  view(nodes, maxK, pinned = []) {
     if (!nodes.length) return { ...this.t };
-    const b = this.bounds(nodes);
     const pad = Math.max(16, Math.min(56, this.width() * 0.07));
     const W = this.width() - 2 * pad;
     const top = this.reserve.top + (this.banner.hidden ? 0 : this.banner.offsetHeight + 8);
     const H = this.height() - 2 * pad - top - this.reserve.bottom;
-    const k = Math.max(0.12, Math.min(maxK, W / Math.max(1, b.x1 - b.x0), H / Math.max(1, b.y1 - b.y0)));
+    const fitK = (b) => Math.max(0.12, Math.min(maxK, W / Math.max(1, b.x1 - b.x0), H / Math.max(1, b.y1 - b.y0)));
+    let b = this.bounds(nodes);
+    let k = fitK(b);
+    const pinSet = new Set(pinned);
+    for (let i = 0; i < 3 && pinSet.size && k < READ_K; i++) {
+      b = this.bounds(nodes, pinSet, READ_K / k);
+      k = fitK(b);
+    }
     return {
       k,
       x: pad + (W - (b.x1 - b.x0) * k) / 2 - b.x0 * k,
       y: pad + top + (H - (b.y1 - b.y0) * k) / 2 - b.y0 * k,
     };
+  }
+
+  // Do the pins of `nodes` that are in view overlap at camera v?
+  pinsApart(nodes, v) {
+    const s = Math.max(v.k, READ_K); // screen pixels per world unit of a pin
+    const h = PILL_H * s;
+    const r = nodes
+      .map((n) => {
+        const cx = v.x + (n.x + n.w / 2) * v.k;
+        return { x0: cx - (n.w / 2) * s, x1: cx + (n.w / 2 + (n.chipW ? n.chipW + 8 : 0)) * s, y: v.y + n.y * v.k };
+      })
+      .filter((p) => p.x1 > 0 && p.x0 < this.width() && p.y > -h && p.y < this.height() + h)
+      .sort((a, b) => a.y - b.y);
+    for (let i = 0; i < r.length; i++) {
+      for (let j = i + 1; j < r.length && r[j].y - r[i].y < h; j++) if (r[j].x0 < r[i].x1 && r[i].x0 < r[j].x1) return false;
+    }
+    return true;
+  }
+
+  // Camera for a selection. `core` (pinned, strongest first) must stay
+  // readable: at READ_K or closer, or at PIN_FLOOR or closer with pins that
+  // do not overlap. Tries `context` (core plus its import paths), then the
+  // core alone, then as many of the core, in order, as fit.
+  frame(core, context, maxK) {
+    const ok = (v) => v.k >= READ_K || (v.k >= PIN_FLOOR && this.pinsApart(core, v));
+    for (const set of [context, core]) {
+      const v = this.view(set, maxK, core);
+      if (ok(v)) return v;
+    }
+    const shown = [core[0]];
+    let best = this.view(shown, maxK, shown);
+    for (const n of core.slice(1)) {
+      const v = this.view([...shown, n], maxK, [...shown, n]);
+      if (ok(v)) {
+        shown.push(n);
+        best = v;
+      }
+    }
+    return best;
+  }
+
+  // Scale of a pinned module at the current zoom.
+  pinScale(n) {
+    return this.pins && this.pins.has(n.id) ? Math.max(1, READ_K / this.t.k) : 1;
   }
 
   moveTo(target, animate = true) {
@@ -181,7 +241,7 @@ class ModuleGraph {
   setHighlight(ids) {
     const wasDim = this.dimming();
     this.highlight = ids && ids.size ? ids : null;
-    this.focus = this.lit = this.path = this.via = null;
+    this.focus = this.lit = this.pins = this.path = this.via = null;
     for (const n of this.nodes) n.chipW = 0;
     if (this.highlight) {
       const lit = new Set(this.highlight);
@@ -195,8 +255,10 @@ class ModuleGraph {
       });
       this.lit = lit;
       this.path = path;
+      const core = [...this.highlight].map((id) => this.byId.get(id)).filter(Boolean);
+      this.pins = new Set(core.map((n) => n.id));
       const nodes = [...lit].map((id) => this.byId.get(id)).filter(Boolean);
-      if (nodes.length) this.moveTo(this.view(nodes, 1.3));
+      if (core.length) this.moveTo(this.frame(core, nodes, 1.3));
     }
     this.startFade(wasDim);
     this.requestDraw();
@@ -209,7 +271,7 @@ class ModuleGraph {
   setFocus(map) {
     const wasDim = this.dimming();
     this.focus = map && map.size ? map : null;
-    this.highlight = this.lit = this.path = this.via = null;
+    this.highlight = this.lit = this.pins = this.path = this.via = null;
     for (const n of this.nodes) n.chipW = 0;
     if (this.focus) {
       const ctx = this.ctx;
@@ -237,9 +299,14 @@ class ModuleGraph {
       }
       this.path = path;
       this.via = done;
+      this.pins = new Set(nodes.map((n) => n.id));
       // Fit the defining modules and their importers back to the roots, so
-      // every lit edge starts at a module in view.
-      if (nodes.length) this.moveTo(this.view([...done].map((id) => this.byId.get(id)), this.width() < 600 ? 1.1 : 1.5));
+      // every lit edge starts at a module in view, while that keeps them
+      // readable; else frame() falls back to them alone, winners first.
+      const rank = (n) => RING_RANK[this.focus.get(n.id).status];
+      const prio = (n) => this.focus.get(n.id).priority ?? Infinity;
+      nodes.sort((a, b) => rank(b) - rank(a) || prio(a) - prio(b));
+      if (nodes.length) this.moveTo(this.frame(nodes, [...done].map((id) => this.byId.get(id)), this.width() < 600 ? 1.1 : 1.5));
     }
     this.startFade(wasDim);
     this.requestDraw();
@@ -368,9 +435,10 @@ class ModuleGraph {
       this.drawPill(n, showText, px, !dimming ? null : this.via && this.via.has(n.id) ? "via" : "dim", f);
     }
     ctx.globalAlpha = 1;
-    for (const n of lit) this.drawPill(n, true, px);
-    for (const n of lit) this.drawStatus(n, px);
-    if (this.selected && !this.focus) this.drawRing(this.selected, colors.accent, 2 * Math.max(px, 0.9), px);
+    for (const n of lit) this.pinned(n, (s) => this.drawPill(n, true, px / s));
+    for (const n of lit) this.pinned(n, (s) => this.drawStatus(n, px / s, s));
+    const sel = this.selected;
+    if (sel && !this.focus) this.pinned(sel, (s) => this.drawRing(sel, colors.accent, (2 * Math.max(px, 0.9)) / s, px / s));
     ctx.restore();
     if (moving && !ui.frozen) this.requestDraw();
   }
@@ -413,6 +481,20 @@ class ModuleGraph {
     ctx.globalAlpha = 1;
   }
 
+  // Draws with a pinned module scaled about its centre (pinScale).
+  pinned(n, draw) {
+    const s = this.pinScale(n);
+    if (s === 1) return draw(1);
+    const { ctx } = this;
+    const cx = n.x + n.w / 2;
+    ctx.save();
+    ctx.translate(cx, n.y);
+    ctx.scale(s, s);
+    ctx.translate(-cx, -n.y);
+    draw(s);
+    ctx.restore();
+  }
+
   drawRing(n, color, width, px, dash) {
     const { ctx } = this;
     const o = 3.5 * px + width / 2;
@@ -428,18 +510,18 @@ class ModuleGraph {
   // Ring and trailing priority chip of a module that defines the selected
   // option. Winner: solid ring with a glow and a filled "✓" chip; lost: thin
   // ring, outlined chip; off: dashed ring and chip. Shape and text differ,
-  // not only the colour.
-  drawStatus(n, px) {
+  // not only the colour. s: the pin's scale.
+  drawStatus(n, px, s = 1) {
     const f = this.focus && this.focus.get(n.id);
     if (!f) return;
     const { ctx, colors } = this;
     ctx.globalAlpha = this.fade;
     const color = f.status === "unknown" ? colors.err : colors[f.status];
-    const lw = Math.max(px, 0.9);
+    const lw = Math.max(px, 0.9 / s);
     if (f.status === "win") {
       ctx.save();
       ctx.shadowColor = color;
-      ctx.shadowBlur = 14 * this.t.k;
+      ctx.shadowBlur = 14 * this.t.k * s;
       this.drawRing(n, color, 2 * lw, px);
       ctx.restore();
     } else this.drawRing(n, color, 1.5 * lw, px, f.status === "off" ? [4 * px, 3 * px] : null);
@@ -473,20 +555,27 @@ class ModuleGraph {
     if (!n) return null;
     const c = this.canvas.getBoundingClientRect();
     const { t } = this;
-    return { x: c.left + t.x + n.x * t.k, y: c.top + t.y + (n.y - n.h / 2) * t.k, w: n.w * t.k, h: n.h * t.k, chipW: n.chipW * t.k };
+    const k = t.k * this.pinScale(n);
+    const cx = c.left + t.x + (n.x + n.w / 2) * t.k;
+    return { x: cx - (n.w / 2) * k, y: c.top + t.y + n.y * t.k - (n.h / 2) * k, w: n.w * k, h: n.h * k, chipW: n.chipW * k };
   }
 
   toWorld(px, py) {
     return [(px - this.t.x) / this.t.k, (py - this.t.y) / this.t.k];
   }
 
+  // Pins first: they are drawn on top.
   nodeAt(px, py) {
     const [x, y] = this.toWorld(px, py);
-    const slack = 3 / this.t.k;
-    for (let i = this.nodes.length - 1; i >= 0; i--) {
-      const n = this.nodes[i];
-      if (x >= n.x - slack && x <= n.x + n.w + slack && Math.abs(y - n.y) <= n.h / 2 + slack) return n;
+    const hit = (n, s) => {
+      const slack = 3 / this.t.k;
+      return Math.abs(x - (n.x + n.w / 2)) <= (n.w / 2) * s + slack && Math.abs(y - n.y) <= (n.h / 2) * s + slack;
+    };
+    for (const id of this.pins || []) {
+      const n = this.byId.get(id);
+      if (n && hit(n, this.pinScale(n))) return n;
     }
+    for (let i = this.nodes.length - 1; i >= 0; i--) if (hit(this.nodes[i], 1)) return this.nodes[i];
     return null;
   }
 
