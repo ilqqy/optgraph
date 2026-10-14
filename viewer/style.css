@@ -57,6 +57,7 @@
   --o-input: #0c7d70;
   --o-nixpkgs: #626a79;
   --o-unknown: #956600;
+  --dim-text: #7d8594; /* labels of receded graph modules: >= 3:1 on --bg */
   --edge: #c2c8d3;
   --grid: rgba(20, 30, 60, .1);
   --scrim: rgba(18, 22, 32, .32);
@@ -92,6 +93,7 @@
     --o-input: #34cdb8;
     --o-nixpkgs: #8790a3;
     --o-unknown: #e6c46e;
+    --dim-text: #5f6778;
     --edge: #2f3748;
     --grid: rgba(255, 255, 255, .065);
     --scrim: rgba(3, 5, 9, .62);
