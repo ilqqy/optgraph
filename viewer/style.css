@@ -426,6 +426,27 @@ button.mpill:hover { border-color: var(--accent); background: var(--accent-soft)
 .card.s-off, .card.s-unknown { border-style: dashed; background: var(--s1); box-shadow: none; }
 .card.s-off .num, .card.s-unknown .num { border-style: dashed; background: var(--s1); color: var(--text-3); }
 .card.is-default:not(.s-win) { border-style: dashed; background: var(--s1); box-shadow: none; }
+/* Several winners: one-line rows (badge, module, origin, preview) that
+   expand to the full card. */
+.card.compact:not(.open) {
+  align-items: center; padding-top: 8px; padding-bottom: 8px;
+  background: linear-gradient(90deg, var(--win-soft), var(--s2) 60%), var(--s2); box-shadow: var(--shadow-1);
+}
+.card.compact:not(.open) .num { min-width: 42px; height: 24px; font-size: var(--fs-md); }
+.card.compact:not(.open) .prio { gap: 1px; padding-top: 0; }
+.card.compact .body, .card.compact.open .summary { display: none; }
+.card.compact.open .body { display: block; }
+.summary { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px 0; border-radius: var(--r-md); cursor: pointer; }
+.summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.summary .mpill { flex: none; max-width: 42%; }
+.summary .chip, .summary .mini { flex: none; }
+.summary .preview { flex: 1; min-width: 0; overflow: hidden; color: var(--text-2); font: var(--fs-sm) var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.summary .preview.none { color: var(--text-3); font-family: var(--font-ui); }
+.summary .chev { flex: none; color: var(--text-3); transition: color var(--dur) var(--ease); }
+.summary:hover .chev { color: var(--text); }
+.card.compact:not(.open):hover { border-color: color-mix(in srgb, var(--win) 80%, transparent); }
+.collapse { width: 24px; height: 24px; margin: -2px -4px -2px 0; }
+.collapse .ico svg { transform: rotate(180deg); }
 .facts {
   display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 12px; margin: var(--sp-6) 0 0; padding-top: var(--sp-4);
   border-top: 1px solid var(--line); font-size: var(--fs-sm);
@@ -614,6 +635,9 @@ body.dragging #empty .drop, body.dragging #stage { outline: 2px dashed var(--acc
   .card { grid-template-columns: 60px minmax(0, 1fr); padding-right: 12px; }
   .ladder::before { left: 30px; }
   .card .nm { font-size: 10px; }
+  .summary { flex-wrap: wrap; row-gap: 6px; }
+  .summary .chev { margin-left: auto; }
+  .summary .preview { order: 5; flex-basis: 100%; }
   .status-chip.ok:not(button) { display: none; }
   .palette-foot > span:not(#palette-count) { display: none; }
   .card .num { min-width: 42px; font-size: var(--fs-md); }

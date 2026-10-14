@@ -237,30 +237,66 @@ function renderOption(model, oi, onModule, onCopyLink) {
     const who = isDefault
       ? h("span", { class: "mpill def", title: file ? shortPath(file) : "option default" }, icon("diamond"), "option default")
       : mod
-        ? h("button", { type: "button", class: "mpill", title: `${moduleLabel(mod)}: show what this module sets`, onclick: () => onModule(mod) }, originDot(mod.origin), moduleShortLabel(mod))
+        ? h("button", { type: "button", class: "mpill", title: `${moduleLabel(mod)}: show what this module sets` }, originDot(mod.origin), moduleShortLabel(mod))
         : h("span", { class: "mpill" }, baseName(file));
+    const noValue = !d.active ? "not evaluated: switched off" : d.priority == null ? "value threw (see the error)" : "no preview";
     const value =
       d.valuePreview == null
-        ? h("div", { class: "novalue" }, !d.active ? "not evaluated: switched off" : d.priority == null ? "value threw (see the error)" : "no preview")
+        ? h("div", { class: "novalue" }, noValue)
         : h("div", { class: `code${d.valuePreview === "<redacted>" ? " redacted" : ""}` }, h("pre", {}, d.valuePreview), copyButton(() => d.valuePreview, "Copy value"));
-    return h(
+    // Several winners (a merged list or attribute set): each is a one-line
+    // row that expands to the full card (click, Enter or Space).
+    const compact = multi && r.status === "win";
+    const toggle = (li, open) => {
+      li.classList.toggle("open", open);
+      li.querySelector(".summary").setAttribute("aria-expanded", String(open));
+      if (open) li.querySelector(".collapse").focus({ preventScroll: true });
+      else li.querySelector(".summary").focus({ preventScroll: true });
+    };
+    const li = h(
       "li",
-      { class: `card s-${r.status}${isDefault ? " is-default" : ""}`, style: `--i:${Math.min(k, 6)}` },
+      { class: `card s-${r.status}${isDefault ? " is-default" : ""}${compact ? " compact" : ""}`, style: `--i:${Math.min(k, 6)}` },
       h(
         "div",
         { class: "prio", title: "override priority: lower wins" },
         h("span", { class: "num" }, d.priority == null ? "—" : String(d.priority)),
         h("span", { class: "nm" }, d.priority == null ? (d.active ? "unknown" : "off") : prioName(d.priority)),
       ),
+      compact
+        ? h(
+            "div",
+            {
+              class: "summary",
+              role: "button",
+              tabindex: "0",
+              "aria-expanded": "false",
+              title: "Show the whole definition",
+              onclick: (e) => toggle(e.currentTarget.closest("li"), true),
+              onkeydown: (e) => {
+                if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+                e.preventDefault();
+                toggle(e.currentTarget.closest("li"), true);
+              },
+            },
+            who,
+            chip(mod ? mod.origin : "unknown"),
+            h("span", { class: "mini st-win", title: "Winner", "aria-label": "Winner" }, icon("check")),
+            h("span", { class: `preview${d.valuePreview == null ? " none" : ""}` }, d.valuePreview == null ? noValue : d.valuePreview.replace(/\s+/g, " ")),
+            icon("chevron", "chev"),
+          )
+        : null,
       h(
         "div",
         { class: "body" },
         h(
           "div",
           { class: "head" },
-          who,
+          who.cloneNode(true),
           isDefault ? null : chip(mod ? mod.origin : "unknown"),
           h("span", { class: `status st-${r.status}` }, icon(ico), label),
+          compact
+            ? h("button", { type: "button", class: "icon-btn collapse", title: "Collapse", "aria-label": "Collapse", onclick: (e) => toggle(e.currentTarget.closest("li"), false) }, icon("chevron"))
+            : null,
         ),
         !isDefault && mod && file && file !== mod.file ? h("div", { class: "where" }, "file ", shortPath(file)) : null,
         isDefault && file ? h("div", { class: "where", title: shortPath(file) }, "declared in ", tailPath(file)) : null,
@@ -268,6 +304,14 @@ function renderOption(model, oi, onModule, onCopyLink) {
         h("div", { class: "reason" }, r.reason),
       ),
     );
+    // The module pill keeps opening the module, in the row and in the card.
+    for (const pill of li.querySelectorAll("button.mpill")) {
+      pill.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onModule(mod);
+      });
+    }
+    return li;
   });
 
   const facts = [
