@@ -72,6 +72,7 @@ class ModuleGraph {
       text: v("--text"),
       text2: v("--text-2"),
       text3: v("--text-3"),
+      dimText: v("--dim-text"),
       accent: v("--accent"),
       s1: v("--s1"),
       s2: v("--s2"),
@@ -236,7 +237,9 @@ class ModuleGraph {
       }
       this.path = path;
       this.via = done;
-      if (nodes.length) this.moveTo(this.view(nodes, this.width() < 600 ? 1.1 : 1.5));
+      // Fit the defining modules and their importers back to the roots, so
+      // every lit edge starts at a module in view.
+      if (nodes.length) this.moveTo(this.view([...done].map((id) => this.byId.get(id)), this.width() < 600 ? 1.1 : 1.5));
     }
     this.startFade(wasDim);
     this.requestDraw();
@@ -313,8 +316,8 @@ class ModuleGraph {
     ctx.clearRect(0, 0, this.width(), this.height());
 
     const dimming = this.dimming();
-    const dimA = 1 - 0.8 * (dimming ? this.fade : 0);
-    const viaA = 1 - 0.45 * (dimming ? this.fade : 0);
+    const f = dimming ? this.fade : 0;
+    const dimA = 1 - 0.7 * f; // edges off the lit paths
     ctx.save();
     ctx.translate(t.x, t.y);
     ctx.scale(t.k, t.k);
@@ -362,8 +365,7 @@ class ModuleGraph {
         lit.push(n);
         continue;
       }
-      ctx.globalAlpha = !dimming ? 1 : this.via && this.via.has(n.id) ? viaA : dimA;
-      this.drawPill(n, showText, px);
+      this.drawPill(n, showText, px, !dimming ? null : this.via && this.via.has(n.id) ? "via" : "dim", f);
     }
     ctx.globalAlpha = 1;
     for (const n of lit) this.drawPill(n, true, px);
@@ -373,9 +375,14 @@ class ModuleGraph {
     if (moving && !ui.frozen) this.requestDraw();
   }
 
-  drawPill(n, showText, px) {
+  // A pill. While something is selected the rest recede: "dim" pills fade
+  // their shape to 40 % and turn their label to --dim-text (at least 3:1 on
+  // the canvas, so still legible); "via" pills (importers on the lit paths)
+  // keep 75 % and a --text-2 label. f is the fade's progress.
+  drawPill(n, showText, px, tier, f = 1) {
     const { ctx, colors } = this;
     const hover = n === this.hover;
+    ctx.globalAlpha = tier === "dim" ? 1 - 0.6 * f : tier === "via" ? 1 - 0.25 * f : 1;
     ctx.beginPath();
     ctx.roundRect(n.x, n.y - n.h / 2, n.w, n.h, n.h / 2);
     ctx.fillStyle = hover ? colors.s3 : colors.s2;
@@ -386,11 +393,24 @@ class ModuleGraph {
     ctx.stroke();
     ctx.setLineDash([]);
     originMark(ctx, n.cls, n.x + 15, n.y, colors[n.cls], px);
-    if (!showText) return;
-    ctx.font = PILL_FONT;
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = n.m.disabled ? colors.text3 : n.cls === "nixpkgs" ? colors.text2 : colors.text;
-    ctx.fillText(n.label, n.x + 25, n.y + 0.5);
+    if (showText) {
+      ctx.font = PILL_FONT;
+      ctx.textBaseline = "middle";
+      const own = n.m.disabled ? colors.text3 : n.cls === "nixpkgs" ? colors.text2 : colors.text;
+      const label = (color, alpha) => {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        ctx.fillText(n.label, n.x + 25, n.y + 0.5);
+      };
+      if (!tier) label(own, 1);
+      else {
+        // Cross-fade from the label's own colour to the receded one.
+        const to = tier === "dim" ? colors.dimText : colors.text2;
+        if (f < 1) label(own, 1 - f);
+        label(to, f);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   drawRing(n, color, width, px, dash) {
