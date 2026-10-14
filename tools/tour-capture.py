@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""tools/tour-capture.py SITE_DIR FRAMES_DIR [--fps N] [--width W] [--height H]
+"""tools/tour-capture.py SITE_DIR FRAMES_DIR [--fps N] [--width W] [--height H] [--scale S]
 
 Serves SITE_DIR (the viewer's index.html and demo.json) on 127.0.0.1 and,
 in one headless Chromium driven over the DevTools protocol, opens
 ?tour&t=<ms> for every frame of the viewer's tour and writes
-FRAMES_DIR/NNNN.png. Dark colour scheme, device scale factor 1. Fails on any
-console error, uncaught exception or browser log error.
+FRAMES_DIR/NNNN.png. Dark colour scheme; W x H CSS pixels at device scale
+factor S (default 1), so the PNGs are S times as large with the same layout.
+Fails on any console error, uncaught exception or browser log error.
 
 Standard library only; CHROMIUM selects the browser (default: chromium).
 The protocol runs over --remote-debugging-pipe (fds 3 and 4, NUL-delimited
@@ -160,6 +161,7 @@ def main():
     ap.add_argument("--fps", type=int, default=15)
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=720)
+    ap.add_argument("--scale", type=float, default=1, help="device scale factor")
     ap.add_argument("--only", help="comma-separated times in ms instead of the whole tour")
     a = ap.parse_args()
 
@@ -180,7 +182,7 @@ def main():
             browser.call(m, session=s)
         browser.call(
             "Emulation.setDeviceMetricsOverride",
-            {"width": a.width, "height": a.height, "deviceScaleFactor": 1, "mobile": False},
+            {"width": a.width, "height": a.height, "deviceScaleFactor": a.scale, "mobile": False},
             s,
         )
         browser.call(
