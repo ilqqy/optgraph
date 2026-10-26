@@ -715,7 +715,7 @@ impl OptgraphView {
                 .bg(t.s2)
                 .child(gradient_layer(linear_gradient(
                     90.,
-                    linear_color_stop(t.win_soft, 0.),
+                    linear_color_stop(crate::theme::over(t.s2, t.win_soft), 0.),
                     linear_color_stop(t.s2, 0.6),
                 )))
                 .shadow(shadow_1(t)),
@@ -726,7 +726,7 @@ impl OptgraphView {
                 .bg(t.s2)
                 .child(gradient_layer(linear_gradient(
                     180.,
-                    linear_color_stop(t.win_soft, 0.),
+                    linear_color_stop(crate::theme::over(t.s2, t.win_soft), 0.),
                     linear_color_stop(t.s2, 0.8),
                 )))
                 .shadow(vec![gpui::BoxShadow {

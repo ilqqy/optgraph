@@ -51,8 +51,10 @@ cleanup() {
 trap cleanup EXIT
 
 # A private runtime dir: the compositor's socket can't clash with a live
-# session, and the app can't reach it either.
+# session, and the app can't reach it either. No session D-Bus either, so
+# portals (file dialogs, the colour scheme) of a live desktop stay out.
 export XDG_RUNTIME_DIR=$run
+export DBUS_SESSION_BUS_ADDRESS=unix:path=$run/no-bus
 unset WAYLAND_DISPLAY DISPLAY
 export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_HEADLESS_OUTPUTS=1 WLR_LIBINPUT_NO_DEVICES=1
 export VK_DRIVER_FILES=$OPTGRAPH_LAVAPIPE_ICD VK_ICD_FILENAMES=$OPTGRAPH_LAVAPIPE_ICD

@@ -7,6 +7,7 @@ mod assets;
 mod graph;
 mod input;
 mod inspector;
+mod loading;
 mod palette;
 mod sidebar;
 mod stage;
@@ -31,7 +32,10 @@ from stdin.
 
   --opt <path>      select an option, e.g. networking.firewall.enable
   --module <index>  select a module by its index in graph.json's modules
-  --light, --dark   colour scheme (default: dark)";
+  --light, --dark   colour scheme (default: follow the system's)
+
+Keys: / or Ctrl+K search, arrows walk the lists, Enter opens, Esc clears,
+Ctrl+O opens a graph.json (or drop one on the window).";
 
 struct Args {
     source: Option<PathBuf>,
@@ -132,6 +136,7 @@ fn main() -> ExitCode {
             let bounds = Bounds::centered(None, size(px(1440.), px(900.)), cx);
             let opt = args.opt.clone();
             let module = args.module;
+            let scheme = args.scheme;
             let window = cx
                 .open_window(
                     WindowOptions {
@@ -156,6 +161,10 @@ fn main() -> ExitCode {
             window
                 .update(cx, |view, window, cx| {
                     window.focus(&view.focus_handle(cx), cx);
+                    if let Some(m) = scheme {
+                        view.scheme = loading::Scheme::Pinned(m);
+                    }
+                    view.watch_appearance(window, cx);
                     if let Some(p) = &opt {
                         view.select_option_path(p, cx);
                     } else if let Some(i) = module {
