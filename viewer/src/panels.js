@@ -173,7 +173,10 @@ function renderOption(model, oi, onModule, onCopyLink) {
   const o = model.options[oi];
   const rows = ladder(model, o);
   const omittedN = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
-  const multi = o.winners.length > 1;
+  // Omitted nixpkgs winners count as winners; when every winner is one of
+  // them, `winners` is empty.
+  const hidden = hiddenWinners(o);
+  const multi = o.winners.length + hidden > 1;
   const losers = rows.filter((r) => r.status === "lose").length;
   const offs = rows.filter((r) => r.status === "off").length;
   const winner = o.winners.length === 1 ? o.definitions[o.winners[0]] : null;
@@ -188,7 +191,18 @@ function renderOption(model, oi, onModule, onCopyLink) {
 
   let verdict;
   if (o.highestPrio == null) verdict = h("p", { class: "verdict" }, "No known winner: ", o.error ? "an active definition could not be read." : "nothing active defines it.");
+  else if (!o.winners.length && hidden)
+    verdict = h(
+      "p",
+      { class: "verdict" },
+      h("b", {}, plural(hidden, "nixpkgs definition")),
+      " win at priority ",
+      h("code", { class: "t-win" }, String(o.highestPrio)),
+      " (not listed)",
+      losers ? `, over ${plural(losers, "weaker definition")}.` : ".",
+    );
   else if (multi) verdict = null;
+  else if (!winner) verdict = h("p", { class: "verdict" }, "No winner is listed.");
   else if (winner.kind === "default")
     verdict = h(
       "p",
@@ -208,7 +222,8 @@ function renderOption(model, oi, onModule, onCopyLink) {
       losers ? `, over ${plural(losers, "weaker definition")}.` : ".",
     );
 
-  const merged = multi
+  const showMerged = multi && o.winners.length > 0;
+  const merged = showMerged
     ? h(
         "div",
         { class: "merged" },
@@ -216,12 +231,17 @@ function renderOption(model, oi, onModule, onCopyLink) {
         h(
           "div",
           {},
-          h("div", { class: "merged-title" }, `Merged from ${plural(new Set(o.winners.map((i) => o.definitions[i].module ?? "default")).size, "module")}`),
+          h(
+            "div",
+            { class: "merged-title" },
+            `Merged from ${plural(new Set(o.winners.map((i) => o.definitions[i].module ?? "default")).size, "module")}`,
+            hidden ? ` and ${plural(hidden, "nixpkgs definition")}` : "",
+          ),
           h(
             "div",
             { class: "merged-sub" },
             `Every active definition at priority ${o.highestPrio} (${prioName(o.highestPrio)}) is a winner; the values are merged.`,
-            o.omitted.nixpkgsActive ? ` Plus ${plural(o.omitted.nixpkgsActive, "nixpkgs definition")} not listed.` : "",
+            hidden ? " The nixpkgs ones are not listed." : "",
           ),
         ),
         h("div", { class: "merged-dots", "aria-hidden": "true" }, ...o.winners.slice(0, 8).map((i) => originDot(defOrigin(model, o.definitions[i])))),

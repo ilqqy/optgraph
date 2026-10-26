@@ -181,12 +181,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 4 others at priority 100 (4 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by hardware-configuration.nix: 100 < 1500"
+     "beaten by 5 definitions at 100 (4 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -241,12 +241,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 6 others at priority 100 (6 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by hardware-configuration.nix: 100 < 1500"
+     "beaten by 7 definitions at 100 (6 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -261,12 +261,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 7 others at priority 100 (7 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by boot.nix: 100 < 1500"
+     "beaten by 8 definitions at 100 (7 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -521,12 +521,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 13 others at priority 100 (13 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by hyprland.nix: 100 < 1500"
+     "beaten by 14 definitions at 100 (13 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -541,7 +541,7 @@
     [
      0,
      "win",
-     "the only active definition"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ]
    ]
   },
@@ -558,37 +558,37 @@
     [
      0,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      1,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      3,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      4,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      5,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      6,
      "win",
-     "merged with 5 others at priority 100"
+     "merged with 74 others at priority 100 (69 nixpkgs, not listed)"
     ],
     [
      7,
      "lose",
-     "beaten by 6 definitions at 100: 100 < 1500"
+     "beaten by 75 definitions at 100 (69 nixpkgs, not listed): 100 < 1500"
     ],
     [
      2,
@@ -688,12 +688,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by fonts.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -768,12 +768,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by desktop.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -788,12 +788,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by gaming.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -993,17 +993,17 @@
     [
      0,
      "win",
-     "merged with 1 other at priority 100"
+     "merged with 4 others at priority 100 (3 nixpkgs, not listed)"
     ],
     [
      1,
      "win",
-     "merged with 1 other at priority 100"
+     "merged with 4 others at priority 100 (3 nixpkgs, not listed)"
     ],
     [
      2,
      "lose",
-     "beaten by 2 definitions at 100: 100 < 1500"
+     "beaten by 5 definitions at 100 (3 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1273,12 +1273,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 7 others at priority 100 (7 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by hardening.nix: 100 < 1500"
+     "beaten by 8 definitions at 100 (7 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1504,7 +1504,7 @@
     [
      0,
      "win",
-     "the only active definition"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ]
    ]
   },
@@ -1539,12 +1539,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by hyprland.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1644,12 +1644,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by gaming.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1853,12 +1853,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 1 other at priority 100 (1 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by power.nix: 100 < 1500"
+     "beaten by 2 definitions at 100 (1 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1873,12 +1873,12 @@
     [
      0,
      "win",
-     "beats the default: 100 < 1500"
+     "merged with 2 others at priority 100 (2 nixpkgs, not listed)"
     ],
     [
      1,
      "lose",
-     "beaten by desktop.nix: 100 < 1500"
+     "beaten by 3 definitions at 100 (2 nixpkgs, not listed): 100 < 1500"
     ]
    ]
   },
@@ -1980,17 +1980,17 @@
     [
      0,
      "win",
-     "merged with 1 other at priority 100"
+     "merged with 18 others at priority 100 (17 nixpkgs, not listed)"
     ],
     [
      2,
      "win",
-     "merged with 1 other at priority 100"
+     "merged with 18 others at priority 100 (17 nixpkgs, not listed)"
     ],
     [
      3,
      "lose",
-     "beaten by 2 definitions at 100: 100 < 1500"
+     "beaten by 19 definitions at 100 (17 nixpkgs, not listed): 100 < 1500"
     ],
     [
      1,

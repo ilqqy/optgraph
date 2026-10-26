@@ -51,12 +51,26 @@ fn graph() -> String {
          {{ "kind": "definition", "module": "{S}/a.nix", "priority": null, "active": false, "condition": "mkIf-false", "valuePreview": null }}
        ],
        "winners": [0], "highestPrio": 50, "omitted": {{ "nixpkgsActive": 0, "nixpkgsInactive": 0 }}, "error": null }},
+    {{ "path": "x.zlist", "loc": ["x", "zlist"], "declaredIn": [], "type": "list of string",
+       "definitions": [
+         {{ "kind": "definition", "module": "{S}/a.nix", "priority": 1000, "active": true, "condition": null, "valuePreview": "[ \"a\" ]" }},
+         {{ "kind": "default", "file": null, "module": null, "priority": 1500, "active": true, "condition": null, "valuePreview": "[ ]" }}
+       ],
+       "winners": [], "highestPrio": 100,
+       "omitted": {{ "nixpkgsActive": 4, "nixpkgsInactive": 7, "nixpkgsWinners": 3 }}, "error": null }},
     {{ "path": "x.zmerged", "loc": ["x", "zmerged"], "declaredIn": [], "type": "attribute set",
        "definitions": [
          {{ "kind": "definition", "module": "{S}/a.nix", "priority": null, "active": false, "condition": "mkIf-false", "valuePreview": null }},
          {{ "kind": "default", "file": null, "module": null, "priority": 1500, "active": true, "condition": null, "valuePreview": "{{ }}" }}
        ],
-       "winners": [], "highestPrio": 100, "omitted": {{ "nixpkgsActive": 11, "nixpkgsInactive": 95 }}, "error": null }}
+       "winners": [], "highestPrio": 100, "omitted": {{ "nixpkgsActive": 11, "nixpkgsInactive": 95 }}, "error": null }},
+    {{ "path": "x.zmix", "loc": ["x", "zmix"], "declaredIn": [], "type": "list of string",
+       "definitions": [
+         {{ "kind": "definition", "module": "{S}/a.nix", "priority": 100, "active": true, "condition": null, "valuePreview": "[ \"a\" ]" }},
+         {{ "kind": "definition", "module": ":anon-12", "priority": 1000, "active": true, "condition": null, "valuePreview": "[ \"b\" ]" }}
+       ],
+       "winners": [0], "highestPrio": 100,
+       "omitted": {{ "nixpkgsActive": 2, "nixpkgsInactive": 0, "nixpkgsWinners": 2 }}, "error": null }}
   ],
   "futureField": true
 }}"#
@@ -177,21 +191,83 @@ fn meta_and_bad_documents() {
     assert!(load::from_path(std::path::Path::new("/nonexistent/graph.json")).is_err());
 }
 
+fn ladder_of(m: &Model, path: &str) -> Vec<(usize, Status, String)> {
+    let oi = m.option_index(path).unwrap();
+    m.ladder(oi).into_iter().map(|r| (r.def, r.status, r.reason)).collect()
+}
+
 #[test]
 fn winners_all_omitted() {
-    // Seen in a real configuration: every winner is a nixpkgs definition
-    // counted in `omitted`, so `winners` is empty while highestPrio is set.
+    // Every winner is a nixpkgs definition counted in `omitted`: `winners`
+    // is empty, `nixpkgsWinners` says how many win at highestPrio.
+    let m = model();
+    let oi = m.option_index("x.zlist").unwrap();
+    let o = &m.options()[oi];
+    assert_eq!((o.hidden_winners(), o.winner_count()), (3, 3));
+    assert_eq!(
+        ladder_of(&m, "x.zlist"),
+        vec![
+            (
+                0,
+                Status::Lose,
+                "beaten by 3 nixpkgs definitions at 100 (not listed): 100 < 1000".into()
+            ),
+            (
+                1,
+                Status::Lose,
+                "beaten by 3 nixpkgs definitions at 100 (not listed): 100 < 1500".into()
+            ),
+        ]
+    );
+    // The user's mkDefault lost to nixpkgs: an override.
+    let info = &m.analysis.info[oi];
+    assert!(info.override_);
+    assert!(!info.user_vs_user);
+    assert_eq!(
+        info.beats.as_ref().unwrap().by_module(),
+        "normal in nixpkgs (3 not listed) beats mkDefault in a.nix"
+    );
+}
+
+#[test]
+fn listed_and_omitted_winners() {
+    // One listed winner merged with omitted nixpkgs ones.
+    let m = model();
+    assert_eq!(
+        ladder_of(&m, "x.zmix"),
+        vec![
+            (
+                0,
+                Status::Win,
+                "merged with 2 others at priority 100 (2 nixpkgs, not listed)".into()
+            ),
+            (
+                1,
+                Status::Lose,
+                "beaten by 3 definitions at 100 (2 nixpkgs, not listed): 100 < 1000".into()
+            ),
+        ]
+    );
+    let oi = m.option_index("x.zmix").unwrap();
+    assert_eq!(
+        m.analysis.info[oi].beats.as_ref().unwrap().by_module(),
+        "normal in a.nix beats mkDefault in inline #3"
+    );
+}
+
+#[test]
+fn winners_not_listed_in_an_older_graph() {
+    // Before omitted.nixpkgsWinners: `winners` empty while highestPrio is
+    // set, and nothing says who wins.
     let m = model();
     let oi = m.option_index("x.zmerged").unwrap();
-    let rows = m.ladder(oi);
-    let def = rows
-        .iter()
-        .find(|r| m.options()[oi].definitions[r.def].is_default())
-        .unwrap();
-    assert_eq!(def.status, Status::Lose);
+    assert_eq!(m.options()[oi].omitted.nixpkgs_winners, 0);
     assert_eq!(
-        def.reason,
-        "beaten by nixpkgs definitions at 100 (not listed): 100 < 1500"
+        ladder_of(&m, "x.zmerged"),
+        vec![
+            (1, Status::Unknown, "the winners are not listed".into()),
+            (0, Status::Off, "switched off: its mkIf condition is false".into()),
+        ]
     );
     assert!(!m.analysis.info[oi].override_);
 }

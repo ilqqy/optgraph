@@ -8,10 +8,10 @@ use crate::model::{Condition, Definition, Graph, Module, OptionEntry, Origin};
 use crate::text::{base_name, plural, prio_name};
 
 /// Per-option facts for the lists and the start summary.
-///   override: a listed definition lost: active, known priority, not a winner.
+///   override: a listed definition lost: active, known priority, not a winner,
+///     to a listed winner or to omitted nixpkgs winners (`nixpkgsWinners`).
 ///     The option default losing does not count (that is just setting an
-///     option), and neither can omitted nixpkgs definitions: `omitted` does
-///     not say whether they won or lost.
+///     option), and neither do omitted nixpkgs definitions that lose.
 ///   user_vs_user: winner and strongest loser both come from non-nixpkgs modules.
 ///   off: indices of mkIf-false definitions from non-nixpkgs modules.
 #[derive(Debug, Clone, Default)]
@@ -315,15 +315,17 @@ impl Model {
                 loser = Some(d);
             }
         }
-        let (Some(loser), Some(&w)) = (loser, o.winners.first()) else {
+        let hidden = o.hidden_winners();
+        let winner = o.winners.first().map(|&w| &o.definitions[w]);
+        // No known winner (none listed, none omitted): no override.
+        let Some(loser) = loser.filter(|_| winner.is_some() || hidden > 0) else {
             return OptionInfo {
                 has_user,
                 off,
                 ..Default::default()
             };
         };
-        let winner = &o.definitions[w];
-        let wo = self.def_origin(winner);
+        let wo = winner.map_or_else(|| "nixpkgs".into(), |w| self.def_origin(w));
         let lo = self.def_origin(loser);
         OptionInfo {
             has_user,
@@ -331,7 +333,7 @@ impl Model {
             user_vs_user: wo != "nixpkgs" && lo != "nixpkgs",
             beats: Some(Beats {
                 win: prio_name(o.highest_prio),
-                win_who: self.def_who(winner),
+                win_who: winner.map_or_else(|| format!("nixpkgs ({hidden} not listed)"), |w| self.def_who(w)),
                 win_origin: wo,
                 lose: prio_name(loser.priority),
                 lose_who: self.def_who(loser),
@@ -345,7 +347,9 @@ impl Model {
     /// first, unknown last, then listing order), each with a status and a
     /// one-line reason computed from the data:
     ///   win   "beats dev-tools.nix: 50 < 1000", "merged with 5 others at priority 100"
-    ///   lose  "beaten by hardening.nix: 50 < 1000"
+    ///   lose  "beaten by hardening.nix: 50 < 1000",
+    ///         "beaten by 3 nixpkgs definitions at 100 (not listed): 100 < 1000"
+    /// Omitted nixpkgs winners (`nixpkgsWinners`) count as winners here.
     ///   off   "switched off: its mkIf condition is false"
     ///   unknown (priority unknown, or no known winner)
     pub fn ladder(&self, oi: usize) -> Vec<LadderRow> {
@@ -362,16 +366,23 @@ impl Model {
                 _ => Some(d),
             });
         let first_winner = o.winners.first().map(|&w| &o.definitions[w]);
+        let hidden = o.hidden_winners();
+        let win_count = o.winner_count();
+        let not_listed = if hidden > 0 {
+            format!(" ({hidden} nixpkgs, not listed)")
+        } else {
+            String::new()
+        };
         let mut rows: Vec<LadderRow> = o
             .definitions
             .iter()
             .enumerate()
             .map(|(i, d)| {
                 let (status, reason) = if o.is_winner(i) {
-                    let reason = if o.winners.len() > 1 {
+                    let reason = if win_count > 1 {
                         format!(
-                            "merged with {} at priority {hp_s}",
-                            plural(o.winners.len() as u64 - 1, "other", None)
+                            "merged with {} at priority {hp_s}{not_listed}",
+                            plural(win_count - 1, "other", None)
                         )
                     } else if let Some(l) = strongest_loser {
                         format!("beats {}: {hp_s} < {}", self.def_who(l), l.priority.unwrap_or_default())
@@ -392,14 +403,18 @@ impl Model {
                     (Status::Unknown, "reading its value threw: priority unknown".into())
                 } else if hp.is_none() {
                     (Status::Unknown, "the winner is unknown (see the error)".into())
+                } else if win_count == 0 {
+                    // A graph.json from before omitted.nixpkgsWinners.
+                    (Status::Unknown, "the winners are not listed".into())
                 } else {
                     let p = d.priority.unwrap_or_default();
-                    let reason = match (o.winners.len(), first_winner) {
-                        (1, Some(w)) => format!("beaten by {}: {hp_s} < {p}", self.def_who(w)),
-                        // Every winner is a nixpkgs definition counted in
-                        // `omitted`, not listed (the web viewer says "0").
-                        (0, _) => format!("beaten by nixpkgs definitions at {hp_s} (not listed): {hp_s} < {p}"),
-                        (n, _) => format!("beaten by {n} definitions at {hp_s}: {hp_s} < {p}"),
+                    let reason = match first_winner {
+                        None => format!(
+                            "beaten by {} at {hp_s} (not listed): {hp_s} < {p}",
+                            plural(hidden, "nixpkgs definition", None)
+                        ),
+                        Some(w) if win_count == 1 => format!("beaten by {}: {hp_s} < {p}", self.def_who(w)),
+                        Some(_) => format!("beaten by {win_count} definitions at {hp_s}{not_listed}: {hp_s} < {p}"),
                     };
                     (Status::Lose, reason)
                 };

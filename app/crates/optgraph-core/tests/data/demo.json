@@ -315,7 +315,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.consoleLogLevel",
       "type": "signed integer",
@@ -355,7 +356,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 4,
-        "nixpkgsInactive": 28
+        "nixpkgsInactive": 28,
+        "nixpkgsWinners": 4
       },
       "path": "boot.initrd.availableKernelModules",
       "type": "(attribute set of boolean) or (list of string) convertible to it",
@@ -396,7 +398,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.initrd.systemd.enable",
       "type": "boolean",
@@ -436,7 +439,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.initrd.verbose",
       "type": "boolean",
@@ -475,7 +479,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 6,
-        "nixpkgsInactive": 88
+        "nixpkgsInactive": 88,
+        "nixpkgsWinners": 6
       },
       "path": "boot.kernelModules",
       "type": "(attribute set of boolean) or (list of string) convertible to it",
@@ -514,7 +519,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 7,
-        "nixpkgsInactive": 23
+        "nixpkgsInactive": 23,
+        "nixpkgsWinners": 7
       },
       "path": "boot.kernelParams",
       "type": "list of string, with spaces inside double quotes",
@@ -555,7 +561,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.loader.efi.canTouchEfiVariables",
       "type": "boolean",
@@ -596,7 +603,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.loader.systemd-boot.configurationLimit",
       "type": "null or signed integer",
@@ -637,7 +645,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.loader.systemd-boot.editor",
       "type": "boolean",
@@ -678,7 +687,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "boot.loader.systemd-boot.enable",
       "type": "boolean",
@@ -718,7 +728,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "boot.loader.timeout",
       "type": "null or signed integer",
@@ -758,7 +769,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "boot.plymouth.enable",
       "type": "boolean",
@@ -797,7 +809,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "console.keyMap",
       "type": "string or absolute path",
@@ -837,7 +850,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "demo.features.gaming",
       "type": "boolean",
@@ -877,7 +891,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "demo.features.laptop",
       "type": "boolean",
@@ -917,7 +932,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "demo.features.printing",
       "type": "boolean",
@@ -957,7 +973,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "demo.features.virtualisation",
       "type": "boolean",
@@ -997,7 +1014,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "documentation.dev.enable",
       "type": "boolean",
@@ -1036,7 +1054,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 13,
-        "nixpkgsInactive": 30
+        "nixpkgsInactive": 30,
+        "nixpkgsWinners": 13
       },
       "path": "environment.sessionVariables",
       "type": "attribute set of (null or (list of (signed integer or string or absolute path)) or signed integer or string or absolute path)",
@@ -1066,7 +1085,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 1
       },
       "path": "environment.shellAliases",
       "type": "attribute set of (null or string or absolute path)",
@@ -1153,7 +1173,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 69,
-        "nixpkgsInactive": 892
+        "nixpkgsInactive": 892,
+        "nixpkgsWinners": 69
       },
       "path": "environment.systemPackages",
       "type": "list of package",
@@ -1199,7 +1220,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 4
+        "nixpkgsInactive": 4,
+        "nixpkgsWinners": 0
       },
       "path": "fileSystems",
       "type": "attribute set of (submodule)",
@@ -1240,7 +1262,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "fonts.fontconfig.defaultFonts.emoji",
       "type": "list of string",
@@ -1281,7 +1304,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 3,
+        "nixpkgsWinners": 0
       },
       "path": "fonts.fontconfig.defaultFonts.monospace",
       "type": "list of string",
@@ -1322,7 +1346,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 3,
+        "nixpkgsWinners": 0
       },
       "path": "fonts.fontconfig.defaultFonts.sansSerif",
       "type": "list of string",
@@ -1361,7 +1386,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 17
+        "nixpkgsInactive": 17,
+        "nixpkgsWinners": 1
       },
       "path": "fonts.packages",
       "type": "list of absolute path",
@@ -1401,7 +1427,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 9
+        "nixpkgsInactive": 9,
+        "nixpkgsWinners": 0
       },
       "path": "hardware.bluetooth.enable",
       "type": "boolean",
@@ -1441,7 +1468,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "hardware.bluetooth.powerOnBoot",
       "type": "boolean",
@@ -1481,7 +1509,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "hardware.bluetooth.settings",
       "type": "attribute set of section of an INI file (attrs of INI atom (null, bool, int, float or string))",
@@ -1521,7 +1550,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 2,
-        "nixpkgsInactive": 16
+        "nixpkgsInactive": 16,
+        "nixpkgsWinners": 1
       },
       "path": "hardware.graphics.enable",
       "type": "boolean",
@@ -1561,7 +1591,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 1
       },
       "path": "hardware.graphics.enable32Bit",
       "type": "boolean",
@@ -1600,7 +1631,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "i18n.defaultLocale",
       "type": "string",
@@ -1639,7 +1671,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "i18n.extraLocaleSettings",
       "type": "attribute set of string",
@@ -1687,7 +1720,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "networking.firewall.enable",
       "type": "boolean",
@@ -1726,7 +1760,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "networking.hostName",
       "type": "string matching the pattern ^$|^[[:alnum:]]([[:alnum:]_-]{0,61}[[:alnum:]])?$",
@@ -1766,7 +1801,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 8
+        "nixpkgsInactive": 8,
+        "nixpkgsWinners": 0
       },
       "path": "networking.networkmanager.enable",
       "type": "boolean",
@@ -1807,7 +1843,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "networking.networkmanager.wifi.backend",
       "type": "one of \"wpa_supplicant\", \"iwd\"",
@@ -1847,7 +1884,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "nix.gc.automatic",
       "type": "boolean",
@@ -1887,7 +1925,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "nix.gc.dates",
       "type": "(optionally newline-terminated) single-line string or list of string",
@@ -1927,7 +1966,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "nix.gc.options",
       "type": "(optionally newline-terminated) single-line string",
@@ -1975,7 +2015,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 3,
-        "nixpkgsInactive": 24
+        "nixpkgsInactive": 24,
+        "nixpkgsWinners": 3
       },
       "path": "nix.settings",
       "type": "open submodule of attribute set of (Nix config atom (null, bool, int, float, str, path or package) or list of (Nix config atom (null, bool, int, float, str, path or package)))",
@@ -2015,7 +2056,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "nixpkgs.config",
       "type": "nixpkgs config",
@@ -2045,7 +2087,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "nixpkgs.hostPlatform",
       "type": "string or (attribute set)",
@@ -2085,7 +2128,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.direnv.enable",
       "type": "boolean",
@@ -2125,7 +2169,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.firefox.enable",
       "type": "boolean",
@@ -2165,7 +2210,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.gamemode.enable",
       "type": "boolean",
@@ -2205,7 +2251,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.git.enable",
       "type": "boolean",
@@ -2245,7 +2292,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.hyprland.enable",
       "type": "boolean",
@@ -2285,7 +2333,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.hyprlock.enable",
       "type": "boolean",
@@ -2325,7 +2374,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.starship.enable",
       "type": "boolean",
@@ -2365,7 +2415,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.steam.enable",
       "type": "boolean",
@@ -2406,7 +2457,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "programs.zsh.autosuggestions.enable",
       "type": "boolean",
@@ -2446,7 +2498,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "programs.zsh.enable",
       "type": "boolean",
@@ -2487,7 +2540,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "programs.zsh.syntaxHighlighting.enable",
       "type": "boolean",
@@ -2527,7 +2581,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 7,
-        "nixpkgsInactive": 30
+        "nixpkgsInactive": 30,
+        "nixpkgsWinners": 7
       },
       "path": "security.polkit.enable",
       "type": "boolean",
@@ -2574,7 +2629,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "security.protectKernelImage",
       "type": "boolean",
@@ -2614,7 +2670,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 3,
+        "nixpkgsWinners": 0
       },
       "path": "security.rtkit.enable",
       "type": "boolean",
@@ -2654,7 +2711,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "security.sudo.execWheelOnly",
       "type": "boolean",
@@ -2694,7 +2752,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 10
+        "nixpkgsInactive": 10,
+        "nixpkgsWinners": 0
       },
       "path": "services.avahi.enable",
       "type": "boolean",
@@ -2734,7 +2793,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "services.avahi.nssmdns4",
       "type": "boolean",
@@ -2774,7 +2834,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "services.avahi.openFirewall",
       "type": "boolean",
@@ -2814,7 +2875,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "services.blueman.enable",
       "type": "boolean",
@@ -2854,7 +2916,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "services.fstrim.enable",
       "type": "boolean",
@@ -2894,7 +2957,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "services.fwupd.enable",
       "type": "boolean",
@@ -2934,7 +2998,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 4
+        "nixpkgsInactive": 4,
+        "nixpkgsWinners": 0
       },
       "path": "services.greetd.enable",
       "type": "boolean",
@@ -2965,7 +3030,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 4
+        "nixpkgsInactive": 4,
+        "nixpkgsWinners": 1
       },
       "path": "services.greetd.settings",
       "type": "TOML value",
@@ -3005,7 +3071,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 8
+        "nixpkgsInactive": 8,
+        "nixpkgsWinners": 0
       },
       "path": "services.gvfs.enable",
       "type": "boolean",
@@ -3045,7 +3112,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 1
       },
       "path": "services.hypridle.enable",
       "type": "boolean",
@@ -3085,7 +3153,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 13
+        "nixpkgsInactive": 13,
+        "nixpkgsWinners": 0
       },
       "path": "services.libinput.enable",
       "type": "boolean",
@@ -3133,7 +3202,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "services.openssh.enable",
       "type": "boolean",
@@ -3173,7 +3243,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 16
+        "nixpkgsInactive": 16,
+        "nixpkgsWinners": 0
       },
       "path": "services.openssh.settings",
       "type": "open submodule of attribute set of (atom (null, bool, int, float or string))",
@@ -3214,7 +3285,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "services.pipewire.alsa.enable",
       "type": "boolean",
@@ -3255,7 +3327,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 1
       },
       "path": "services.pipewire.alsa.support32Bit",
       "type": "boolean",
@@ -3295,7 +3368,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 3,
+        "nixpkgsWinners": 0
       },
       "path": "services.pipewire.enable",
       "type": "boolean",
@@ -3336,7 +3410,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "services.pipewire.pulse.enable",
       "type": "boolean",
@@ -3377,7 +3452,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "services.pipewire.wireplumber.enable",
       "type": "boolean",
@@ -3425,7 +3501,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 6
+        "nixpkgsInactive": 6,
+        "nixpkgsWinners": 0
       },
       "path": "services.power-profiles-daemon.enable",
       "type": "boolean",
@@ -3465,7 +3542,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "services.printing.drivers",
       "type": "list of absolute path",
@@ -3505,7 +3583,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 3
+        "nixpkgsInactive": 3,
+        "nixpkgsWinners": 0
       },
       "path": "services.printing.enable",
       "type": "boolean",
@@ -3545,7 +3624,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 2
+        "nixpkgsInactive": 2,
+        "nixpkgsWinners": 0
       },
       "path": "services.pulseaudio.enable",
       "type": "boolean",
@@ -3585,7 +3665,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 5
+        "nixpkgsInactive": 5,
+        "nixpkgsWinners": 0
       },
       "path": "services.resolved.enable",
       "type": "boolean",
@@ -3625,7 +3706,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "services.tlp.enable",
       "type": "boolean",
@@ -3665,7 +3747,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 1,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 1
       },
       "path": "services.tlp.settings",
       "type": "attribute set of (boolean or signed integer or floating point number or string or list of string)",
@@ -3705,7 +3788,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 2,
-        "nixpkgsInactive": 9
+        "nixpkgsInactive": 9,
+        "nixpkgsWinners": 2
       },
       "path": "services.udisks2.enable",
       "type": "boolean",
@@ -3745,7 +3829,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 16
+        "nixpkgsInactive": 16,
+        "nixpkgsWinners": 0
       },
       "path": "services.upower.enable",
       "type": "boolean",
@@ -3784,7 +3869,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "swapDevices",
       "type": "list of (submodule)",
@@ -3823,7 +3909,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "system.stateVersion",
       "type": "string",
@@ -3870,7 +3957,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 5
+        "nixpkgsInactive": 5,
+        "nixpkgsWinners": 0
       },
       "path": "time.timeZone",
       "type": "null or string without spaces",
@@ -3926,7 +4014,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 17,
-        "nixpkgsInactive": 716
+        "nixpkgsInactive": 716,
+        "nixpkgsWinners": 17
       },
       "path": "users.users",
       "type": "attribute set of (submodule)",
@@ -3968,7 +4057,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "virtualisation.podman.defaultNetwork.settings",
       "type": "JSON value",
@@ -4008,7 +4098,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "virtualisation.podman.dockerCompat",
       "type": "boolean",
@@ -4048,7 +4139,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 1
+        "nixpkgsInactive": 1,
+        "nixpkgsWinners": 0
       },
       "path": "virtualisation.podman.enable",
       "type": "boolean",
@@ -4087,7 +4179,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "zramSwap.enable",
       "type": "boolean",
@@ -4126,7 +4219,8 @@
       ],
       "omitted": {
         "nixpkgsActive": 0,
-        "nixpkgsInactive": 0
+        "nixpkgsInactive": 0,
+        "nixpkgsWinners": 0
       },
       "path": "zramSwap.memoryPercent",
       "type": "positive integer, meaning >0",
