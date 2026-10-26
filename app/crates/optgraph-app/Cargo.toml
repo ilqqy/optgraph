@@ -1,0 +1,12 @@
+[package]
+name = "optgraph-app"
+description = "Native viewer for optgraph's graph.json (GPUI)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+optgraph-core = { path = "../optgraph-core" }
+gpui = { package = "gpui-pre", version = "=0.3.10" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.10", features = ["wayland", "x11"] }
