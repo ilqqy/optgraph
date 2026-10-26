@@ -35,7 +35,8 @@ optgraph on PATH) and shows its progress.
 
   --opt <path>      select an option, e.g. networking.firewall.enable
   --module <index>  select a module by its index in graph.json's modules
-  --light, --dark   colour scheme (default: follow the system's)
+  --light, --dark   colour scheme (default: dark, light when the system
+                    explicitly prefers light)
 
 Keys: / or Ctrl+K search, arrows walk the lists, Enter opens, Esc clears,
 Ctrl+O opens a graph.json (or drop one on the window).";
