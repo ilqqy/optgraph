@@ -1094,3 +1094,164 @@ The first run writes `flake.lock`; with `--no-write-lock-file` the second does n
 - `nix eval` of a git flake with a dirty tree prints `warning: Git tree ... is dirty` on stderr; this is not an error.
 
 **Consequence for optgraph.** No `--impure`, no `getFlake`: run `nix eval --json <ref> --apply <expr>` (the CLI adds `--option pure-eval true`, `--no-write-lock-file` and `--show-trace`, never `--impure`) with the tool's source supplied through `fetchTree { type = "path"; path; narHash; }`, pass `generatedAt` from the CLI, and take `nixpkgsVersion` from `config.lib.version` and `nixpkgsRev` from `config.system.nixos.revision`.
+
+---
+
+## 9. Submodules
+
+Re-run 2026-10-27 (Nix 2.34.8, nixpkgs `c59305b`; home-manager `nix-community/home-manager@6407259`, source `/nix/store/5lmwxsfw02ljibw4wqf4739d1mfhxn66-source`, called `$HM` below). Snippets were files under `/tmp/sub/`, run with `nix eval --impure --json --file <file>` (`--impure` only for the absolute store-path imports); they are quoted in compressed form (the declarations and definitions that matter, and the printed result).
+
+### 9.1 How a submodule instance is evaluated
+
+**Answer.**
+
+- `types.submodule m` is `submoduleWith { shorthandOnlyDefinesConfig = true; modules = toList m; }`. `submoduleWith` builds `base = evalModules { class, specialArgs, modules = [ { _module.args.name = mkOptionDefault "‹name›"; } ] ++ modules; }`.
+- Its `merge.v2` receives the option's **final** definitions (`defsFinal`, after the outer option's `mkIf`/`mkOverride` filtering) and evaluates one instance per merge: `configuration = base.extendModules { modules = [ { _module.args.name = last loc; } ] ++ allModules defs; prefix = loc; }`, returned as `valueMeta = { inherit configuration; }`.
+- `allModules` turns each definition into a module: `{ _file = def.file; config = def.value; }` when `shorthandOnlyDefinesConfig` and the value is an attrset, else `{ _file = def.file; imports = [ def.value ]; }` (functions, paths, and every value of a `submoduleWith` without the flag, e.g. home-manager). With the flag, an attrset value is pure config: `users.users.x = { imports = [ ... ]; }` is an error (`imports` is not an option); imports inside an instance need the function form or a non-shorthand type.
+- `configuration` is a full `evalModules` result: attributes `_module _type class config extendModules graph options type`. `configuration.type.getSubModules` is `[ name-default ] ++ <declaration modules> ++ [ name ] ++ <one module per surviving definition>`. The declaration modules are the option type's `getSubModules`, each wrapped by `mergeOptionDecls` in `setDefaultModuleLocation <declaring file>`. Definition modules come in the module system's definition order (reverse module order, like topic 2).
+- `attrsOf`/`lazyAttrsOf` (`attrsWith`) push the file down to each name (`pushPositions`), group with `zipAttrsWith` and call `mergeDefinitions (loc ++ [ name ]) elemType` per name. This is a second level of `mkIf`/`mkOverride` filtering: `users.users.alice = mkIf false {...}` drops that definition, `users.users.dave = mkForce { x = 4; }` removes every lower-priority definition of `dave` as a whole. The sub-option's own `highestPrio` only sees what is inside the surviving values (`dave.x` reports 100 although the instance won with `mkForce`). Non-lazy `attrsOf` drops a name whose definitions are all filtered out (`filterAttrs (n: v: v.optionalValue ? value)`); `lazyAttrsOf` keeps it.
+- Per instance: `option.valueMeta.attrs.<name>.configuration` (attrsOf, lazyAttrsOf), `option.valueMeta.configuration` (plain `submodule`; `nullOr submodule` when the value is not null). `listOf submodule` gives `valueMeta.list` (instances named by position); `either` gives the matched branch's `valueMeta`; freeform values have none (9.4).
+
+**Evidence.**
+
+- `nixpkgs@c59305b:lib/types.nix:1326-1331` (`submodule`, flag at :1329), :1417-1424 (`submoduleWith` arguments), :1428-1442 (`allModules`), :1444-1467 (`base`, name default at :1463), :1500-1512 (`merge.v2`, `extendModules` at :1503-1506, `valueMeta` at :1511), :1537 (`getSubModules = modules`).
+- `nixpkgs@c59305b:lib/types.nix:962-1036` (`attrsWith`: `pushPositions` :965-971, per-name `mergeDefinitions` :1018 and :1023, non-lazy filter :1022, `valueMeta.attrs` :1035); :1237-1293 (`nullOr`: non-null values delegate to the element's `merge.v2`, :1258-1261); :747 (`listOf`: `valueMeta.list`).
+- `nixpkgs@c59305b:lib/modules.nix:1083-1086` (declaration submodules wrapped in `setDefaultModuleLocation opt._file`), :382-394 (`extendModules` appends to `regularModules`), :402-407 (result: `options`, `config` without `_module`, `_module`, `graph`, `type`, `class`).
+- nixos-25.11 (`b6018f8`, the oldest supported release) has the same `valueMeta.attrs` and `valueMeta = { inherit configuration; }` (`lib/types.nix:885`, :1308). <!-- unverified: grep of the raw file from GitHub, not evaluated -->
+
+**Verified by eval** (`/tmp/sub/t1.nix`). Declarations: `u = attrsOf sub`, `l = lazyAttrsOf sub`, `s = sub`, `n = nullOr sub`, where `sub` is a `submodule ({ name, ... }: ...)` with options `x` (int, default 0), `who` (default `name`) and `inner` (`attrsOf (submodule { options.y = ...; })`). Definitions:
+
+```nix
+{ _file = "a.nix"; u.alice.x = mkForce 5; u.alice.inner.p.y = 1; }
+{ _file = "b.nix"; u.alice = mkIf false { x = 9; }; u.gone = mkIf false { x = 1; }; l.gone = mkIf false { x = 1; }; }
+{ _file = "c.nix"; u.alice.x = mkIf false 3; u.bob = { name, config, ... }: { x = 1; who = "fn-${name}"; }; }
+{ _file = "d.nix"; u.dave = mkForce { x = 4; }; u.carol = { imports = [ { _file = "e.nix"; x = 2; } ]; }; }
+{ _file = "f.nix"; u.dave.x = 3; s.x = 1; n.x = 2; }
+```
+
+```
+uNames ["alice","bob","carol","dave"]          (u.gone dropped)
+lNames ["gone"]                                (lazyAttrsOf keeps it)
+instAttrs ["_module","_type","class","config","extendModules","graph","options","type"]
+args ["extendModules","moduleType","name"]
+aliceSub [{"file":null,"keys":["_module"]},{"file":"decl.nix","keys":["_file","imports"]},{"file":null,"keys":["_module"]},{"file":"c.nix","keys":["_file","config"]},{"file":"a.nix","keys":["_file","config"]}]
+aliceX {"files":["a.nix"],"highestPrio":50}    (b.nix and c.nix: mkIf false, gone)
+daveX {"files":["d.nix"],"highestPrio":100}    (f.nix lost at the instance level)
+bobWho "fn-bob"
+nestedY {"files":["a.nix"],"highestPrio":100}  (u.alice.inner.p.y via a nested valueMeta)
+sMeta ["_internal","configuration"]  nMeta ["_internal","configuration"]  sName "s"
+types ["attrsOf","lazyAttrsOf","submodule","nullOr"]  elem "submodule"  subModsOfType 1
+```
+
+`listOf sub` (`/tmp/sub/t3.nix`): `valueMeta` has `["_internal","list"]`.
+
+**Caveats.**
+
+- `valueMeta` exists only on the `merge.v2` path; a custom type that wraps a submodule without forwarding `v2` (`either`, `coercedTo`, `addCheck`, ...) hides the instances.
+- Instance-level `mkOrder` (`alice = mkBefore {...}`) reorders the surviving definitions (`sortProperties`), so their order no longer follows module order. <!-- unverified: code reading (lib/modules.nix:1262-1267), not run -->
+
+### 9.2 Module arguments inside an instance
+
+**Answer.** An instance's modules are called like top-level ones (`lib/modules.nix:259-270`, `applyModuleArgs` :725-750): `{ lib, options, specialArgs, _class, _prefix, config } // specialArgs`, every other formal resolved lazily from `config._module.args.<name>`. Inside an instance:
+
+- `config`/`options` are the instance's own; `_prefix` is the instance loc; `_class` is the type's `class` (`null` for NixOS submodules, `"homeManager"` for home-manager).
+- `name` comes from `_module.args.name` (`last loc`), not from `specialArgs`.
+- `specialArgs` is only what the type declares: `{}` for `users.users`/`systemd.services`; for `home-manager.users`: `lib` (HM's extended lib), `modulesPath`, `nixosConfig`, `osClass`, `osConfig` (`home-manager@6407259:nixos/common.nix:25-34`).
+- NixOS submodules get no `pkgs`; their declaring module closes over it. home-manager sets `_module.args` `baseModules darwinConfig extendModules moduleType name nixosConfig osConfig pkgs pkgsPath` (`home-manager@6407259:modules/modules.nix:105-109`).
+
+So `nix/collect.nix`'s argument scheme works unchanged on `sys = configuration` (`configuration._module.specialArgs`, `configuration.config // { _module = configuration._module; }`, `configuration.options`), with `_prefix` set to the instance loc and `_class` to `configuration.class`. Arguments are passed as lazy thunks (`mapAttrs` over `functionArgs`), so calling a function-style definition `{ config, name, osConfig, ... }: {...}` forces nothing but the attribute names.
+
+**Verified by eval.** `t1.nix` above: `args` and `bobWho`. home-manager (`/tmp/sub/t2.nix`: `nixos/lib/eval-config.nix` with `$HM/nixos`, `users.users.u.isNormalUser = true`, `home-manager.useGlobalPkgs = true`, `home-manager.users.u = { config, osConfig, name, ... }: { imports = [ ./hm/git.nix ]; home.stateVersion = "25.05"; programs.git.enable = osConfig.users.users.${name}.isNormalUser; }`, `git.nix` sets `programs.git.settings.user.name = lib.mkDefault "demo"`):
+
+```
+type ["attrsOf","submodule"]  nDecl 1  top 4  lastTop ["_file","imports"]  class "homeManager"
+args ["baseModules","darwinConfig","extendModules","moduleType","name","nixosConfig","osConfig","pkgs","pkgsPath"]
+specialArgs ["lib","modulesPath","nixosConfig","osClass","osConfig"]
+gitEnable {"files":["t2.nix"],"highestPrio":100}
+gitUserName {"files":["git.nix"],"highestPrio":100}
+nOpts 4088
+```
+
+0.88 s, 247 MB (`/usr/bin/env time -v`) for the whole run. `top 4`: name default, home-manager's one declaration module (it imports the ~650 home-manager modules), name, the user's definition as `{ _file; imports = [ value ]; }` (no shorthand flag). `gitUserName` shows the freeform caveat of 9.4: the `mkDefault` inside `programs.git.settings` is invisible at the option level.
+
+**Caveats.** Arguments that are neither special nor in `_module.args` fail only when used (`attribute 'foo' missing`, uncatchable, 9.3), exactly as in the module system's own evaluation of the instance.
+
+### 9.3 Failure granularity
+
+**Answer.**
+
+- Enumerating instances (`attrNames option.valueMeta.attrs`) forces every definition of the option to WHNF, every `mkIf` condition at the option and the instance level, and every per-name value to WHNF. For non-lazy `attrsOf` one instance value that throws breaks the enumeration of all instances of that option; `lazyAttrsOf` does not filter, so the others stay readable.
+- A function-style instance (`x = { ... }: throw "..."`) only breaks its own `configuration`; the names and the other instances are fine.
+- A sub-option value that throws (`u.a.x = throw "..."`) breaks nothing structural (like top-level definitions, topic 3).
+- Uncatchable inside an instance: `abort` in an instance module, a missing module argument that is used, infinite recursion through `_module.args`, plus every case of topic 6. These need a marker per instance (and one per option for the enumeration).
+
+**Verified by eval** (`/tmp/sub/t3.nix`; `ok x = (tryEval x).success`):
+
+```
+attrsThrow false       attrsOf,     u.a.x = 1; u.bad = throw: names
+lazyThrow true         lazyAttrsOf, same: names
+lazyThrowOther true    lazyAttrsOf, same: u.a's x.highestPrio
+fnThrowNames ["a","bad"]   attrsOf, u.bad = { ... }: throw: names
+fnThrowInst false      same: u.bad's x.highestPrio
+fnThrowOther 100       same: u.a's x.highestPrio
+subValueThrow true     attrsOf, u.a.x = throw: names
+```
+
+`u.bad = { ... }: abort "boom"`, then `tryEval` of `u.bad`'s `x.highestPrio`: exit 1, `error: evaluation aborted with the following error message: 'boom'`.
+
+### 9.4 Freeform options
+
+**Answer.** Keys without a declared option are merged by `_module.freeformType.merge prefix defs` (`nixpkgs@c59305b:lib/modules.nix:288-295`, the v1 call): only the value is kept, there is no `valueMeta` and no per-key `highestPrio`/`files`. Per-key attribution of `freeformType = attrsOf <scalar>` (most `services.*.settings`) is cheap with the same walker (walk the unmatched keys, group per key, `classify`), but the module system offers nothing to check it against without forcing values. Declared options inside a freeform submodule (`services.openssh.settings.PermitRootLogin`) are ordinary sub-options and are covered by 9.1.
+
+**Verified by eval.** `gitUserName` in 9.2 (an `attrsOf (attrsOf ...)` option, not a submodule: the inner `mkDefault` is not visible). The freeform merge is from code reading.
+
+### 9.5 Real-world shapes
+
+From `$HM` and `nixpkgs@c59305b` (research run 2026-10-27; type and count claims spot-checked: `users-groups.nix:721-723`, `$HM/nixos/common.nix:25`, :167, and `nOpts` above):
+
+| Option | Type | Depth | Notes |
+|---|---|---|---|
+| `users.users` | `attrsOf (submodule userOpts)` | 1 | 35 sub-options; `subUidRanges`/`subGidRanges` are `listOf submodule` (leaves) |
+| `systemd.services` | `attrsOf (submodule [ ... ])` | 1 | 53 sub-options; `serviceConfig` is `attrsOf unitOption` (a leaf); ~1700 nixpkgs definitions of the outer option |
+| `home-manager.users` | `attrsOf (submoduleWith { class = "homeManager"; ... })` | 1 + | ~4090 sub-options and ~650 modules per user; nested `home.file`, `xdg.configFile` (`attrsOf submodule`), `programs.*.profiles` ... |
+| `services.nginx.virtualHosts` | `attrsOf submodule`, `.locations` `attrsOf submodule` | 2 | |
+| `networking.interfaces` | `attrsOf submodule`; `.ipv4.addresses` `listOf submodule` | 1 | addresses stay a leaf |
+| `fileSystems`, `environment.etc` | `attrsOf submodule` | 1 | `fileSystems` has an `apply`; irrelevant, values are not read |
+
+<!-- unverified: the systemd/nginx/interfaces rows and sub-option counts come from the research run, not re-run here -->
+
+### 9.6 Design for nested attribution (plan of `feat/submodules`)
+
+Supported shapes: an option whose type is `submodule`/`submoduleWith` (one instance, instance path = option path), `attrsOf`/`lazyAttrsOf` of one (one instance per name), `nullOr` of one (one instance when not null). Detected by `type.name` and `type.nestedTypes.elemType.name == "submodule"`. Everything else stays a leaf: `listOf`/`nonEmptyListOf` of submodules, `attrsOf (attrsOf submodule)`, `either`/`oneOf`/`coercedTo`/`attrTag`/`functionTo`/`deferredModule`, freeform keys. Nesting depth is capped (`--submodule-depth`, default 3; 0 = today's output); depth 1 is `users.users.alice`, 2 is `services.nginx.virtualHosts.x.locations."/"`.
+
+Per expanded instance:
+
+1. Outer survivors: the parent option's reconstructed definitions that are active at `highestPrio` (nothing is expanded when that is unknown). For `attrsOf`, each survivor's `content.<name>` is classified again (`classify`) and filtered at the instance level the same way; for a single submodule the outer level is the instance level.
+2. Alignment: `configuration.type.getSubModules` minus the `1 + nDecl + 1` leading modules must have as many entries as there are instance survivors, with the same `_file`s in the same order. Then each definition module gets its owner (the module that wrote the definition). A mismatch makes the instance a leaf, with a `nested-degraded` warning.
+3. `nix/collect.nix` re-collects `configuration` (`sys = configuration`, `_prefix` = instance loc). Name modules are hidden, wrapper modules (`{ _file; imports = [ v ]; }`) collapse to their child. Nested module ids are `«<instance path>»<inner key>`.
+4. User side: a module is user-side if it is a non-`nixpkgs` top-level module, an instance definition module whose owner is user-side, imported by a user-side module, or an inner module whose own origin (topic 5 rules) is `user`/`user-inline`/`unknown`. Declaration-side modules from nixpkgs or an input (home-manager's own modules, the systemd unit options) are not user-side. This keeps the default scope to what the user wrote.
+5. Pass A over the user-side inner modules gives the touched sub-options. Pass B walks every inner module, pruned to them. `classify`, winners, previews and the self-check against `configuration.options.<sub>.highestPrio`/`files` are the top-level code, parameterized by the options tree and the loc prefix.
+6. Definitions that lost at an enclosing level (outer or instance non-survivors) or sit under a false `mkIf` there are walked only if their content is a plain attrset (WHNF under `tryEval`, inside the instance marker; functions and paths are not called or imported). They are listed with their inner priority, never as winners, with `shadowedAt` (the path where they lost) or `condition: "mkIf-false"`. Otherwise they stay visible only on the parent option.
+7. Recursion: nested options of a supported type expand the same way, owners being nested modules.
+
+Failures: markers `optgraph-marker:instances:{"path":<option>}` (enumeration) and `optgraph-marker:instance:{"path":<instance>}` (collection and walk). A catchable failure makes the option or instance a leaf with `nested-degraded`. An uncatchable one goes through the CLI's crash recovery, which adds the subject to `excludeNesting`/`excludeInstances` (`nested-crash`). Nested options use the existing `reconstruct`/`selfcheck`/`preview` markers and lists, keyed by their full loc.
+
+Schema delta (all new fields optional, so existing documents stay valid; the viewers already ignore unknown fields, `app/crates/optgraph-core/src/model.rs:3-4`):
+
+- option: `instance` (path of the enclosing instance), `parent` (path of the option whose value holds it; equals `instance` for a single submodule). Both are absent at top level. Paths stay unique: nested paths extend an instance path, which no top-level option has.
+- module: `scope` (instance path; absent at top level), `owner` (id of the module that wrote the instance definition; only on instance definition modules).
+- definition: `shadowedAt` (path where the enclosing definition lost on priority).
+- omitted: `declarationActive`/`declarationInactive`: non-nixpkgs declaration-side definitions inside instances (home-manager's own modules), counted instead of listed. Listing them would multiply the output (about 10x more definitions in the prototype).
+- meta: `submoduleDepth`. Warning codes `nested-degraded`, `nested-crash`, `nested-unchecked` (reserved for freeform per-key attribution, no self-check possible, 9.4).
+- Scope: instances are expanded when a user-side definition names them; nested options are listed when a user-side module touches them; nested modules follow the top-level rule per scope. `--all` keeps nested expansion at the default rule (it would otherwise list ~4000 options per home-manager user).
+
+Self-check: nested winners are compared like top-level ones (`highestPrio` and winner files against the instance's option). Alignment (step 2) checks the owners. Shadowed definitions are non-winners by construction. Prototype (`/tmp/sub/proto.nix`, local): 6/6 nested options matched on `tests/fixture`.
+
+Stages (status kept here for a resumed session):
+
+- [x] Stage 1: research, this section, plan (approval pending)
+- [ ] Stage 2: extractor (`nix/`), CLI recovery for the new stages
+- [ ] Stage 3: schema, `docs/schema.md`, README Limitations
+- [ ] Stage 4: fixture cases and assertions, `tests/e2e.sh`
+- [ ] Stage 5: viewers load and render nested options (fixture + demo flake story)
+- [ ] Stage 6: real-config budget check, PR
