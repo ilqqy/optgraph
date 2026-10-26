@@ -23,7 +23,10 @@ fn check(name: &str) {
         .as_array()
         .unwrap()
         .iter()
-        .map(|s| Size { w: s["w"].as_f64().unwrap(), h: s["h"].as_f64().unwrap() })
+        .map(|s| Size {
+            w: s["w"].as_f64().unwrap(),
+            h: s["h"].as_f64().unwrap(),
+        })
         .collect();
     let edges: Vec<(usize, usize)> = e["edges"]
         .as_array()
@@ -33,12 +36,24 @@ fn check(name: &str) {
         .collect();
     let got = layered_layout(&sizes, &edges);
     let out = &e["out"];
-    let layer: Vec<usize> = out["layer"].as_array().unwrap().iter().map(|v| v.as_u64().unwrap() as usize).collect();
+    let layer: Vec<usize> = out["layer"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_u64().unwrap() as usize)
+        .collect();
     assert_eq!(got.layer, layer, "{name}: layers");
-    assert_eq!(got.crossings as u64, out["crossings"].as_u64().unwrap(), "{name}: crossings");
+    assert_eq!(
+        got.crossings as u64,
+        out["crossings"].as_u64().unwrap(),
+        "{name}: crossings"
+    );
     for (i, (x, y)) in got.x.iter().zip(&got.y).enumerate() {
         let (ex, ey) = (out["x"][i].as_f64().unwrap(), out["y"][i].as_f64().unwrap());
-        assert!(close(*x, ex) && close(*y, ey), "{name}: node {i} at ({x}, {y}), layout.js ({ex}, {ey})");
+        assert!(
+            close(*x, ex) && close(*y, ey),
+            "{name}: node {i} at ({x}, {y}), layout.js ({ex}, {ey})"
+        );
     }
     for (k, p) in got.paths.iter().enumerate() {
         let ep = &out["paths"][k];
@@ -48,7 +63,10 @@ fn check(name: &str) {
                 let ep = ep.as_array().unwrap();
                 assert_eq!(pts.len(), ep.len(), "{name}: edge {k}");
                 for (pt, q) in pts.iter().zip(ep) {
-                    assert!(close(pt.x, q["x"].as_f64().unwrap()) && close(pt.y, q["y"].as_f64().unwrap()), "{name}: edge {k}");
+                    assert!(
+                        close(pt.x, q["x"].as_f64().unwrap()) && close(pt.y, q["y"].as_f64().unwrap()),
+                        "{name}: edge {k}"
+                    );
                 }
             }
         }

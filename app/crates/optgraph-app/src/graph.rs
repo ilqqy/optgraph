@@ -146,7 +146,11 @@ pub struct GraphState {
 #[derive(Clone)]
 enum Goal {
     Fit,
-    Frame { core: Vec<usize>, context: Vec<usize>, max_k: f64 },
+    Frame {
+        core: Vec<usize>,
+        context: Vec<usize>,
+        max_k: f64,
+    },
 }
 
 impl Default for GraphState {
@@ -173,21 +177,42 @@ impl Default for GraphState {
 }
 
 fn ui_font(weight: FontWeight) -> Font {
-    Font { weight, ..gpui::font(FONT_UI) }
+    Font {
+        weight,
+        ..gpui::font(FONT_UI)
+    }
 }
 
 fn mono_font() -> Font {
-    Font { weight: FontWeight::SEMIBOLD, ..gpui::font(FONT_MONO) }
+    Font {
+        weight: FontWeight::SEMIBOLD,
+        ..gpui::font(FONT_MONO)
+    }
 }
 
 fn text_width(window: &Window, text: &str, font: Font, size: f64) -> f64 {
-    let run = TextRun { len: text.len(), font, color: Hsla::default(), background_color: None, underline: None, strikethrough: None };
-    f32::from(window.text_system().shape_line(SharedString::from(text.to_string()), px(size as f32), &[run], None).width)
-        as f64
+    let run = TextRun {
+        len: text.len(),
+        font,
+        color: Hsla::default(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    f32::from(
+        window
+            .text_system()
+            .shape_line(SharedString::from(text.to_string()), px(size as f32), &[run], None)
+            .width,
+    ) as f64
 }
 
 const fn ease(p: f64) -> f64 {
-    if p < 0.5 { 4. * p * p * p } else { 1. - (-2. * p + 2.) * (-2. * p + 2.) * (-2. * p + 2.) / 2. }
+    if p < 0.5 {
+        4. * p * p * p
+    } else {
+        1. - (-2. * p + 2.) * (-2. * p + 2.) * (-2. * p + 2.) / 2.
+    }
 }
 
 impl GraphState {
@@ -196,7 +221,9 @@ impl GraphState {
     pub fn set_model(&mut self, model: &Model, window: &Window) {
         let all = model.modules();
         let too_many = all.len() > GRAPH_LIMIT;
-        let shown: Vec<usize> = (0..all.len()).filter(|&i| !too_many || all[i].origin.is_userish()).collect();
+        let shown: Vec<usize> = (0..all.len())
+            .filter(|&i| !too_many || all[i].origin.is_userish())
+            .collect();
         let banner = too_many.then(|| {
             format!(
                 "{} modules are too many to draw: showing the {} non-nixpkgs modules only. Search and option details cover everything.",
@@ -228,7 +255,12 @@ impl GraphState {
         for (i, &mi) in shown.iter().enumerate() {
             for t in &all[mi].imports {
                 if let Some(&tn) = model.mod_index.get(t).and_then(|ti| by_module.get(ti)) {
-                    links.push(Link { source: i, target: tn, dashed: all[nodes[tn].module].disabled, pts: vec![] });
+                    links.push(Link {
+                        source: i,
+                        target: tn,
+                        dashed: all[nodes[tn].module].disabled,
+                        pts: vec![],
+                    });
                 }
             }
         }
@@ -247,7 +279,13 @@ impl GraphState {
         for (k, l) in links.iter().enumerate() {
             parents[l.target].push(k);
         }
-        self.data = Some(Rc::new(GraphData { nodes, links, by_module, parents, banner }));
+        self.data = Some(Rc::new(GraphData {
+            nodes,
+            links,
+            by_module,
+            parents,
+            banner,
+        }));
         self.clear();
         self.goal(Goal::Fit, false);
     }
@@ -290,7 +328,14 @@ impl GraphState {
             let Some(&n) = data.by_module.get(mi) else { continue };
             let chip: SharedString = ring_text(s).into();
             let chip_w = text_width(window, &chip, mono_font(), 11.).ceil() + 16.;
-            rings.insert(n, Ring { status: s.status, chip, chip_w });
+            rings.insert(
+                n,
+                Ring {
+                    status: s.status,
+                    chip,
+                    chip_w,
+                },
+            );
             core.push(n);
         }
         if rings.is_empty() {
@@ -346,7 +391,14 @@ impl GraphState {
         self.lit = Some(Rc::new(lit));
         self.path = Some(Rc::new(path));
         self.start_fade(was_dim);
-        self.goal(Goal::Frame { core: vec![n], context, max_k: 1.3 }, true);
+        self.goal(
+            Goal::Frame {
+                core: vec![n],
+                context,
+                max_k: 1.3,
+            },
+            true,
+        );
     }
 
     fn goal(&mut self, g: Goal, animate: bool) {
@@ -383,7 +435,11 @@ impl GraphState {
     pub fn move_to(&mut self, target: Cam, animate: bool) {
         self.step(Instant::now());
         if animate && !self.reduced_motion {
-            self.anim = Some(CamAnim { from: self.cam, to: target, at: Instant::now() });
+            self.anim = Some(CamAnim {
+                from: self.cam,
+                to: target,
+                at: Instant::now(),
+            });
         } else {
             self.anim = None;
             self.cam = target;
@@ -412,7 +468,11 @@ impl GraphState {
                 self.cam = to;
                 self.anim = None;
             } else {
-                self.cam = Cam { k, x: cx - wx * k, y: cy - wy * k };
+                self.cam = Cam {
+                    k,
+                    x: cx - wx * k,
+                    y: cy - wy * k,
+                };
                 moving = true;
             }
         }
@@ -452,7 +512,11 @@ impl GraphState {
     }
 
     fn banner_h(&self) -> f64 {
-        if self.data.as_ref().is_some_and(|d| d.banner.is_some()) { 56. } else { 0. }
+        if self.data.as_ref().is_some_and(|d| d.banner.is_some()) {
+            56.
+        } else {
+            0.
+        }
     }
 
     /// World bounds of `nodes`, those in `pinned` scaled by s about their centre.
@@ -482,7 +546,10 @@ impl GraphState {
         let top = self.banner_h();
         let hh = self.height - 2. * pad - top - RESERVE_BOTTOM;
         let fit_k = |b: (f64, f64, f64, f64)| {
-            (ww / (b.2 - b.0).max(1.)).min(hh / (b.3 - b.1).max(1.)).min(max_k).max(MIN_K)
+            (ww / (b.2 - b.0).max(1.))
+                .min(hh / (b.3 - b.1).max(1.))
+                .min(max_k)
+                .max(MIN_K)
         };
         let pin_set: HashSet<usize> = pinned.iter().copied().collect();
         let mut b = self.bounds(nodes, &HashSet::new(), 1.);
@@ -563,7 +630,14 @@ impl GraphState {
         let t = self.anim.map(|a| a.to).unwrap_or(self.cam);
         let k = (t.k * f).clamp(MIN_K, MAX_K);
         let (cx, cy) = (self.width / 2., self.height / 2.);
-        self.move_to(Cam { k, x: cx - (cx - t.x) / t.k * k, y: cy - (cy - t.y) / t.k * k }, true);
+        self.move_to(
+            Cam {
+                k,
+                x: cx - (cx - t.x) / t.k * k,
+                y: cy - (cy - t.y) / t.k * k,
+            },
+            true,
+        );
     }
 
     /// Wheel zoom about the pointer.
@@ -571,7 +645,11 @@ impl GraphState {
         self.stop_camera();
         let k = (self.cam.k * (-dy * if fine { 0.01 } else { 0.0015 }).exp()).clamp(MIN_K, MAX_K);
         let (wx, wy) = ((px_ - self.cam.x) / self.cam.k, (py - self.cam.y) / self.cam.k);
-        self.cam = Cam { k, x: px_ - wx * k, y: py - wy * k };
+        self.cam = Cam {
+            k,
+            x: px_ - wx * k,
+            y: py - wy * k,
+        };
     }
 
     /// Centre a node, keeping the zoom.
@@ -588,7 +666,11 @@ impl GraphState {
     }
 
     pub fn pin_scale(&self, n: usize) -> f64 {
-        if self.pins.contains(&n) { (READ_K / self.cam.k).max(1.) } else { 1. }
+        if self.pins.contains(&n) {
+            (READ_K / self.cam.k).max(1.)
+        } else {
+            1.
+        }
     }
 
     /// The node under a stage point; pins first, as they are drawn on top.
@@ -626,7 +708,9 @@ impl GraphState {
     /// chip in its status colour with its ring text; a click brings it into
     /// view.
     pub fn edge_chips(&self) -> Vec<EdgeChip> {
-        let (Some(data), Some(via)) = (&self.data, &self.via) else { return vec![] };
+        let (Some(data), Some(via)) = (&self.data, &self.via) else {
+            return vec![];
+        };
         if self.rings.is_empty() || self.anim.is_some() {
             return vec![];
         }
@@ -639,7 +723,12 @@ impl GraphState {
             .iter()
             .map(|&p| {
                 let (x, y, rw, rh) = self.node_rect(p);
-                (x - 6., y - 6., x + rw + (self.chip_w(p) + 6.) * self.cam.k * self.pin_scale(p), y + rh + 6.)
+                (
+                    x - 6.,
+                    y - 6.,
+                    x + rw + (self.chip_w(p) + 6.) * self.cam.k * self.pin_scale(p),
+                    y + rh + 6.,
+                )
             })
             .collect();
         let mut ids: Vec<usize> = via.iter().copied().collect();
@@ -648,8 +737,20 @@ impl GraphState {
         for n in ids {
             let (x, y, rw, rh) = self.node_rect(n);
             let (cx, cy) = (x + rw / 2., y + rh / 2.);
-            let off_x = if x + rw < 0. { -1 } else if x > w { 1 } else { 0 };
-            let off_y = if y + rh < self.banner_h() { -1 } else if y > h { 1 } else { 0 };
+            let off_x = if x + rw < 0. {
+                -1
+            } else if x > w {
+                1
+            } else {
+                0
+            };
+            let off_y = if y + rh < self.banner_h() {
+                -1
+            } else if y > h {
+                1
+            } else {
+                0
+            };
             if off_x == 0 && off_y == 0 {
                 continue;
             }
@@ -684,16 +785,26 @@ impl GraphState {
             // (bottom ones upwards).
             let step = if off_y == 1 { -26. } else { 26. };
             let hits_pin = |ey: f64| {
-                pins.iter().any(|&(px0, py0, px1, py1)| ex < px1 && ex + est_w > px0 && ey < py1 && ey + 24. > py0)
+                pins.iter()
+                    .any(|&(px0, py0, px1, py1)| ex < px1 && ex + est_w > px0 && ey < py1 && ey + 24. > py0)
             };
             let mut tries = 0;
             while tries < 40
-                && (out.iter().any(|c| (c.y - ey).abs() < 26. && (c.x - ex).abs() < est_w.max(60.)) || hits_pin(ey))
+                && (out
+                    .iter()
+                    .any(|c| (c.y - ey).abs() < 26. && (c.x - ex).abs() < est_w.max(60.))
+                    || hits_pin(ey))
             {
                 ey += step;
                 tries += 1;
             }
-            out.push(EdgeChip { node: n, x: ex, y: ey, text, status: ring.map(|r| r.status) });
+            out.push(EdgeChip {
+                node: n,
+                x: ex,
+                y: ey,
+                text,
+                status: ring.map(|r| r.status),
+            });
         }
         out
     }
@@ -705,7 +816,10 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
     let cam = frame.cam;
     let ox = f64::from(f32::from(bounds.origin.x));
     let oy = f64::from(f32::from(bounds.origin.y));
-    let (bw, bh) = (f64::from(f32::from(bounds.size.width)), f64::from(f32::from(bounds.size.height)));
+    let (bw, bh) = (
+        f64::from(f32::from(bounds.size.width)),
+        f64::from(f32::from(bounds.size.height)),
+    );
     let sp = |x: f64, y: f64| point(px((ox + cam.x + x * cam.k) as f32), px((oy + cam.y + y * cam.k) as f32));
     let dimming = !frame.rings.is_empty() || frame.lit.is_some();
     let f = frame.fade;
@@ -717,7 +831,10 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
         let mut gx = 12.;
         while gx < bw {
             window.paint_quad(quad(
-                Bounds::new(point(px((ox + gx) as f32), px((oy + gy) as f32)), size(px(1.5), px(1.5))),
+                Bounds::new(
+                    point(px((ox + gx) as f32), px((oy + gy) as f32)),
+                    size(px(1.5), px(1.5)),
+                ),
                 px(0.75),
                 t.grid,
                 px(0.),
@@ -768,13 +885,23 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
     };
     let on_path = |k: usize| frame.path.as_ref().is_some_and(|p| p.contains(&k));
     for dashed in [false, true] {
-        let rest = data.links.iter().enumerate().filter(|(k, l)| l.dashed == dashed && !on_path(*k)).map(|(_, l)| l);
+        let rest = data
+            .links
+            .iter()
+            .enumerate()
+            .filter(|(k, l)| l.dashed == dashed && !on_path(*k))
+            .map(|(_, l)| l);
         let alpha = if frame.path.is_some() { dim_a } else { 1. };
         if let Some(p) = edge_path(&mut rest.into_iter(), (1.25 * cam.k).max(1.), dashed) {
             window.paint_path(p, t.edge.opacity(alpha as f32));
         }
         if frame.path.is_some() {
-            let lit = data.links.iter().enumerate().filter(|(k, l)| l.dashed == dashed && on_path(*k)).map(|(_, l)| l);
+            let lit = data
+                .links
+                .iter()
+                .enumerate()
+                .filter(|(k, l)| l.dashed == dashed && on_path(*k))
+                .map(|(_, l)| l);
             if let Some(p) = edge_path(&mut lit.into_iter(), (1.6 * cam.k).max(1.2), dashed) {
                 window.paint_path(p, t.text3);
             }
@@ -792,7 +919,13 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
         }
     };
     let show_text = cam.k >= 0.42;
-    let pin_scale = |i: usize| if frame.pins.contains(&i) { (READ_K / cam.k).max(1.) } else { 1. };
+    let pin_scale = |i: usize| {
+        if frame.pins.contains(&i) {
+            (READ_K / cam.k).max(1.)
+        } else {
+            1.
+        }
+    };
     let mut lit = Vec::new();
     for (i, n) in data.nodes.iter().enumerate() {
         if dimming && is_lit(i) {
@@ -815,7 +948,19 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
         }
     }
     for &i in &lit {
-        paint_pill(frame, t, &data.nodes[i], i, pin_scale(i), true, Tier::Own, 1., (ox, oy, bw, bh), window, cx);
+        paint_pill(
+            frame,
+            t,
+            &data.nodes[i],
+            i,
+            pin_scale(i),
+            true,
+            Tier::Own,
+            1.,
+            (ox, oy, bw, bh),
+            window,
+            cx,
+        );
     }
     for &i in &lit {
         if let Some(r) = frame.rings.get(&i) {
@@ -873,14 +1018,21 @@ fn paint_pill(
         Tier::Own => 1.,
     } as f32;
     let hover = frame.hover == Some(i);
-    let bounds = Bounds::new(point(px(x as f32), px((cy - h / 2.) as f32)), size(px(w as f32), px(h as f32)));
+    let bounds = Bounds::new(
+        point(px(x as f32), px((cy - h / 2.) as f32)),
+        size(px(w as f32), px(h as f32)),
+    );
     window.paint_quad(quad(
         bounds,
         px((h / 2.) as f32),
         (if hover { t.s3 } else { t.s2 }).opacity(alpha),
         px(1.),
         (if hover { t.text3 } else { t.line2 }).opacity(alpha),
-        if n.disabled { BorderStyle::Dashed } else { BorderStyle::Solid },
+        if n.disabled {
+            BorderStyle::Dashed
+        } else {
+            BorderStyle::Solid
+        },
     ));
     origin_mark(t, n.class, x + 15. * k, cy, k, alpha, window);
     if show_text {
@@ -901,7 +1053,9 @@ fn paint_pill(
                 underline: None,
                 strikethrough: None,
             };
-            let line = window.text_system().shape_line(n.label.clone(), px(size as f32), &[run], None);
+            let line = window
+                .text_system()
+                .shape_line(n.label.clone(), px(size as f32), &[run], None);
             let lh = size * 1.25;
             line.paint(
                 point(px((x + 25. * k) as f32), px((cy - lh / 2. + 0.5 * k) as f32)),
@@ -932,11 +1086,21 @@ fn paint_pill(
 fn origin_mark(t: &Theme, class: OriginClass, x: f64, y: f64, k: f64, alpha: f32, window: &mut Window) {
     let color = t.origin(class).opacity(alpha);
     let disc = |r: f64, fill: bool, window: &mut Window| {
-        let b = Bounds::new(point(px((x - r * k) as f32), px((y - r * k) as f32)), size(px((2. * r * k) as f32), px((2. * r * k) as f32)));
+        let b = Bounds::new(
+            point(px((x - r * k) as f32), px((y - r * k) as f32)),
+            size(px((2. * r * k) as f32), px((2. * r * k) as f32)),
+        );
         if fill {
             window.paint_quad(quad(b, px((r * k) as f32), color, px(0.), color, BorderStyle::Solid));
         } else {
-            window.paint_quad(quad(b, px((r * k) as f32), gpui::transparent_black(), px((1.8 * k).max(1.) as f32), color, BorderStyle::Solid));
+            window.paint_quad(quad(
+                b,
+                px((r * k) as f32),
+                gpui::transparent_black(),
+                px((1.8 * k).max(1.) as f32),
+                color,
+                BorderStyle::Solid,
+            ));
         }
     };
     match class {
@@ -946,7 +1110,10 @@ fn origin_mark(t: &Theme, class: OriginClass, x: f64, y: f64, k: f64, alpha: f32
         OriginClass::Unknown => {
             let d = 3.6 * k;
             window.paint_quad(quad(
-                Bounds::new(point(px((x - d) as f32), px((y - d) as f32)), size(px((2. * d) as f32), px((2. * d) as f32))),
+                Bounds::new(
+                    point(px((x - d) as f32), px((y - d) as f32)),
+                    size(px((2. * d) as f32), px((2. * d) as f32)),
+                ),
                 px(0.),
                 color,
                 px(0.),
@@ -990,7 +1157,16 @@ fn paint_glow(frame: &Frame, t: &Theme, n: &Node, s: f64, o: (f64, f64), window:
 }
 
 #[allow(clippy::too_many_arguments)]
-fn paint_ring(frame: &Frame, n: &Node, s: f64, o: (f64, f64), color: Hsla, width: f64, dashed: bool, window: &mut Window) {
+fn paint_ring(
+    frame: &Frame,
+    n: &Node,
+    s: f64,
+    o: (f64, f64),
+    color: Hsla,
+    width: f64,
+    dashed: bool,
+    window: &mut Window,
+) {
     let (x, cy, w, h, _) = node_screen(frame, n, s, o);
     let off = 3.5 + width / 2.;
     let b = Bounds::new(
@@ -1003,7 +1179,11 @@ fn paint_ring(frame: &Frame, n: &Node, s: f64, o: (f64, f64), color: Hsla, width
         gpui::transparent_black(),
         px(width as f32),
         color,
-        if dashed { BorderStyle::Dashed } else { BorderStyle::Solid },
+        if dashed {
+            BorderStyle::Dashed
+        } else {
+            BorderStyle::Solid
+        },
     ));
 }
 
@@ -1012,7 +1192,16 @@ fn paint_ring(frame: &Frame, n: &Node, s: f64, o: (f64, f64), color: Hsla, width
 /// ring, outlined chip; off: dashed ring and chip. Shape and text differ,
 /// not only the colour.
 #[allow(clippy::too_many_arguments)]
-fn paint_status(frame: &Frame, t: &Theme, n: &Node, r: &Ring, s: f64, o: (f64, f64), window: &mut Window, cx: &mut App) {
+fn paint_status(
+    frame: &Frame,
+    t: &Theme,
+    n: &Node,
+    r: &Ring,
+    s: f64,
+    o: (f64, f64),
+    window: &mut Window,
+    cx: &mut App,
+) {
     let a = frame.fade as f32;
     let color = match r.status {
         Status::Win => t.win,
@@ -1031,7 +1220,10 @@ fn paint_status(frame: &Frame, t: &Theme, n: &Node, r: &Ring, s: f64, o: (f64, f
     let cw = r.chip_w * k;
     let ch = CHIP_H * k;
     let chx = x + w + 8. * k;
-    let b = Bounds::new(point(px(chx as f32), px((cy - ch / 2.) as f32)), size(px(cw as f32), px(ch as f32)));
+    let b = Bounds::new(
+        point(px(chx as f32), px((cy - ch / 2.) as f32)),
+        size(px(cw as f32), px(ch as f32)),
+    );
     if r.status == Status::Win {
         window.paint_quad(quad(b, px((ch / 2.) as f32), color, px(0.), color, BorderStyle::Solid));
     } else {
@@ -1041,19 +1233,29 @@ fn paint_status(frame: &Frame, t: &Theme, n: &Node, r: &Ring, s: f64, o: (f64, f
             t.s1.opacity(a),
             px(1.),
             color,
-            if r.status == Status::Off { BorderStyle::Dashed } else { BorderStyle::Solid },
+            if r.status == Status::Off {
+                BorderStyle::Dashed
+            } else {
+                BorderStyle::Solid
+            },
         ));
     }
     let size = 11. * k;
     let run = TextRun {
         len: r.chip.len(),
         font: mono_font(),
-        color: if r.status == Status::Win { t.on_win.opacity(a) } else { color },
+        color: if r.status == Status::Win {
+            t.on_win.opacity(a)
+        } else {
+            color
+        },
         background_color: None,
         underline: None,
         strikethrough: None,
     };
-    let line = window.text_system().shape_line(r.chip.clone(), px(size as f32), &[run], None);
+    let line = window
+        .text_system()
+        .shape_line(r.chip.clone(), px(size as f32), &[run], None);
     let lh = size * 1.3;
     line.paint(
         point(px((chx + 8. * k) as f32), px((cy - lh / 2. + 0.5 * k) as f32)),
