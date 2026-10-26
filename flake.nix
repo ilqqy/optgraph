@@ -42,6 +42,9 @@
         import ./tests {
           inherit pkgs nixpkgs self;
         }
+        // {
+          optgraph-core = import ./app/core-tests.nix { inherit pkgs; };
+        }
       );
 
       devShells = forAllSystems (pkgs: {

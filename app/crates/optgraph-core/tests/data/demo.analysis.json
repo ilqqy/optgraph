@@ -1,0 +1,2219 @@
+{
+ "stats": {
+  "modules": 27,
+  "options": 94,
+  "definitions": 108,
+  "overrides": 5,
+  "switchedOff": 10,
+  "errors": 0
+ },
+ "overrides": [
+  33,
+  55,
+  69,
+  76,
+  87
+ ],
+ "withUser": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  34,
+  35,
+  36,
+  37,
+  38,
+  39,
+  40,
+  41,
+  42,
+  43,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  50,
+  51,
+  52,
+  53,
+  54,
+  56,
+  57,
+  58,
+  59,
+  60,
+  61,
+  62,
+  63,
+  64,
+  65,
+  66,
+  67,
+  68,
+  70,
+  71,
+  72,
+  73,
+  74,
+  75,
+  77,
+  78,
+  79,
+  80,
+  81,
+  82,
+  83,
+  84,
+  85,
+  86,
+  88,
+  89,
+  90,
+  91,
+  92,
+  93
+ ],
+ "nixpkgsOnly": [],
+ "switchedOff": [
+  [
+   20,
+   2
+  ],
+  [
+   58,
+   0
+  ],
+  [
+   59,
+   0
+  ],
+  [
+   60,
+   0
+  ],
+  [
+   77,
+   0
+  ],
+  [
+   78,
+   0
+  ],
+  [
+   88,
+   1
+  ],
+  [
+   89,
+   0
+  ],
+  [
+   90,
+   0
+  ],
+  [
+   91,
+   0
+  ]
+ ],
+ "errors": [],
+ "options": [
+  {
+   "path": "boot.consoleLogLevel",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.initrd.availableKernelModules",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardware-configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.initrd.systemd.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.initrd.verbose",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.kernelModules",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardware-configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.kernelParams",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.efi.canTouchEfiVariables",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.systemd-boot.configurationLimit",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.systemd-boot.editor",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardening.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.systemd-boot.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.timeout",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.plymouth.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by boot.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "console.keyMap",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by locale.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "demo.features.gaming",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "demo.features.laptop",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "demo.features.printing",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "demo.features.virtualisation",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "documentation.dev.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by dev-tools.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "environment.sessionVariables",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hyprland.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "environment.shellAliases",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "environment.systemPackages",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    2
+   ],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     3,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     4,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     5,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     6,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     7,
+     "lose",
+     "beaten by 6 definitions at 100: 100 < 1500"
+    ],
+    [
+     2,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fileSystems",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardware-configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fonts.fontconfig.defaultFonts.emoji",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fonts.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fonts.fontconfig.defaultFonts.monospace",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fonts.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fonts.fontconfig.defaultFonts.sansSerif",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fonts.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fonts.packages",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fonts.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "hardware.bluetooth.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by bluetooth.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "hardware.bluetooth.powerOnBoot",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by bluetooth.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "hardware.bluetooth.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by bluetooth.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "hardware.graphics.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by desktop.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "hardware.graphics.enable32Bit",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by gaming.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "i18n.defaultLocale",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by locale.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "i18n.extraLocaleSettings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by locale.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "networking.firewall.enable",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats mkDefault (user)",
+   "beatsModules": "mkForce in hardening.nix beats mkDefault in dev-tools.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats dev-tools.nix: 50 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by hardening.nix: 50 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by hardening.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "networking.hostName",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by inline #2: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "networking.networkmanager.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by networking.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "networking.networkmanager.wifi.backend",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by networking.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nix.gc.automatic",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nix-settings.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nix.gc.dates",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nix-settings.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nix.gc.options",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nix-settings.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nix.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by 2 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nixpkgs.config",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by gaming.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nixpkgs.hostPlatform",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "programs.direnv.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by dev-tools.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.firefox.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by apps.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.gamemode.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by gaming.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.git.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by dev-tools.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.hyprland.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hyprland.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.hyprlock.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hyprland.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.starship.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by shell.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.steam.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by gaming.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.zsh.autosuggestions.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by shell.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.zsh.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by shell.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "programs.zsh.syntaxHighlighting.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by shell.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "security.polkit.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardening.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "security.protectKernelImage",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats mkDefault (input:shared)",
+   "beatsModules": "mkForce in power.nix beats mkDefault in base.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats base.nix: 50 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by power.nix: 50 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by power.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "security.rtkit.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "security.sudo.execWheelOnly",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardening.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.avahi.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "services.avahi.nssmdns4",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "services.avahi.openFirewall",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "services.blueman.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by bluetooth.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.fstrim.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by maintenance.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.fwupd.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by maintenance.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.greetd.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hyprland.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.greetd.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "services.gvfs.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by desktop.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.hypridle.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hyprland.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.libinput.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by desktop.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.openssh.enable",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats mkDefault (input:shared)",
+   "beatsModules": "mkForce in hardening.nix beats mkDefault in base.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats base.nix: 50 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by hardening.nix: 50 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by hardening.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.openssh.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by base.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.pipewire.alsa.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.pipewire.alsa.support32Bit",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by gaming.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.pipewire.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.pipewire.pulse.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.pipewire.wireplumber.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.power-profiles-daemon.enable",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats mkDefault (user)",
+   "beatsModules": "mkForce in power.nix beats mkDefault in desktop.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats desktop.nix: 50 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by power.nix: 50 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by power.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.printing.drivers",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "services.printing.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "services.pulseaudio.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by audio.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.resolved.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by networking.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.tlp.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by power.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.tlp.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by power.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.udisks2.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by desktop.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "services.upower.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by power.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "swapDevices",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by hardware-configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "system.stateVersion",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "time.timeZone",
+   "override": true,
+   "userVsUser": true,
+   "beats": "normal (user) beats mkDefault (input:shared)",
+   "beatsModules": "normal in locale.nix beats mkDefault in base.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats base.nix: 100 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by locale.nix: 100 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by locale.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "users.users",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    1
+   ],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     2,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by 2 definitions at 100: 100 < 1500"
+    ],
+    [
+     1,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "virtualisation.podman.defaultNetwork.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "virtualisation.podman.dockerCompat",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "virtualisation.podman.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "zramSwap.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by maintenance.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "zramSwap.memoryPercent",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by maintenance.nix: 100 < 1500"
+    ]
+   ]
+  }
+ ],
+ "modules": [
+  [
+   "configuration.nix",
+   "…/demo/configuration.nix"
+  ],
+  [
+   "base.nix",
+   "…/demo/shared/base.nix"
+  ],
+  [
+   "inline #2",
+   "inline module #2 (flake.nix:25)"
+  ],
+  [
+   "hardware-configuration.nix",
+   "…/demo/hardware-configuration.nix"
+  ],
+  [
+   "options.nix",
+   "…/demo/modules/options.nix"
+  ],
+  [
+   "core.nix",
+   "…/demo/modules/core.nix"
+  ],
+  [
+   "desktop.nix",
+   "…/demo/modules/desktop.nix"
+  ],
+  [
+   "dev-tools.nix",
+   "…/demo/modules/dev-tools.nix"
+  ],
+  [
+   "gaming.nix",
+   "…/demo/modules/gaming.nix"
+  ],
+  [
+   "virtualisation.nix",
+   "…/demo/modules/virtualisation.nix"
+  ],
+  [
+   "maintenance.nix",
+   "…/demo/modules/maintenance.nix"
+  ],
+  [
+   "local.nix",
+   "…/demo/modules/local.nix"
+  ],
+  [
+   "not-detected.nix",
+   "…/nixos/modules/installer/scan/not-detected.nix"
+  ],
+  [
+   "boot.nix",
+   "…/demo/modules/core/boot.nix"
+  ],
+  [
+   "locale.nix",
+   "…/demo/modules/core/locale.nix"
+  ],
+  [
+   "nix-settings.nix",
+   "…/demo/modules/core/nix-settings.nix"
+  ],
+  [
+   "networking.nix",
+   "…/demo/modules/core/networking.nix"
+  ],
+  [
+   "users.nix",
+   "…/demo/modules/core/users.nix"
+  ],
+  [
+   "shell.nix",
+   "…/demo/modules/core/shell.nix"
+  ],
+  [
+   "hardening.nix",
+   "…/demo/modules/core/hardening.nix"
+  ],
+  [
+   "hyprland.nix",
+   "…/demo/modules/desktop/hyprland.nix"
+  ],
+  [
+   "audio.nix",
+   "…/demo/modules/desktop/audio.nix"
+  ],
+  [
+   "fonts.nix",
+   "…/demo/modules/desktop/fonts.nix"
+  ],
+  [
+   "bluetooth.nix",
+   "…/demo/modules/desktop/bluetooth.nix"
+  ],
+  [
+   "power.nix",
+   "…/demo/modules/desktop/power.nix"
+  ],
+  [
+   "printing.nix",
+   "…/demo/modules/desktop/printing.nix"
+  ],
+  [
+   "apps.nix",
+   "…/demo/modules/desktop/apps.nix"
+  ]
+ ]
+}
