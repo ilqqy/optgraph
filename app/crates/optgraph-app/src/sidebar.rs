@@ -295,9 +295,11 @@ impl OptgraphView {
             .child(div().flex_1())
             .child(
                 div()
+                    .flex_shrink_1()
+                    .min_w_0()
+                    .truncate()
                     .text_color(t.text3)
                     .text_size(px(FS_SM))
-                    .whitespace_nowrap()
                     .child(format!(
                         "{} modules · {} options · scope {}",
                         thousands(model.modules().len() as u64),
@@ -305,6 +307,7 @@ impl OptgraphView {
                         m.scope.as_str()
                     )),
             )
+
     }
 }
 

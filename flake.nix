@@ -75,11 +75,16 @@
             pkgs.slurp
             pkgs.wlr-randr
             pkgs.wtype
+            pkgs.wlrctl
+            (pkgs.python3.withPackages (p: [ p.pywayland ])) # tools/native-pointer.py
             pkgs.vulkan-tools
             pkgs.wayland-utils
           ];
           buildInputs = import ./app/runtime-libs.nix pkgs;
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (import ./app/runtime-libs.nix pkgs);
+          # The virtual pointer protocol, for tools/native-pointer.py.
+          OPTGRAPH_WLR_PROTOCOLS = "${pkgs.wlr-protocols}/share/wlr-protocols";
+          OPTGRAPH_WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
           # Mesa's lavapipe (software Vulkan), used by tools/native-shot.sh.
           OPTGRAPH_LAVAPIPE_ICD = "${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.uname.processor}.json";
         };

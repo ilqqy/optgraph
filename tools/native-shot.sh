@@ -4,11 +4,13 @@
 # software rendering (pixman for the compositor, Mesa's lavapipe for the
 # app's Vulkan), then captures the output with grim.
 #
-#   tools/native-shot.sh [-o out.png] [-s 1600x1000] [-w secs] [-k keys] -- command [args...]
+#   tools/native-shot.sh [-o out.png] [-s 1600x1000] [-w secs] [-k keys] [-x cmd] -- command [args...]
 #
 # -k types keys into the app before the capture, with wtype (the virtual
 # keyboard protocol): a space-separated list of wtype arguments, e.g.
 # "-k slash -s 300 fire" (slash key, wait 300 ms, type "fire"); see wtype(1).
+# -x runs a shell command in the session after that, e.g. pointer moves and
+# clicks with wlrctl: -x "wlrctl pointer move 700 400; wlrctl pointer click".
 #
 # Run it from the native dev shell (`nix develop .#native`): cage, grim,
 # wlr-randr and $OPTGRAPH_LAVAPIPE_ICD come from there. The default output is
@@ -19,12 +21,14 @@ out=/tmp/optgraph-native/shot.png
 mode=1600x1000
 wait_s=4
 keys=
+cmd=
 while [ $# -gt 0 ]; do
   case $1 in
     -o) out=$2; shift 2 ;;
     -s) mode=$2; shift 2 ;;
     -w) wait_s=$2; shift 2 ;;
     -k) keys=$2; shift 2 ;;
+    -x) cmd=$2; shift 2 ;;
     --) shift; break ;;
     *) break ;;
   esac
@@ -70,6 +74,10 @@ sleep "$wait_s"
 if [ -n "$keys" ]; then
   # shellcheck disable=SC2086 # word splitting is the point: wtype arguments
   wtype -s 300 $keys # the delay lets the client take the new keymap first
+  sleep 1
+fi
+if [ -n "$cmd" ]; then
+  bash -c "$cmd"
   sleep 1
 fi
 kill -0 "$cage_pid" 2>/dev/null || { echo "native-shot: the app exited" >&2; tail -n 20 "$log" >&2; exit 1; }

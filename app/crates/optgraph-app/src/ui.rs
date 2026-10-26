@@ -306,3 +306,4 @@ pub fn icon_button(t: &Theme, name: &str) -> Div {
         .cursor_pointer()
         .child(icon(name, 16., t.text3))
 }
+

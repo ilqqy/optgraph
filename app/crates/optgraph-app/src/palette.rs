@@ -553,29 +553,4 @@ impl OptgraphView {
             )
             .children(list)
     }
-
-    /// The centre pane until the graph lands: the stage's dot grid.
-    pub fn render_stage(&mut self, t: &Theme, _model: &Model, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex_1()
-            .min_w_0()
-            .h_full()
-            .relative()
-            .bg(t.bg)
-            .flex()
-            .items_center()
-            .justify_center()
-            .text_color(t.text3)
-            .text_size(px(FS_SM))
-            .child(
-                div()
-                    .px(px(12.))
-                    .py(px(8.))
-                    .rounded(px(R_LG))
-                    .border_1()
-                    .border_dashed()
-                    .border_color(t.line2)
-                    .child("Module graph"),
-            )
-    }
 }

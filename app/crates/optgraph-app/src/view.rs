@@ -11,6 +11,7 @@ use gpui::{
 };
 use optgraph_core::Model;
 
+use crate::graph::GraphState;
 use crate::input::{InputEvent, TextInput};
 use crate::palette::PaletteState;
 use crate::theme::{FONT_UI, FS_MD, Theme, theme};
@@ -98,6 +99,10 @@ pub struct OptgraphView {
     pub palette: PaletteState,
     pub inspector_scroll: ScrollHandle,
     pub sidebar_scroll: ScrollHandle,
+    pub graph: GraphState,
+    /// The selection the graph has not shown yet (it needs the window).
+    pub graph_sel: Option<Sel>,
+    pub bench: Option<crate::stage::Bench>,
 }
 
 impl Focusable for OptgraphView {
@@ -130,6 +135,9 @@ impl OptgraphView {
             palette: PaletteState::new(input),
             inspector_scroll: ScrollHandle::new(),
             sidebar_scroll: ScrollHandle::new(),
+            graph: GraphState::default(),
+            graph_sel: None,
+            bench: crate::stage::Bench::from_env(),
         };
         if let Some(m) = model {
             view.set_model(m, cx);
@@ -141,6 +149,8 @@ impl OptgraphView {
         let model = Rc::new(model);
         self.side_items = side_items(&model);
         self.model = Some(model);
+        self.graph = GraphState::default();
+        self.graph_sel = None;
         self.load_error = None;
         self.sel = Sel::None;
         self.side_cursor = None;
@@ -156,6 +166,7 @@ impl OptgraphView {
             self.path_copied = false;
         }
         self.sel = sel;
+        self.graph_sel = Some(sel);
         let n = match (sel, &self.model) {
             (Sel::Option(oi), Some(m)) => m.options()[oi].definitions.len(),
             _ => 0,
@@ -352,7 +363,7 @@ impl Render for OptgraphView {
                             .flex_1()
                             .min_h_0()
                             .flex()
-                            .child(self.render_stage(&t, &model, cx))
+                            .child(self.render_stage(&t, &model, insp_w, window, cx))
                             .child(self.render_inspector(&t, &model, insp_w, cx)),
                     ),
             )
