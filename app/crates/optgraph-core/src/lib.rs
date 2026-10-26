@@ -3,6 +3,7 @@
 //! helpers (`text`). No GUI dependency.
 
 pub mod analysis;
+pub mod layout;
 pub mod load;
 pub mod model;
 pub mod search;
