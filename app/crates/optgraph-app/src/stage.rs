@@ -27,7 +27,13 @@ pub struct Bench {
 impl Bench {
     pub fn from_env() -> Option<Bench> {
         let n: usize = std::env::var("OPTGRAPH_BENCH_PAN").ok()?.parse().ok()?;
-        Some(Bench { frames: n, last: None, intervals: Vec::new(), cpu: Vec::new(), dir: 1. })
+        Some(Bench {
+            frames: n,
+            last: None,
+            intervals: Vec::new(),
+            cpu: Vec::new(),
+            dir: 1.,
+        })
     }
 
     fn report(&self) {
@@ -36,7 +42,12 @@ impl Bench {
             s.sort_by(|a, b| a.total_cmp(b));
             let mean = s.iter().sum::<f64>() / s.len().max(1) as f64;
             let q = |p: f64| s[((s.len() as f64 - 1.) * p).round() as usize];
-            format!("mean {mean:.2} ms, p50 {:.2}, p95 {:.2}, max {:.2}", q(0.5), q(0.95), q(1.))
+            format!(
+                "mean {mean:.2} ms, p50 {:.2}, p95 {:.2}, max {:.2}",
+                q(0.5),
+                q(0.95),
+                q(1.)
+            )
         };
         // The first frames warm caches (glyphs, paths); skip them.
         let skip = 10.min(self.intervals.len() / 4);
@@ -101,7 +112,12 @@ impl OptgraphView {
         .absolute()
         .inset_0();
 
-        let local = |p: gpui::Point<Pixels>| (f64::from(f32::from(p.x)) - SIDE_W as f64, f64::from(f32::from(p.y)) - TOP_H as f64);
+        let local = |p: gpui::Point<Pixels>| {
+            (
+                f64::from(f32::from(p.x)) - SIDE_W as f64,
+                f64::from(f32::from(p.y)) - TOP_H as f64,
+            )
+        };
         let dragging = self.graph.drag.as_ref().is_some_and(|d| d.moved);
         let cursor = if dragging {
             CursorStyle::ClosedHand
@@ -124,7 +140,11 @@ impl OptgraphView {
                 MouseButton::Left,
                 cx.listener(move |this, ev: &gpui::MouseDownEvent, _, cx| {
                     this.graph.stop_camera();
-                    this.graph.drag = Some(graph::Drag { start: local(ev.position), cam: this.graph.cam, moved: false });
+                    this.graph.drag = Some(graph::Drag {
+                        start: local(ev.position),
+                        cam: this.graph.cam,
+                        moved: false,
+                    });
                     cx.notify();
                 }),
             )
@@ -140,7 +160,11 @@ impl OptgraphView {
                         d.moved = true;
                     }
                     if d.moved {
-                        this.graph.cam = graph::Cam { x: d.cam.x + dx, y: d.cam.y + dy, k: d.cam.k };
+                        this.graph.cam = graph::Cam {
+                            x: d.cam.x + dx,
+                            y: d.cam.y + dy,
+                            k: d.cam.k,
+                        };
                         this.graph.hover = None;
                         cx.notify();
                     }
@@ -174,7 +198,6 @@ impl OptgraphView {
                 }),
             )
             .on_hover(cx.listener(|this, inside: &bool, _, cx| {
-
                 if !inside && this.graph.hover.is_some() {
                     this.graph.hover = None;
                     cx.notify();
@@ -271,7 +294,12 @@ impl OptgraphView {
             div()
                 .flex()
                 .gap(px(4.))
-                .child(div().text_color(t.text).font_weight(FontWeight::SEMIBOLD).child(n.to_string()))
+                .child(
+                    div()
+                        .text_color(t.text)
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .child(n.to_string()),
+                )
                 .child(if n == 1 { one.to_string() } else { many.to_string() })
         };
         div()
@@ -316,7 +344,13 @@ impl OptgraphView {
                     .child(fact(importers, "importer", "importers")),
             )
             .when(m.disabled, |d| {
-                d.child(div().mt(px(4.)).text_color(t.text3).italic().child("disabled (disabledModules): not evaluated"))
+                d.child(
+                    div()
+                        .mt(px(4.))
+                        .text_color(t.text3)
+                        .italic()
+                        .child("disabled (disabledModules): not evaluated"),
+                )
             })
             .into_any_element()
     }
@@ -324,7 +358,14 @@ impl OptgraphView {
     /// Origins (mark shape and colour), and while an option is selected the
     /// statuses of its defining modules.
     fn legend(&self, t: &Theme) -> AnyElement {
-        let item = |mark: AnyElement, label: &str| div().flex().items_center().gap(px(6.)).child(mark).child(label.to_string());
+        let item = |mark: AnyElement, label: &str| {
+            div()
+                .flex()
+                .items_center()
+                .gap(px(6.))
+                .child(mark)
+                .child(label.to_string())
+        };
         let o = |s: &str| origin_dot(t, &optgraph_core::Origin::parse(s));
         let ring = |c: gpui::Hsla, dashed: bool, glow: bool| {
             div()
@@ -363,7 +404,14 @@ impl OptgraphView {
                     .child(item(o("nixpkgs"), "nixpkgs"))
                     .child(item(o("unknown"), "unknown"))
                     .child(item(
-                        div().w(px(18.)).h(px(10.)).rounded(px(5.)).border_1().border_dashed().border_color(t.text3).into_any_element(),
+                        div()
+                            .w(px(18.))
+                            .h(px(10.))
+                            .rounded(px(5.))
+                            .border_1()
+                            .border_dashed()
+                            .border_color(t.text3)
+                            .into_any_element(),
                         "disabled",
                     )),
             )

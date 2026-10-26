@@ -264,7 +264,10 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
     index(&layers, &mut pos);
 
     // 5. Coordinates.
-    let col_w: Vec<f64> = layers.iter().map(|col| col.iter().fold(0f64, |m, &v| m.max(w[v]))).collect();
+    let col_w: Vec<f64> = layers
+        .iter()
+        .map(|col| col.iter().fold(0f64, |m, &v| m.max(w[v])))
+        .collect();
     let mut col_x = Vec::with_capacity(nl);
     let mut acc = 0.;
     for cw in &col_w {
@@ -312,7 +315,11 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
         Both,
     }
     let relax = |dir: Dir, y: &mut Vec<f64>| {
-        let order: Vec<usize> = if dir == Dir::Up { (0..nl).rev().collect() } else { (0..nl).collect() };
+        let order: Vec<usize> = if dir == Dir::Up {
+            (0..nl).rev().collect()
+        } else {
+            (0..nl).collect()
+        };
         for l in order {
             let col = &layers[l];
             if col.is_empty() {
@@ -373,7 +380,10 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
     if pack_isolated {
         let cell_w = isolated.iter().fold(f64::NEG_INFINITY, |m, &v| m.max(w[v])) + GAP_X / 2.;
         let width = (acc - GAP_X).max(cell_w);
-        let cols = ((width + GAP_X / 2.) / cell_w).floor().min(isolated.len() as f64).max(1.) as usize;
+        let cols = ((width + GAP_X / 2.) / cell_w)
+            .floor()
+            .min(isolated.len() as f64)
+            .max(1.) as usize;
         let row_h = isolated.iter().fold(f64::NEG_INFINITY, |m, &v| m.max(h[v])) + GAP_Y;
         let y0 = (if bottom > 0. { bottom + 3. * GAP_Y } else { 0. }) + row_h / 2.;
         for (i, &v) in isolated.iter().enumerate() {
@@ -390,15 +400,30 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
             for (i, &v) in chain.iter().enumerate() {
                 if v < n {
                     // Leave a module on its right side, enter on its left.
-                    pts.push(Point { x: x[v] + if i == 0 { w[v] / 2. } else { -w[v] / 2. }, y: y[v] });
+                    pts.push(Point {
+                        x: x[v] + if i == 0 { w[v] / 2. } else { -w[v] / 2. },
+                        y: y[v],
+                    });
                 } else {
-                    pts.push(Point { x: col_x[lay[v]], y: y[v] });
-                    pts.push(Point { x: col_x[lay[v]] + col_w[lay[v]], y: y[v] });
+                    pts.push(Point {
+                        x: col_x[lay[v]],
+                        y: y[v],
+                    });
+                    pts.push(Point {
+                        x: col_x[lay[v]] + col_w[lay[v]],
+                        y: y[v],
+                    });
                 }
             }
             Some(pts)
         })
         .collect();
     y.truncate(n);
-    Layout { x, y, layer, paths, crossings: best_x }
+    Layout {
+        x,
+        y,
+        layer,
+        paths,
+        crossings: best_x,
+    }
 }
