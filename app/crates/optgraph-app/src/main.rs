@@ -4,6 +4,7 @@
 //!   optgraph-app - < graph.json
 
 mod assets;
+mod evaluate;
 mod graph;
 mod input;
 mod inspector;
@@ -24,11 +25,13 @@ use optgraph_core::{Model, load};
 use crate::theme::Theme;
 use crate::view::{OptgraphView, Sel};
 
-const USAGE: &str = "usage: optgraph-app [graph.json | -] [--opt <option path>] [--module <index>]
+const USAGE: &str = "usage: optgraph-app [graph.json | - | <flakeref>#nixosConfigurations.<host>]
+                    [--opt <option path>] [--module <index>] [--light | --dark]
 
 Shows who set each option of a NixOS configuration, at what priority, and
 why the other definitions lost. graph.json is made by optgraph; - reads it
-from stdin.
+from stdin. A flake reference runs optgraph on it first ($OPTGRAPH_CLI, else
+optgraph on PATH) and shows its progress.
 
   --opt <path>      select an option, e.g. networking.firewall.enable
   --module <index>  select a module by its index in graph.json's modules
@@ -85,8 +88,14 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    let flake_ref = args
+        .source
+        .as_ref()
+        .map(|p| p.to_string_lossy().into_owned())
+        .filter(|s| evaluate::is_flake_ref(s));
     let (model, load_error) = match &args.source {
         None => (None, None),
+        Some(_) if flake_ref.is_some() => (None, None),
         Some(p) => match load::from_path(p) {
             Ok(g) => (Some(Model::new(g)), None),
             Err(e) => {
@@ -165,6 +174,10 @@ fn main() -> ExitCode {
                         view.scheme = loading::Scheme::Pinned(m);
                     }
                     view.watch_appearance(window, cx);
+                    if let Some(target) = flake_ref.clone() {
+                        view.after_load = (opt.clone(), module);
+                        view.start_evaluation(target, window, cx);
+                    }
                     if let Some(p) = &opt {
                         view.select_option_path(p, cx);
                     } else if let Some(i) = module {

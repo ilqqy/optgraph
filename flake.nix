@@ -23,6 +23,14 @@
           inherit (self) narHash;
           inherit toolVersion viewer;
         };
+        # The native viewer (app/); runs the CLI above for flake references.
+        optgraph-app = pkgs.callPackage ./app/package.nix {
+          src = ./.;
+          optgraph = default;
+          # The crate's version: the vendored dependencies (a fixed-output
+          # derivation named after it) then survive commits.
+          version = "0.1.0";
+        };
         # Single-file viewer: result/index.html (viewer/build.sh).
         viewer = pkgs.runCommand "optgraph-viewer" { } ''
           bash ${./viewer/build.sh} ${./viewer} $out
@@ -34,6 +42,11 @@
           type = "app";
           program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/optgraph";
           meta.description = "Extract the module graph and option definitions of a NixOS configuration";
+        };
+        app = {
+          type = "app";
+          program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.optgraph-app}/bin/optgraph-app";
+          meta.description = "Native viewer: who set an option, at what priority, and why the others lost";
         };
       });
 
@@ -80,8 +93,8 @@
             pkgs.vulkan-tools
             pkgs.wayland-utils
           ];
-          buildInputs = import ./app/runtime-libs.nix pkgs;
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (import ./app/runtime-libs.nix pkgs);
+          buildInputs = pkgs.callPackage ./app/runtime-libs.nix { };
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (pkgs.callPackage ./app/runtime-libs.nix { });
           # The virtual pointer protocol, for tools/native-pointer.py.
           OPTGRAPH_WLR_PROTOCOLS = "${pkgs.wlr-protocols}/share/wlr-protocols";
           OPTGRAPH_WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
