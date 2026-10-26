@@ -74,6 +74,7 @@
             pkgs.grim
             pkgs.slurp
             pkgs.wlr-randr
+            pkgs.wtype
             pkgs.vulkan-tools
             pkgs.wayland-utils
           ];

@@ -4,7 +4,11 @@
 # software rendering (pixman for the compositor, Mesa's lavapipe for the
 # app's Vulkan), then captures the output with grim.
 #
-#   tools/native-shot.sh [-o out.png] [-s 1600x1000] [-w secs] -- command [args...]
+#   tools/native-shot.sh [-o out.png] [-s 1600x1000] [-w secs] [-k keys] -- command [args...]
+#
+# -k types keys into the app before the capture, with wtype (the virtual
+# keyboard protocol): a space-separated list of wtype arguments, e.g.
+# "-k slash -s 300 fire" (slash key, wait 300 ms, type "fire"); see wtype(1).
 #
 # Run it from the native dev shell (`nix develop .#native`): cage, grim,
 # wlr-randr and $OPTGRAPH_LAVAPIPE_ICD come from there. The default output is
@@ -14,17 +18,19 @@ set -euo pipefail
 out=/tmp/optgraph-native/shot.png
 mode=1600x1000
 wait_s=4
+keys=
 while [ $# -gt 0 ]; do
   case $1 in
     -o) out=$2; shift 2 ;;
     -s) mode=$2; shift 2 ;;
     -w) wait_s=$2; shift 2 ;;
+    -k) keys=$2; shift 2 ;;
     --) shift; break ;;
     *) break ;;
   esac
 done
 [ $# -gt 0 ] || { echo "usage: $0 [-o out.png] [-s WxH] [-w secs] -- command [args...]" >&2; exit 2; }
-for t in cage grim wlr-randr; do
+for t in cage grim wlr-randr wtype; do
   command -v "$t" >/dev/null || { echo "native-shot: $t not found; run from 'nix develop .#native'" >&2; exit 2; }
 done
 [ -n "${OPTGRAPH_LAVAPIPE_ICD:-}" ] || { echo "native-shot: OPTGRAPH_LAVAPIPE_ICD unset; run from 'nix develop .#native'" >&2; exit 2; }
@@ -61,6 +67,11 @@ output=$(wlr-randr | awk 'NR==1 {print $1}')
 wlr-randr --output "$output" --custom-mode "$mode" >/dev/null
 
 sleep "$wait_s"
+if [ -n "$keys" ]; then
+  # shellcheck disable=SC2086 # word splitting is the point: wtype arguments
+  wtype -s 300 $keys # the delay lets the client take the new keymap first
+  sleep 1
+fi
 kill -0 "$cage_pid" 2>/dev/null || { echo "native-shot: the app exited" >&2; tail -n 20 "$log" >&2; exit 1; }
 grim "$out"
 echo "$out"

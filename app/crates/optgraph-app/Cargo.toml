@@ -10,3 +10,9 @@ publish.workspace = true
 optgraph-core = { path = "../optgraph-core" }
 gpui = { package = "gpui-pre", version = "=0.3.10" }
 gpui_platform = { package = "gpui-pre-platform", version = "=0.3.10", features = ["wayland", "x11"] }
+anyhow = "=1.0.104"
+
+[build-dependencies]
+# Decodes the viewer's WOFF2 fonts and cuts static weights from the
+# variable fonts (GPUI's text system ignores variation axes).
+allsorts = { version = "=0.16.1", default-features = false, features = ["flate2_rust"] }
