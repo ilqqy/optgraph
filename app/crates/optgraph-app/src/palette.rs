@@ -259,6 +259,7 @@ impl OptgraphView {
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .child(
                         div()
+                            .flex_none()
                             .flex()
                             .items_center()
                             .gap(px(10.))
@@ -283,6 +284,7 @@ impl OptgraphView {
                     )
                     .child(
                         div()
+                            .flex_none()
                             .flex()
                             .items_center()
                             .gap(px(16.))
