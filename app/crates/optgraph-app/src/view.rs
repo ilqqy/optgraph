@@ -106,6 +106,10 @@ pub struct OptgraphView {
     pub graph_sel: Option<Sel>,
     pub bench: Option<crate::stage::Bench>,
     pub scheme: crate::loading::Scheme,
+    /// A running (or failed) `optgraph` evaluation of a flake reference.
+    pub evaluation: Option<crate::evaluate::Evaluation>,
+    /// --opt / --module to apply once an evaluation has loaded.
+    pub after_load: (Option<String>, Option<usize>),
     _appearance: Option<gpui::Subscription>,
 }
 
@@ -143,6 +147,8 @@ impl OptgraphView {
             graph_sel: None,
             bench: crate::stage::Bench::from_env(),
             scheme: crate::loading::Scheme::System,
+            evaluation: None,
+            after_load: (None, None),
             _appearance: None,
         };
         if let Some(m) = model {
@@ -364,6 +370,11 @@ impl Render for OptgraphView {
             .font_family(FONT_UI)
             .text_size(px(FS_MD))
             .line_height(gpui::relative(1.45));
+        if let Some(ev) = self.evaluation.take() {
+            let el = self.render_evaluation(&t, &ev);
+            self.evaluation = Some(ev);
+            return root.child(el).into_any_element();
+        }
         let Some(model) = self.model.clone() else {
             return root.child(self.render_empty(&t, cx)).into_any_element();
         };

@@ -1,0 +1,31 @@
+name: native
+# The native app (app/, GPUI). Kept out of ci.yml: building GPUI takes
+# minutes, and `nix flake check` only runs optgraph-core's tests.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "flake.*"
+      - "viewer/vendor/fonts/**"
+      - ".github/workflows/native.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "flake.*"
+      - "viewer/vendor/fonts/**"
+      - ".github/workflows/native.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Build .#optgraph-app
+        run: nix build -L .#optgraph-app
+      - name: The wrapper runs
+        run: ./result/bin/optgraph-app --help
