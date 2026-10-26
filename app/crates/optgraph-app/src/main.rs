@@ -4,10 +4,12 @@
 //!   optgraph-app - < graph.json
 
 mod assets;
+mod graph;
 mod input;
 mod inspector;
 mod palette;
 mod sidebar;
+mod stage;
 mod theme;
 mod ui;
 mod view;
@@ -35,7 +37,7 @@ struct Args {
     source: Option<PathBuf>,
     opt: Option<String>,
     module: Option<usize>,
-    light: bool,
+    scheme: Option<theme::Mode>,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -43,7 +45,7 @@ fn parse_args() -> Result<Args, String> {
         source: None,
         opt: None,
         module: None,
-        light: false,
+        scheme: None,
     };
     let mut it = std::env::args().skip(1);
     while let Some(a) = it.next() {
@@ -54,8 +56,8 @@ fn parse_args() -> Result<Args, String> {
                 let v = it.next().ok_or("--module needs an index")?;
                 args.module = Some(v.parse().map_err(|_| format!("--module: not an index: {v}"))?);
             }
-            "--light" => args.light = true,
-            "--dark" => args.light = false,
+            "--light" => args.scheme = Some(theme::Mode::Light),
+            "--dark" => args.scheme = Some(theme::Mode::Dark),
             s if s.starts_with("--") => return Err(format!("unknown option {s}")),
             s => {
                 if args.source.replace(PathBuf::from(s)).is_some() {
@@ -113,7 +115,7 @@ fn main() -> ExitCode {
             if let Err(e) = cx.text_system().add_fonts(assets::fonts()) {
                 eprintln!("optgraph-app: loading the fonts failed: {e:#}");
             }
-            cx.set_global(if args.light { Theme::light() } else { Theme::dark() });
+            cx.set_global(Theme::for_mode(args.scheme.unwrap_or(theme::Mode::Dark)));
             cx.bind_keys(input::bindings());
             cx.bind_keys(view::bindings());
             cx.on_window_closed(|cx, _| {

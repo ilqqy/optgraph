@@ -61,7 +61,6 @@ pub struct Theme {
     pub edge: Hsla,
     pub grid: Hsla,
     pub scrim: Hsla,
-    pub glow: Hsla,
     /// Shadow colour of raised surfaces.
     pub shadow: Hsla,
 }
@@ -109,7 +108,6 @@ impl Theme {
             edge: c(0x2f3748),
             grid: ca(0xffffff11),
             scrim: ca(0x03050990),
-            glow: ca(0xa093ff13),
             shadow: ca(0x000000bf),
         }
     }
@@ -146,7 +144,6 @@ impl Theme {
             edge: c(0xc2c8d3),
             grid: ca(0x141e3c1a),
             scrim: ca(0x12162052),
-            glow: ca(0x5b47e00e),
             shadow: ca(0x10182833),
         }
     }
