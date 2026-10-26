@@ -283,7 +283,10 @@ impl OptgraphView {
     fn render_option(&mut self, t: &Theme, model: &Model, oi: usize, cx: &mut Context<Self>) -> Vec<AnyElement> {
         let o = &model.options()[oi];
         let rows = model.ladder(oi);
-        let multi = o.winners.len() > 1;
+        // Omitted nixpkgs winners count as winners; when every winner is one
+        // of them, `winners` is empty.
+        let hidden = o.hidden_winners();
+        let multi = o.winner_count() > 1;
         let losers = rows.iter().filter(|r| r.status == Status::Lose).count() as u64;
         let offs = rows.iter().filter(|r| r.status == Status::Off).count() as u64;
         let winner = (o.winners.len() == 1).then(|| &o.definitions[o.winners[0]]);
@@ -347,6 +350,21 @@ impl OptgraphView {
                     "nothing active defines it."
                 }
             )))
+        } else if o.winners.is_empty() && hidden > 0 {
+            let who = plural(hidden, "nixpkgs definition", None);
+            let code = o.highest_prio.unwrap_or_default().to_string();
+            let tail = if losers > 0 {
+                format!(", over {}.", plural(losers, "weaker definition", None))
+            } else {
+                ".".into()
+            };
+            let s = format!("{who} win at priority {code} (not listed){tail}");
+            let c0 = who.len() + 17;
+            Some(
+                StyledText::new(s)
+                    .with_highlights([(0..who.len(), strong(t.text)), (c0..c0 + code.len(), strong(t.win))])
+                    .with_font_family_overrides([(c0..c0 + code.len(), FONT_MONO.into())]),
+            )
         } else if multi {
             None
         } else if let Some(w) = winner {
@@ -377,18 +395,8 @@ impl OptgraphView {
                         .with_font_family_overrides([(c0..c0 + code.len(), FONT_MONO.into())]),
                 )
             }
-        } else if o.winners.is_empty() {
-            // Every winner is an omitted nixpkgs definition (`winners` is
-            // empty while highestPrio is set).
-            let code = format!("{} {}", prio_name(o.highest_prio), o.highest_prio.unwrap_or_default());
-            let s = format!("nixpkgs definitions win with {code}; they are counted, not listed.");
-            Some(
-                StyledText::new(s)
-                    .with_highlights([(29..29 + code.len(), strong(t.win))])
-                    .with_font_family_overrides([(29..29 + code.len(), FONT_MONO.into())]),
-            )
         } else {
-            None
+            Some(StyledText::new("No winner is listed."))
         };
 
         let mut out: Vec<AnyElement> = vec![head.into_any_element(), title.into_any_element()];
@@ -424,18 +432,17 @@ impl OptgraphView {
                     .into_any_element(),
             );
         }
-        if multi {
+        if multi && !o.winners.is_empty() {
             let n = model.merged_modules(oi) as u64;
+            let mut merged_title = format!("Merged from {}", plural(n, "module", None));
             let mut sub = format!(
                 "Every active definition at priority {} ({}) is a winner; the values are merged.",
                 o.highest_prio.unwrap_or_default(),
                 prio_name(o.highest_prio)
             );
-            if o.omitted.nixpkgs_active > 0 {
-                sub.push_str(&format!(
-                    " Plus {} not listed.",
-                    plural(o.omitted.nixpkgs_active, "nixpkgs definition", None)
-                ));
+            if hidden > 0 {
+                merged_title.push_str(&format!(" and {}", plural(hidden, "nixpkgs definition", None)));
+                sub.push_str(" The nixpkgs ones are not listed.");
             }
             let dots = o.winners.iter().take(8).map(|&w| {
                 let origin = model.def_module(&o.definitions[w]).map(|m| m.origin.clone());
@@ -472,7 +479,7 @@ impl OptgraphView {
                                 div()
                                     .text_size(px(FS_LG))
                                     .font_weight(FontWeight(650.))
-                                    .child(format!("Merged from {}", plural(n, "module", None))),
+                                    .child(merged_title),
                             )
                             .child(div().text_color(t.text2).text_size(px(FS_SM)).child(sub)),
                     )

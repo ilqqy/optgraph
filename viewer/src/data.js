@@ -29,10 +29,10 @@ function buildModel(doc) {
 }
 
 // Per-option facts for the start panel and the empty-query order.
-//   override: a listed definition lost: active, known priority, not a winner.
+//   override: a listed definition lost: active, known priority, not a winner,
+//     to a listed winner or to omitted nixpkgs winners (omitted.nixpkgsWinners).
 //     The option default losing does not count (that is just setting an
-//     option), and neither can omitted nixpkgs definitions: `omitted` does not
-//     say whether they won or lost.
+//     option), and neither do omitted nixpkgs definitions that lose.
 //   userVsUser: winner and strongest loser both come from non-nixpkgs modules.
 //   off: indices of mkIf-false definitions from non-nixpkgs modules.
 function analyse(model) {
@@ -51,9 +51,11 @@ function analyse(model) {
         loser = d;
       }
     });
-    if (!loser) return { hasUser, override: false, userVsUser: false, beats: null, beatsParts: null, off };
-    const winner = o.definitions[o.winners[0]];
-    const wo = defOrigin(model, winner);
+    const hidden = hiddenWinners(o);
+    // No known winner (winners is empty, nothing omitted wins): no override.
+    if (!loser || (!o.winners.length && !hidden)) return { hasUser, override: false, userVsUser: false, beats: null, beatsParts: null, off };
+    const winner = o.winners.length ? o.definitions[o.winners[0]] : null;
+    const wo = winner ? defOrigin(model, winner) : "nixpkgs";
     const lo = defOrigin(model, loser);
     return {
       hasUser,
@@ -62,7 +64,7 @@ function analyse(model) {
       // "mkForce (user) beats mkDefault (input:shared)"
       beats: `${prioName(o.highestPrio)} (${wo}) beats ${prioName(loser.priority)} (${lo})`,
       // "mkForce" in "hardening.nix" beats "mkDefault" in "dev-tools.nix"
-      beatsParts: { win: prioName(o.highestPrio), winWho: defWho(model, winner), lose: prioName(loser.priority), loseWho: defWho(model, loser) },
+      beatsParts: { win: prioName(o.highestPrio), winWho: winner ? defWho(model, winner) : `nixpkgs (${hidden} not listed)`, lose: prioName(loser.priority), loseWho: defWho(model, loser) },
       off,
     };
   });
@@ -96,7 +98,9 @@ function analyse(model) {
 // unknown last, then listing order), each with a status and a one-line
 // reason computed from the data:
 //   win   "beats dev-tools.nix: 50 < 1000", "merged with 5 others at 100"
-//   lose  "beaten by hardening.nix: 50 < 1000"
+//   lose  "beaten by hardening.nix: 50 < 1000",
+//         "beaten by 3 nixpkgs definitions at 100 (not listed): 100 < 1000"
+// Omitted nixpkgs winners (omitted.nixpkgsWinners) count as winners here.
 //   off   "switched off: its mkIf condition is false"
 //   unknown (priority unknown, or no known winner)
 function ladder(model, o) {
@@ -106,12 +110,15 @@ function ladder(model, o) {
   const active = defs.filter(({ d, i }) => d.active && d.priority != null && !winners.has(i));
   const strongestLoser = active.reduce((best, x) => (best == null || x.d.priority < best.d.priority ? x : best), null);
   const firstWinner = o.winners.length ? o.definitions[o.winners[0]] : null;
+  const hidden = hiddenWinners(o);
+  const winCount = o.winners.length + hidden;
+  const notListed = hidden ? ` (${hidden} nixpkgs, not listed)` : "";
   const rows = defs.map(({ d, i }) => {
     let status;
     let reason;
     if (winners.has(i)) {
       status = "win";
-      if (o.winners.length > 1) reason = `merged with ${plural(o.winners.length - 1, "other")} at priority ${hp}`;
+      if (winCount > 1) reason = `merged with ${plural(winCount - 1, "other")} at priority ${hp}${notListed}`;
       else if (strongestLoser) reason = `beats ${defWho(model, strongestLoser.d)}: ${hp} < ${strongestLoser.d.priority}`;
       else if (d.kind === "default") reason = "nothing stronger is set: the default applies";
       else reason = "the only active definition";
@@ -124,16 +131,25 @@ function ladder(model, o) {
     } else if (hp == null) {
       status = "unknown";
       reason = "the winner is unknown (see the error)";
+    } else if (winCount === 0) {
+      // A graph.json from before omitted.nixpkgsWinners.
+      status = "unknown";
+      reason = "the winners are not listed";
     } else {
       status = "lose";
-      reason =
-        o.winners.length === 1
-          ? `beaten by ${defWho(model, firstWinner)}: ${hp} < ${d.priority}`
-          : `beaten by ${o.winners.length} definitions at ${hp}: ${hp} < ${d.priority}`;
+      if (!o.winners.length) reason = `beaten by ${plural(hidden, "nixpkgs definition")} at ${hp} (not listed): ${hp} < ${d.priority}`;
+      else if (winCount === 1) reason = `beaten by ${defWho(model, firstWinner)}: ${hp} < ${d.priority}`;
+      else reason = `beaten by ${winCount} definitions at ${hp}${notListed}: ${hp} < ${d.priority}`;
     }
     return { d, i, status, reason };
   });
   return rows.sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
+}
+
+// Winners counted in `omitted` instead of listed (0 in graphs from before
+// the field, and whenever there is a single winner: it is always listed).
+function hiddenWinners(o) {
+  return o.omitted.nixpkgsWinners ?? 0;
 }
 
 // A definition's file: its own, else its module's (docs/schema.md).
