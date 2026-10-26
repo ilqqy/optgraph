@@ -377,6 +377,16 @@ impl OptgraphView {
                         .with_font_family_overrides([(c0..c0 + code.len(), FONT_MONO.into())]),
                 )
             }
+        } else if o.winners.is_empty() {
+            // Every winner is an omitted nixpkgs definition (`winners` is
+            // empty while highestPrio is set).
+            let code = format!("{} {}", prio_name(o.highest_prio), o.highest_prio.unwrap_or_default());
+            let s = format!("nixpkgs definitions win with {code}; they are counted, not listed.");
+            Some(
+                StyledText::new(s)
+                    .with_highlights([(29..29 + code.len(), strong(t.win))])
+                    .with_font_family_overrides([(29..29 + code.len(), FONT_MONO.into())]),
+            )
         } else {
             None
         };
