@@ -197,3 +197,40 @@ fn modules_index_options_and_importers() {
         .unwrap();
     assert_eq!(m.importers[hardening], vec![core]);
 }
+
+#[test]
+fn palette_search_matches_the_viewer() {
+    use optgraph_core::search::{Group, Kind, Where, palette_search};
+    let m = demo();
+    let e = expected();
+    let key = |g: Group| match g {
+        Group::Overrides => "overrides",
+        Group::Off => "off",
+        Group::Errors => "errors",
+        Group::Options => "options",
+        Group::Modules => "modules",
+    };
+    for case in e["palette"].as_array().unwrap() {
+        let q = case[0].as_str().unwrap();
+        let got = palette_search(&m, q);
+        let want = case[1].as_array().unwrap();
+        assert_eq!(got.len(), want.len(), "query {q:?}");
+        for (g, w) in got.iter().zip(want) {
+            assert_eq!(key(g.group), w[0].as_str().unwrap(), "query {q:?}");
+            assert_eq!(g.total as u64, w[1].as_u64().unwrap(), "query {q:?}");
+            let items = w[2].as_array().unwrap();
+            assert_eq!(g.items.len(), items.len(), "query {q:?}");
+            for (it, wi) in g.items.iter().zip(items) {
+                let kind = if it.kind == Kind::Option { "option" } else { "module" };
+                assert_eq!(kind, wi[0].as_str().unwrap(), "query {q:?}");
+                assert_eq!(it.index as u64, wi[1].as_u64().unwrap(), "query {q:?}");
+                assert_eq!(it.hits, indices(&wi[2]), "query {q:?}");
+                if it.kind == Kind::Module {
+                    let place = if it.place == Where::Label { "label" } else { "path" };
+                    assert_eq!(place, wi[3].as_str().unwrap(), "query {q:?}");
+                }
+                assert!((it.score - wi[4].as_f64().unwrap()).abs() < 1e-9, "query {q:?}");
+            }
+        }
+    }
+}

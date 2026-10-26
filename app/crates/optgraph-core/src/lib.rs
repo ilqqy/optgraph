@@ -5,6 +5,7 @@
 pub mod analysis;
 pub mod load;
 pub mod model;
+pub mod search;
 pub mod text;
 
 pub use analysis::{

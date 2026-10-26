@@ -446,19 +446,44 @@ impl Model {
         best
     }
 
-    /// The modules defining option `oi`, each with its best status, strongest
-    /// first (status, then priority): the graph's rings.
+    /// The modules defining option `oi`, each with its best definition
+    /// (win > lose > unknown > off), strongest first (status, then
+    /// priority): the graph's rings. As the web viewer's graph (main.js
+    /// focusOf), an active loser whose own priority is unknown is "unknown".
     pub fn defining_modules(&self, oi: usize) -> Vec<(usize, ModuleStatus)> {
         let o = &self.graph.options[oi];
-        let mut seen = HashSet::new();
-        let mut out: Vec<(usize, ModuleStatus)> = o
-            .definitions
-            .iter()
-            .filter_map(|d| d.module.as_deref())
-            .filter(|id| seen.insert(*id))
-            .filter_map(|id| self.mod_index.get(id).copied())
-            .filter_map(|mi| self.module_status(mi, oi).map(|s| (mi, s)))
-            .collect();
+        let mut order: Vec<usize> = Vec::new();
+        let mut best: HashMap<usize, ModuleStatus> = HashMap::new();
+        for (i, d) in o.definitions.iter().enumerate() {
+            let Some(&mi) = d.module.as_deref().and_then(|id| self.mod_index.get(id)) else {
+                continue;
+            };
+            let status = if !d.active {
+                Status::Off
+            } else if o.is_winner(i) {
+                Status::Win
+            } else if d.priority.is_none() || o.highest_prio.is_none() {
+                Status::Unknown
+            } else {
+                Status::Lose
+            };
+            let s = ModuleStatus {
+                status,
+                priority: d.priority,
+                condition: d.condition,
+            };
+            match best.get(&mi) {
+                None => {
+                    order.push(mi);
+                    best.insert(mi, s);
+                }
+                Some(b) if status.rank() > b.status.rank() => {
+                    best.insert(mi, s);
+                }
+                Some(_) => {}
+            }
+        }
+        let mut out: Vec<(usize, ModuleStatus)> = order.into_iter().map(|mi| (mi, best[&mi])).collect();
         out.sort_by_key(|(_, s)| (std::cmp::Reverse(s.status.rank()), s.priority.unwrap_or(i64::MAX)));
         out
     }
