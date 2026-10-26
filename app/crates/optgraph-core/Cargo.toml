@@ -1,0 +1,11 @@
+[package]
+name = "optgraph-core"
+description = "graph.json model of optgraph: types, loader, derived data and the module graph layout"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"

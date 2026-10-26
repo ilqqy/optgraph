@@ -55,6 +55,30 @@
             pkgs.python3 # tools/tour-capture.py (standard library only)
           ];
         };
+        # Native app (app/): Rust, GPUI's build and runtime libraries, and a
+        # headless Wayland compositor with software Vulkan for screenshots
+        # (tools/native-shot.sh).
+        native = pkgs.mkShell {
+          packages = [
+            pkgs.cargo
+            pkgs.rustc
+            pkgs.clippy
+            pkgs.rustfmt
+            pkgs.pkg-config
+            pkgs.jq
+            pkgs.cage
+            pkgs.weston
+            pkgs.grim
+            pkgs.slurp
+            pkgs.wlr-randr
+            pkgs.vulkan-tools
+            pkgs.wayland-utils
+          ];
+          buildInputs = import ./app/runtime-libs.nix pkgs;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (import ./app/runtime-libs.nix pkgs);
+          # Mesa's lavapipe (software Vulkan), used by tools/native-shot.sh.
+          OPTGRAPH_LAVAPIPE_ICD = "${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.uname.processor}.json";
+        };
       });
 
       # nixfmt (RFC style) on .nix files. `nix fmt` passes no arguments, and
