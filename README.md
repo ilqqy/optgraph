@@ -139,6 +139,46 @@ Layout: a slim sidebar on the left (the search box and three lists with counts),
 - Tour: `?tour` plays a 19-second scripted walk through the viewer (the GIF at the top), driving the real palette, lists, ladder and graph with a drawn cursor, key caps and captions; Pause/Play/Restart and *Exit tour* sit at the bottom right of the graph, and any real click or key hands the page back. With `prefers-reduced-motion` it waits for *Play* and jumps instead of moving. It shows the demo's `networking.firewall.enable`, `services.printing.enable`, `i18n.defaultLocale` and `environment.systemPackages`; on another graph it takes the first options that fit each scene, and does not start if one is missing. Captions take module names and priorities from the graph. `?tour&t=<ms>` renders the single frame at that time, which is how the GIF is made.
 - Local only: no analytics and no external requests. The page's Content-Security-Policy allows inline code only and limits `fetch` (`?src=`) to the page's own origin. The fonts are Geist and Geist Mono (SIL Open Font License 1.1, licence in `viewer/vendor/fonts/OFL.txt`), Latin subsets made by `tools/subset-fonts.sh` from nixpkgs' `geist-font` 1.7.0, pinned by `viewer/vendor/fonts/SHA256SUMS` (checked by `viewer/build.sh`) and inlined as base64. The page builds them with the `FontFace` API from those bytes, so nothing is fetched and the CSP needs no `font-src`. The whole page is about 200 KB; the viewer check keeps it under 250 KB.
 
+## Native app
+
+A desktop app with the viewer's function: who set an option, at what priority, and why the others lost. It is written in Rust with [GPUI](https://gpui.rs) (Zed's UI framework, the `gpui-pre` 0.3.10 snapshot from crates.io), Linux first: tested on Wayland; GPUI's X11 backend is built in but was not tried. The web viewer stays the zero-install way to look at a graph; the app is for working with your own configuration at your desk.
+
+![The native app: an override, the graph with the defining modules ringed](docs/native-override.png)
+
+```sh
+nix run .#app -- graph.json                                   # a graph.json made by optgraph
+nix run .#app -- /etc/nixos#nixosConfigurations.myhost        # runs optgraph first, shows its progress
+nix run .#app -- graph.json --opt networking.firewall.enable  # open an option (or --module <index>)
+```
+
+With a flake reference the app runs the optgraph CLI on a background thread (the package sets `OPTGRAPH_CLI`; outside the package it uses `optgraph` on `PATH`), shows the CLI's progress lines while it evaluates, then the graph; if the evaluation fails, the CLI's error. A partial graph (exit 3) loads with its warnings. `-` reads `graph.json` from stdin. Ctrl+O, the top bar's *Open graph.json* or dropping a file on the window opens another graph (the file dialog is xdg-desktop-portal's; without a portal the app says so).
+
+What it shows is the web viewer's: the sidebar lists (*Overrides*, *Switched off*, *Errors*), the top bar's status chips and warnings panel, the priority ladder with its statuses and reasons (merged options as compact rows that open on click, Enter or Space), the module detail, the graph with rings, priority chips, dimming and the camera that keeps defining modules at 12 px labels, and the command palette (`/` or Ctrl+K). The derived data comes from `app/crates/optgraph-core`, a library without GUI dependencies whose tests compare its results with the web viewer's own code on the demo's graph (`viewer/src/data.js`, `search.js` and `layout.js` run under node by `app/scripts/`). Keys: `/` and Ctrl+K search, arrows walk the sidebar lists, Enter opens, Tab moves between compact rows, Esc clears; Ctrl+O opens a file. The colour scheme follows the system's (light when it reports no preference, like the web viewer); the top bar's toggle or `--dark`/`--light` pin it.
+
+![A merged list option: one compact row per winner](docs/native-merged.png)
+
+Differences from the web viewer:
+
+- When the path from a defining module back to the roots doesn't fit, the modules of that path that end up out of view get chips at the edge of the graph (an arrow and the module's name; a defining module's chip in its status colour); a click brings the module into view. The web viewer only fits what it can.
+- When every winner of a merged option is a nixpkgs definition that `omitted` counts instead of listing, the app says so ("beaten by nixpkgs definitions at 100 (not listed)"); the web viewer says "beaten by 0 definitions".
+- No deep links (`?opt=` is `--opt`), no *Copy link* (the app copies the option path), no tour, no mobile layout, no touch gestures (pinch), and no animation of the ladder's cards.
+- The fonts are the viewer's Geist and Geist Mono (`viewer/vendor/fonts`); `build.rs` decodes the WOFF2 files and cuts static 400 to 700 weights from the variable fonts, because GPUI picks faces by weight.
+
+![The command palette, light theme](docs/native-palette-light.png)
+
+Measured (2026-10-26, Ryzen 5 5600, software rendering: cage's headless output with pixman and Mesa's lavapipe for Vulkan, 1600x1000): panning a synthetic 255-module graph takes 2.8 ms of the app's CPU time per frame (render and paint; 3.6 ms with an option selected), and frames arrive every 37 to 43 ms, the same as on the 27-module demo, so the software rasteriser sets that pace, not the graph. `OPTGRAPH_BENCH_PAN=<frames>` repeats the measurement. The first build of the package takes about 4 minutes.
+
+### Developing the app
+
+```sh
+nix develop .#native                        # Rust, GPUI's libraries, cage, grim, wtype, lavapipe
+cd app && cargo run -p optgraph-app -- crates/optgraph-core/tests/data/demo.json
+cargo test -p optgraph-core                 # also checks.optgraph-core in nix flake check
+tools/native-shot.sh -o /tmp/optgraph-native/shot.png -- app/target/debug/optgraph-app graph.json --dark
+```
+
+`tools/native-shot.sh` takes screenshots without a display: it runs the app in cage on a headless output (pixman), with lavapipe for Vulkan, a private runtime directory and no session D-Bus, and captures the output with grim. `-k` types keys first (wtype, e.g. `-k "-k slash -s 300 fire"`), `-x` runs a command in the session, e.g. `tools/native-pointer.py`, which drives a virtual pointer (moves, clicks, drags, the wheel) and keeps it there while the screenshot is taken. `nix build .#optgraph-app` builds the package; `.github/workflows/native.yml` builds it when `app/`, `flake.*` or the fonts change. `nix flake check` runs only optgraph-core's tests, with that crate's own `Cargo.lock`, so it doesn't build GPUI.
+
 ## Scope and support
 
 - Default scope: options with at least one definition from a module that is not nixpkgs, plus the non-nixpkgs modules, their ancestors and their direct imports. `--all` lifts the filter.
@@ -190,7 +230,7 @@ nix run . -- ./demo#nixosConfigurations.demo -o demo.json   # the live demo's gr
 
 `nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-09). `tests/assertions.jq` has 88 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
-Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/fonts/`), `tools/` the tour renderer and the font subsetter, `demo/` the demo flake (a synthetic desktop configuration; `pages.yml` extracts its graph at deploy time as the live demo's `demo.json`, and `checks.demo` keeps it free of warnings and option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
+Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/fonts/`), `app/` the native app (Cargo workspace: `optgraph-core`, `optgraph-app`), `tools/` the tour renderer, the font subsetter and the native app's screenshot tools, `demo/` the demo flake (a synthetic desktop configuration; `pages.yml` extracts its graph at deploy time as the live demo's `demo.json`, and `checks.demo` keeps it free of warnings and option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
 
 ### Regenerating the tour
 
