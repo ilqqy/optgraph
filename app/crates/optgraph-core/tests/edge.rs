@@ -50,7 +50,13 @@ fn graph() -> String {
          {{ "kind": "definition", "module": "{S}/a.nix", "priority": 75, "active": true, "condition": null, "valuePreview": "2" }},
          {{ "kind": "definition", "module": "{S}/a.nix", "priority": null, "active": false, "condition": "mkIf-false", "valuePreview": null }}
        ],
-       "winners": [0], "highestPrio": 50, "omitted": {{ "nixpkgsActive": 0, "nixpkgsInactive": 0 }}, "error": null }}
+       "winners": [0], "highestPrio": 50, "omitted": {{ "nixpkgsActive": 0, "nixpkgsInactive": 0 }}, "error": null }},
+    {{ "path": "x.zmerged", "loc": ["x", "zmerged"], "declaredIn": [], "type": "attribute set",
+       "definitions": [
+         {{ "kind": "definition", "module": "{S}/a.nix", "priority": null, "active": false, "condition": "mkIf-false", "valuePreview": null }},
+         {{ "kind": "default", "file": null, "module": null, "priority": 1500, "active": true, "condition": null, "valuePreview": "{{ }}" }}
+       ],
+       "winners": [], "highestPrio": 100, "omitted": {{ "nixpkgsActive": 11, "nixpkgsInactive": 95 }}, "error": null }}
   ],
   "futureField": true
 }}"#
@@ -148,7 +154,7 @@ fn nixpkgs_beats_user_with_a_custom_priority() {
         "mkForce (nixpkgs) beats mkOverride 75 (user)"
     );
     assert_eq!(info.off, vec![2]);
-    assert_eq!(m.analysis.switched_off.len(), 1);
+    assert_eq!(m.analysis.switched_off.len(), 2); // and x.zmerged's
 }
 
 #[test]
@@ -169,4 +175,23 @@ fn meta_and_bad_documents() {
         .to_string();
     assert!(e.starts_with("not an optgraph graph.json"), "{e}");
     assert!(load::from_path(std::path::Path::new("/nonexistent/graph.json")).is_err());
+}
+
+#[test]
+fn winners_all_omitted() {
+    // Seen in a real configuration: every winner is a nixpkgs definition
+    // counted in `omitted`, so `winners` is empty while highestPrio is set.
+    let m = model();
+    let oi = m.option_index("x.zmerged").unwrap();
+    let rows = m.ladder(oi);
+    let def = rows
+        .iter()
+        .find(|r| m.options()[oi].definitions[r.def].is_default())
+        .unwrap();
+    assert_eq!(def.status, Status::Lose);
+    assert_eq!(
+        def.reason,
+        "beaten by nixpkgs definitions at 100 (not listed): 100 < 1500"
+    );
+    assert!(!m.analysis.info[oi].override_);
 }

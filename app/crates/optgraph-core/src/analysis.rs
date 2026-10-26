@@ -396,6 +396,9 @@ impl Model {
                     let p = d.priority.unwrap_or_default();
                     let reason = match (o.winners.len(), first_winner) {
                         (1, Some(w)) => format!("beaten by {}: {hp_s} < {p}", self.def_who(w)),
+                        // Every winner is a nixpkgs definition counted in
+                        // `omitted`, not listed (the web viewer says "0").
+                        (0, _) => format!("beaten by nixpkgs definitions at {hp_s} (not listed): {hp_s} < {p}"),
                         (n, _) => format!("beaten by {n} definitions at {hp_s}: {hp_s} < {p}"),
                     };
                     (Status::Lose, reason)
