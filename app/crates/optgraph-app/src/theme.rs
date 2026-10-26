@@ -2,7 +2,7 @@
 //! light. Statuses (win, lose, off) always come with a mark or a label too,
 //! never colour alone.
 
-use gpui::{App, Global, Hsla, rgb, rgba};
+use gpui::{App, Global, Hsla, Rgba, rgb, rgba};
 use optgraph_core::OriginClass;
 
 pub const FONT_UI: &str = "Geist";
@@ -168,4 +168,19 @@ impl Theme {
 
 pub fn theme(cx: &App) -> &Theme {
     cx.global::<Theme>()
+}
+
+/// `top` composited over the opaque `base`: an opaque colour. GPUI's
+/// gradients interpolate unpremultiplied colours, so a translucent stop
+/// tints the whole gradient; CSS composites first.
+pub fn over(base: Hsla, top: Hsla) -> Hsla {
+    let (b, t) = (Rgba::from(base), Rgba::from(top));
+    let a = t.a;
+    Rgba {
+        r: t.r * a + b.r * (1. - a),
+        g: t.g * a + b.g * (1. - a),
+        b: t.b * a + b.b * (1. - a),
+        a: 1.,
+    }
+    .into()
 }

@@ -307,3 +307,30 @@ pub fn icon_button(t: &Theme, name: &str) -> Div {
         .child(icon(name, 16., t.text3))
 }
 
+/// A small text tooltip (the web viewer's `title`).
+pub struct TextTip(SharedString);
+
+impl gpui::Render for TextTip {
+    fn render(&mut self, _: &mut gpui::Window, cx: &mut gpui::Context<Self>) -> impl IntoElement {
+        let t = crate::theme::theme(cx);
+        div()
+            .max_w(px(420.))
+            .px(px(10.))
+            .py(px(6.))
+            .rounded(px(R_SM))
+            .border_1()
+            .border_color(t.line2)
+            .bg(t.s1)
+            .text_color(t.text2)
+            .text_size(px(FS_SM))
+            .font_family(crate::theme::FONT_UI)
+            .shadow(shadow_1(t))
+            .child(self.0.clone())
+    }
+}
+
+/// `.tooltip(tip("text"))`
+pub fn tip(text: impl Into<SharedString>) -> impl Fn(&mut gpui::Window, &mut gpui::App) -> gpui::AnyView + 'static {
+    let text: SharedString = text.into();
+    move |_, cx| gpui::AppContext::new(cx, |_| TextTip(text.clone())).into()
+}

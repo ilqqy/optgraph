@@ -14,12 +14,13 @@ use optgraph_core::Model;
 use crate::graph::GraphState;
 use crate::input::{InputEvent, TextInput};
 use crate::palette::PaletteState;
-use crate::theme::{FONT_UI, FS_MD, Theme, theme};
+use crate::theme::{FONT_UI, FS_MD, theme};
 
 actions!(
     optgraph,
     [
         OpenPalette,
+        OpenFile,
         Up,
         Down,
         Confirm,
@@ -38,6 +39,7 @@ pub fn bindings() -> Vec<KeyBinding> {
     vec![
         KeyBinding::new("/", OpenPalette, shell),
         KeyBinding::new("ctrl-k", OpenPalette, Some("Shell")),
+        KeyBinding::new("ctrl-o", OpenFile, Some("Shell")),
         KeyBinding::new("up", Up, shell),
         KeyBinding::new("down", Down, shell),
         KeyBinding::new("enter", Confirm, shell),
@@ -103,6 +105,8 @@ pub struct OptgraphView {
     /// The selection the graph has not shown yet (it needs the window).
     pub graph_sel: Option<Sel>,
     pub bench: Option<crate::stage::Bench>,
+    pub scheme: crate::loading::Scheme,
+    _appearance: Option<gpui::Subscription>,
 }
 
 impl Focusable for OptgraphView {
@@ -138,11 +142,19 @@ impl OptgraphView {
             graph: GraphState::default(),
             graph_sel: None,
             bench: crate::stage::Bench::from_env(),
+            scheme: crate::loading::Scheme::System,
+            _appearance: None,
         };
         if let Some(m) = model {
             view.set_model(m, cx);
         }
         view
+    }
+
+    /// Follow the system colour scheme from now on (unless pinned).
+    pub fn watch_appearance(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self._appearance = Some(cx.observe_window_appearance(window, |this, window, cx| this.apply_scheme(window, cx)));
+        self.apply_scheme(window, cx);
     }
 
     pub fn set_model(&mut self, model: Model, cx: &mut Context<Self>) {
@@ -338,6 +350,12 @@ impl Render for OptgraphView {
             .on_action(cx.listener(Self::focus_next))
             .on_action(cx.listener(Self::focus_prev))
             .on_action(cx.listener(|this, _: &OpenPalette, window, cx| this.open_palette(window, cx)))
+            .on_action(cx.listener(|this, _: &OpenFile, window, cx| this.prompt_open(window, cx)))
+            .on_drop(cx.listener(|this, paths: &gpui::ExternalPaths, window, cx| this.on_drop_paths(paths, window, cx)))
+            .drag_over::<gpui::ExternalPaths>({
+                let accent = t.accent;
+                move |s, _, _, _| s.border_2().border_color(accent)
+            })
             .relative()
             .size_full()
             .flex()
@@ -370,36 +388,5 @@ impl Render for OptgraphView {
             .when(self.warnings_open, |d| d.child(self.render_warnings(&t, &model, cx)))
             .when(self.palette.open, |d| d.child(self.render_palette(&t, &model, cx)))
             .into_any_element()
-    }
-}
-
-impl OptgraphView {
-    fn render_empty(&mut self, t: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {
-        div().size_full().flex().items_center().justify_center().child(
-            div()
-                .max_w(px(520.))
-                .p(px(32.))
-                .rounded(px(crate::theme::R_XL))
-                .border(px(1.5))
-                .border_dashed()
-                .border_color(t.line2)
-                .bg(t.s1)
-                .flex()
-                .flex_col()
-                .gap(px(8.))
-                .child(
-                    div()
-                        .text_size(px(crate::theme::FS_2XL))
-                        .font_weight(gpui::FontWeight(650.))
-                        .child("No graph loaded"),
-                )
-                .child(
-                    div().text_color(t.text2).child(
-                        self.load_error
-                            .clone()
-                            .unwrap_or_else(|| "Run optgraph-app with a graph.json.".to_string()),
-                    ),
-                ),
-        )
     }
 }

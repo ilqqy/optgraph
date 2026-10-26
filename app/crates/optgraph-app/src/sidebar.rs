@@ -162,6 +162,7 @@ impl OptgraphView {
                         .when(is_sel, |d| d.bg(t.accent_soft).border_l_2().border_color(t.accent))
                         .when(is_cursor && !is_sel, |d| d.bg(t.s3))
                         .hover(|s| s.bg(t.s3).text_color(t.text))
+                        .tooltip(crate::ui::tip(item.note.clone()))
                         .on_click(cx.listener(move |this, _, _, cx| {
                             this.side_cursor = Some(i);
                             this.select(Sel::Option(oi), cx);
@@ -307,7 +308,39 @@ impl OptgraphView {
                         m.scope.as_str()
                     )),
             )
-
+            .child(
+                crate::ui::small_button(t)
+                    .id("theme-toggle")
+                    .h(px(30.))
+                    .px(px(8.))
+                    .hover(|s| s.bg(t.s3).text_color(t.text))
+                    .tooltip(crate::ui::tip(if t.mode == crate::theme::Mode::Dark {
+                        "Light theme"
+                    } else {
+                        "Dark theme"
+                    }))
+                    .on_click(cx.listener(|this, _, window, cx| this.toggle_scheme(window, cx)))
+                    .child(icon(
+                        if t.mode == crate::theme::Mode::Dark {
+                            "sun"
+                        } else {
+                            "moon"
+                        },
+                        16.,
+                        t.text3,
+                    )),
+            )
+            .child(
+                crate::ui::small_button(t)
+                    .id("open-file")
+                    .h(px(30.))
+                    .px(px(12.))
+                    .text_size(px(crate::theme::FS_MD))
+                    .hover(|s| s.bg(t.s3).text_color(t.text))
+                    .on_click(cx.listener(|this, _, window, cx| this.prompt_open(window, cx)))
+                    .child(icon("open", 16., t.text3))
+                    .child("Open graph.json"),
+            )
     }
 }
 
