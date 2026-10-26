@@ -24,8 +24,10 @@ expect_exit() { # expect_exit WANT NAME CMD...
   if [ "$got" -eq "$want" ]; then pass "$name: exit $got"; else fail "$name: exit $got, want $want (see $out/$name.log)"; fi
 }
 evaluations() { sed -n 's/.* \([0-9][0-9]*\) evaluations, \([0-9][0-9]*\) crash recoveries.*/\1 evaluations, \2 crash recoveries/p' "$out/$1.log"; }
-jq_check() { # jq_check NAME FILE FILTER
-  if jq -e "$3" "$2" >/dev/null; then pass "$1"; else fail "$1"; fi
+jq_check() { # jq_check NAME FILE [JQ OPTIONS...] FILTER
+  local name=$1 file=$2
+  shift 2
+  if jq -e "$@" "$file" >/dev/null; then pass "$name"; else fail "$name"; fi
 }
 
 nix build .#default -o "$out/result"
@@ -55,7 +57,12 @@ fi
 # 1b. --include-all-definitions: nothing omitted, more definitions listed.
 expect_exit 0 include-all "$optgraph" "$fixture" -o "$out/include-all.json" --include-all-definitions
 check-jsonschema --schemafile schema/graph.schema.json "$out/include-all.json" && pass "include-all: schema" || fail "include-all: schema"
-jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; .omitted == {nixpkgsActive: 0, nixpkgsInactive: 0})'
+jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; .omitted == {nixpkgsActive: 0, nixpkgsInactive: 0, nixpkgsWinners: 0})'
+# Nothing double counted: listed + omitted definitions, and listed + omitted
+# winners, add up to what --include-all-definitions lists.
+jq_check "include-all: listed + omitted = all, winners too" "$out/include-all.json" --slurpfile d "$out/graph.json" \
+  '([.options[] | {key: .path, value: {defs: (.definitions | length), winners: (.winners | length)}}] | from_entries) as $all
+   | all($d[0].options[]; $all[.path] as $a | (.definitions | length) + .omitted.nixpkgsActive + .omitted.nixpkgsInactive == $a.defs and (.winners | length) + .omitted.nixpkgsWinners == $a.winners)'
 jq_check "include-all: inactive nixpkgs definitions listed" "$out/include-all.json" \
   '(.options[] | select(.path == "systemd.services") | .definitions | length) > 1000'
 
