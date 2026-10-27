@@ -18,6 +18,10 @@ in
       type = types.str;
       default = name;
     };
+    packages = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+    };
     # A submodule inside the submodule.
     files = mkOption {
       type = types.attrsOf (
@@ -32,6 +36,14 @@ in
       default = { };
     };
   };
-  # A declaration-side definition, counted (not listed) where it loses.
-  config.theme = lib.mkOptionDefault "from the declaration module";
+  # Declaration-side definitions, counted (not listed): theme loses where
+  # an instance sets it; the two packages definitions win (a list merges
+  # them), so an instance whose own packages lose has no listed winner.
+  config = {
+    theme = lib.mkOptionDefault "from the declaration module";
+    packages = lib.mkMerge [
+      [ "base" ]
+      [ "extra" ]
+    ];
+  };
 }

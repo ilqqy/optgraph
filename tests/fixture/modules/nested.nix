@@ -10,8 +10,10 @@
       editor = "vim for ${name} on ${osConfig.networking.hostName}";
       files.todo.text = "nested submodule";
     };
-  # A second instance name.
+  # A second instance name. Its mkDefault packages lose to the declaration
+  # module's two (listed: none of the winners).
   fixture.home.bob.editor = "emacs";
+  fixture.home.bob.packages = lib.mkDefault [ "mine" ];
   # The instance-level mkForce wins; nested-plain.nix's carol definition loses
   # as a whole (shadowedAt).
   fixture.home.carol = lib.mkForce { theme = "forced instance"; };

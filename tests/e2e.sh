@@ -66,7 +66,10 @@ fi
 # 1b. --include-all-definitions: nothing omitted, more definitions listed.
 expect_exit 0 include-all "$optgraph" "$fixture" -o "$out/include-all.json" --include-all-definitions
 check-jsonschema --schemafile schema/graph.schema.json "$out/include-all.json" && pass "include-all: schema" || fail "include-all: schema"
-jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; [.omitted[]] | all(. == 0))'
+jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; [.omitted[] | numbers] | all(. == 0))'
+jq_check "full: compact JSON by default" "$out/graph.json" --raw-input -s 'split("\n") | length <= 2'
+expect_exit 0 pretty "$optgraph" "$fixture" -o "$out/pretty.json" --pretty --submodule-depth 0
+jq_check "pretty: indented, same document as depth0" "$out/pretty.json" --raw-input -s --slurpfile d "$out/depth0.json" '(split("\n") | length > 100) and ((fromjson | del(.meta.generatedAt)) == ($d[0] | del(.meta.generatedAt)))'
 # Nothing double counted: listed + omitted definitions, and listed + omitted
 # winners, add up to what --include-all-definitions lists.
 jq_check "include-all: listed + omitted = all, winners too" "$out/include-all.json" --slurpfile d "$out/graph.json" \
