@@ -2,7 +2,7 @@
 
 `schema/graph.schema.json` (JSON Schema 2020-12) is the source of truth. This file explains what the fields mean and which invariants hold. Statements here were checked against `nix/*.nix`, `cli/optgraph.sh` and a run on `tests/fixture` (nixpkgs `c59305b`, Nix 2.34.8, 2026-10-03) unless marked otherwise.
 
-All objects set `additionalProperties: false` and list every field below as required, except `definitions[].file`, which is absent when it equals its module's file; other nullable fields are present with value `null`. There is no separate schema version; `meta.toolVersion` identifies the producer.
+All objects set `additionalProperties: false` and list every field below as required, except `definitions[].file`, which is absent when it equals its module's file, and the fields added for [submodule instances](#submodule-instances), which are optional and absent at top level (`meta.submoduleDepth`, `modules[].scope`, `modules[].owner`, `options[].instance`, `options[].parent`, `definitions[].shadowedAt`, `omitted.declaration*`): a document without nesting is valid as it was before them. Other nullable fields are present with value `null`. There is no separate schema version; `meta.toolVersion` identifies the producer.
 
 `optgraph --html FILE` embeds the same document, unchanged, in the viewer page's `<script type="application/json" id="optgraph-data">` element; every `<` in it is written as `\u003c`, so `JSON.parse` of the element's text gives the document back.
 
@@ -22,7 +22,8 @@ graph.json = { meta, modules[], options[] }
 | `scope` | `"user"` or `"all"` | `"user"`: default scope filter. `"all"`: CLI flag `--all`. See [Scope](#scope). |
 | `attribution` | `"aligned"` or `"file-based"` | How top-level modules were classified. `"aligned"`: the evaluation's `getSubModules` list was lined up with `_module.args.baseModules`, `extraModules` and `modules` of `nixos/lib/eval-config.nix`, and the module `nixosSystem` injects (it sets only `nixpkgs.flake.source`) was found by content as the last user module. `"file-based"`: fallback; origins come from file paths and positions only, `modulesIndex` is always `null`, the `setDefaultModuleLocation` wrapper nodes are not collapsed (they show up as extra anonymous modules), and an `alignment-failed` warning is present. |
 | `complete` | boolean | `false` only when the CLI ran out of crash recoveries or time and wrote a partial document (CLI exit code 3). The lib itself always reports `true`. |
-| `warnings` | array of warning | Order: lib-level warnings (alignment, version, inputs, modules, graph), then per-option warnings in option-path order, then the CLI's `budget-exhausted`. |
+| `submoduleDepth` | integer >= 1, optional | `--submodule-depth`: how many instance levels are attributed. Present only when nesting is enabled (default 3); absent with `--submodule-depth 0`. |
+| `warnings` | array of warning | Order: lib-level warnings (alignment, version, inputs, modules, graph), then per-option and per-instance warnings sorted by `subject` (stable), then the CLI's `budget-exhausted`. |
 
 Partial documents (`complete: false`): the CLI keeps the crash exclusions it already found, then runs up to two more evaluations, each limited to `max(120, time budget / 4)` seconds. First with previews and self-check disabled for every option (so every `valuePreview` is `null` and there are no `reconstruction-mismatch` warnings). If that run fails too (crash or timeout), once more with an empty option list (modules only). If that fails as well, it writes a document with empty `modules` and `options`, `nixpkgsVersion: "unknown"`, `attribution: "file-based"` and no warnings other than `budget-exhausted`. The last step is from code reading. The first was run (`--max-retries 2` on the fixture: 25 options, no previews, exit 3), and so was the second (`--time-budget 1`: the first evaluation is killed, the partial run without previews still hits the fixture's deliberate `abort`, the modules-only run gives 21 modules, 0 options, exit 3).
 
@@ -30,12 +31,13 @@ Partial documents (`complete: false`): the CLI keeps the crash exclusions it alr
 
 `{ code, message, subject }`, all required. `subject` is a string or `null`:
 
-- an option path (`fixture.aborting`), exactly as in `options[].path`;
+- an option path (`fixture.aborting`), exactly as in `options[].path` (for nested options, the full path: `fixture.accounts.dave.shell`);
+- a submodule instance path (`fixture.home.aborts`), for `nested-degraded` and `nested-crash` about one instance; it equals `options[].instance` of the nested options and `modules[].scope`;
 - a module slot: the position-based name `<parent key>:anon-<n>` (`n` = 1-based index in the parent's `imports`; top-level parent key is empty, giving `:anon-3`). It equals `modules[].id` for anonymous modules only; a module loaded from a path has the path as its id but its slot is still `<parent key>:anon-<n>`;
 - an input source root (store path), for `input-ambiguous`;
 - `null`.
 
-For `eval-crash`, `preview-crash` and `selfcheck-crash` the CLI appends `":\n"` and the trimmed Nix error (last error block of stderr, at most 20 lines) to `message`.
+For `eval-crash`, `preview-crash`, `selfcheck-crash` and `nested-crash` the CLI appends `":\n"` and the trimmed Nix error (last error block of stderr, at most 20 lines) to `message`.
 
 | Code | Emitted by | Subject | When |
 |---|---|---|---|
@@ -49,6 +51,9 @@ For `eval-crash`, `preview-crash` and `selfcheck-crash` the CLI appends `":\n"` 
 | `selfcheck-crash` | lib, message extended by CLI | option path | Uncatchable error in the self-check of this option. The self-check is skipped for it. |
 | `selfcheck-skipped` | lib | option path | The self-check could not run: the module system's `highestPrio`/`files` threw (`throw`/`assert`), or the winner is unknown (an active definition has an unknown priority, or an `mkIf` condition failed). |
 | `reconstruction-mismatch` | lib | option path | The reconstructed `highestPrio` or the files of the winning definitions differ from the module system's `highestPrio` and `files`. Should not happen; it means the reconstruction is wrong for this option. The message shows both sides. |
+| `nested-degraded` | lib | option path or instance path | The option's or the instance's nesting is not expanded: it stays a leaf and nothing inside it is attributed. One of these reasons (message text): the option's winner is unknown; `mkBefore`/`mkAfter`/`mkOrder` on the option's definitions reorders them, or on the instance's definitions (definitions cannot be matched to their modules); a winning definition is not a plain attribute set (e.g. `users.users = mkForce <non-attrset>`); listing the option's instances threw; an instance-level definition could not be classified; the instance does not evaluate (`throw`/`assert`); the instance's definition modules do not line up with the reconstructed winning definitions; loading an instance module threw; the re-collected instance modules differ from the instance's own module graph; walking an instance module threw. Seen on the fixture: `fixture.forced` (not an attribute set), `fixture.home.broken` (does not evaluate), `fixture.lazyAccounts.bad` (instance-level definition throws), `fixture.ordered.frank` (`mkBefore`). |
+| `nested-crash` | lib, message extended by CLI | instance path or option path | An uncatchable error (e.g. `abort`) while expanding one instance (subject: the instance path; the CLI excluded just that instance and re-ran, sibling instances are still expanded; stage `instance`) or while listing the option's instances (subject: the option path; none of them is expanded; stage `instances`). The instance or option stays a leaf. |
+| `nested-unchecked` | lib | option path | Reserved for a possible per-key attribution of freeform options that cannot be self-checked. Never emitted today. |
 | `budget-exhausted` | CLI | `null` | The crash-recovery limit (`--max-retries`: the N+1th crash) or the time budget (`--time-budget`; an evaluation killed by `timeout` exits 124) was reached. Always accompanied by `meta.complete: false`. |
 
 ## `modules[]`
@@ -57,13 +62,25 @@ One record per module of the configuration's module tree, deduplicated by key. R
 
 | Field | Type | Meaning |
 |---|---|---|
-| `id` | string | The module's key; unique across `modules`. A path module: its absolute path. An anonymous module (attrset or function): `<parent key>:anon-<n>` (see slot above), e.g. `:anon-2120:anon-1`. A module with an explicit `key` uses it. A key derived from a string is kept as is: `"${extra}/interpolated.nix"` with a relative `path:` input `extra` gives `…/tests/fixture/./extra/interpolated.nix`, the `/./` included. The number in a top-level anonymous id is the index in the whole top-level module list (about 2100 base modules come first), so it changes with nixpkgs; do not treat it as stable across revisions. |
+| `id` | string | The module's key; unique across `modules`. A path module: its absolute path. An anonymous module (attrset or function): `<parent key>:anon-<n>` (see slot above), e.g. `:anon-2120:anon-1`. A module with an explicit `key` uses it. A key derived from a string is kept as is: `"${extra}/interpolated.nix"` with a relative `path:` input `extra` gives `…/tests/fixture/./extra/interpolated.nix`, the `/./` included. The number in a top-level anonymous id is the index in the whole top-level module list (about 2100 base modules come first), so it changes with nixpkgs; do not treat it as stable across revisions. Modules inside a submodule instance: `«<instance path>»<key>`, see [Nested modules](#nested-modules); top-level ids never start with `«`. |
 | `file` | string | The module's `_file`. For path modules the path itself. For anonymous modules the parent's `_file`, or `<unknown-file>` at top level. For inline modules in nixosSystem's `modules` list this is nixpkgs' own `flake.nix` (eval-config's `modulesLocation`), not your file; use `origin` and `position`. |
 | `imports` | array of string | Ids of the modules this one imports, sorted, unique, restricted to ids that appear in `modules` (disabled modules count: they stay listed). Empty for a disabled module. |
 | `origin` | string | `user`, `user-inline`, `nixpkgs`, `input:<name>` or `unknown`. See below. |
 | `disabled` | boolean | `true` if some module's `disabledModules` excludes this key. The record is listed (always, whatever the scope) so that import edges resolve; the module is not part of the evaluation, so `imports` is empty and it defines nothing. |
 | `modulesIndex` | integer or null | Index in the `modules` list given to `nixosSystem`. Set only for the module that is itself an entry of that list, has origin `user-inline`, and only in `"aligned"` attribution. `null` otherwise: for anonymous modules nested in such an entry (they have no index of their own), for path modules, for entries whose origin is not `user-inline` (an inline module exported by an input, an entry with a real `_file`), and in `"file-based"` attribution. |
+| `scope` | string, optional | Nested modules only: the instance path (`users.users.alice`). Absent at top level. |
+| `owner` | string, optional | Only on an instance's definition modules: the `id` of the module whose definition became this module (a top-level module, or a module of the enclosing instance). Always listed in `modules`. |
 | `position` | string or null | `<file>:<line>` of the module's alphabetically first attribute (`attrNames` order: for `{ options = ...; imports = ...; }` it is `imports`, not `options`). `null` for path modules (key is their path), for a top-level module that is an `mkIf`/`mkOverride` value, for modules without attributes, and for modules that failed to load or were excluded. |
+
+### Nested modules
+
+With nesting on, each expanded [submodule instance](#submodule-instances) is re-collected and its modules are listed as ordinary records, with `scope` set.
+
+- Id: `«<instance path>»<key>`, where `key` is the module's key in the instance's own evaluation: `:anon-<n>...` for anonymous modules, an absolute path for path modules (a file imported inside the instance: `«home-manager.users.u»/nix/store/…-source/home/git.nix`). The `«…»` prefix keeps ids unique across scopes. `modulesIndex` is `null` and `disabled` is `false` for all of them.
+- Definition modules: each definition of the instance's value is a module of the instance. `owner` names the module that wrote that definition (`users.users.alice = { ... }` in `users.nix`: the module `«users.users.alice»:anon-6` has `owner` = `users.nix`). With `types.submodule` (attrset definitions are `{ _file; config = value; }`, the module system's `shorthandOnlyDefinesConfig`), the record is that wrapper and its `position` is the first attribute of the definition value. With a non-shorthand submodule (`submoduleWith`, e.g. `home-manager.users`) the record is the child of the hidden wrapper (`«fixture.home.alice»:anon-6:anon-1`), with its own `imports`.
+- Hidden wrappers (never listed): the two modules that set `_module.args.name`, the `setDefaultModuleLocation` wrappers around the submodule's declaration modules, and the `{ _file; imports = [ value ]; }` wrapper the module system puts around each definition of a non-shorthand submodule (its child is listed instead, e.g. `:anon-4:anon-1`).
+- `origin`: an instance's definition module takes its owner's origin. The other nested modules follow the top-level file and position rules (below); an anonymous module whose code sits in the user's flake is `user-inline`.
+- Which nested modules are listed: the user-side ones (see [Submodule instances](#submodule-instances)), their ancestors inside the instance, their direct imports, the modules referenced by listed definitions, and the owner chain of every listed nested module, so every `module`, `imports` and `owner` reference resolves. With `--all` nothing more is expanded.
 
 ### `origin`
 
@@ -92,17 +109,52 @@ Sorted by `path` (bytewise). `_module.*` is never listed, in either scope.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `path` | string | `lib.showOption loc`. Unique. |
+| `path` | string | `lib.showOption loc`. Unique. For a nested option `loc` is the full loc, so names with dots are quoted: `users.users."a.b".shell`. |
+| `instance` | string, optional | Nested options only: path of the enclosing submodule instance (`users.users.alice`). |
+| `parent` | string, optional | Nested options only: path of the option whose value holds the instance (`users.users`). Equals `instance` for a single submodule or `nullOr` submodule. |
 | `loc` | array of string, at least 1 | Option path components. |
 | `declaredIn` | array of string | The option's `declarations`: files that declare it, usually one. `[]` for excluded options, or when reading them threw. |
 | `type` | string or null | `type.description` of the option type, e.g. `string`, `signed integer`, `attribute set of (submodule)`. `null` for excluded options, or when it cannot be read. |
-| `definitions` | array of definition | The listed definitions of the option, plus the option default as the last entry if the option has a `default` (always listed, whether it wins or loses). By default a definition is listed when it comes from a module whose origin is not `nixpkgs` (`user`, `user-inline`, `input:*` or `unknown`; active or not), or when it is the option's only winner. Every other nixpkgs definition, including nixpkgs winners of options with several winners (lists, attrsets), is only counted in `omitted`; `winners` then indexes only the listed ones, and `omitted.nixpkgsWinners` counts the others. With `--include-all-definitions` every definition found in the loaded modules is listed. Order: modules in the order of `modules`, each module's definitions in walk order. This is not the module system's merge order. |
+| `definitions` | array of definition | The listed definitions of the option, plus the option default as the last entry if the option has a `default` (always listed, whether it wins or loses). By default a definition is listed when it comes from a module whose origin is not `nixpkgs` (`user`, `user-inline`, `input:*` or `unknown`; active or not), or when it is the option's only winner. Every other nixpkgs definition, including nixpkgs winners of options with several winners (lists, attrsets), is only counted in `omitted`; `winners` then indexes only the listed ones, and `omitted.nixpkgsWinners` counts the others. With `--include-all-definitions` every definition found in the loaded modules is listed. Nested options list user-side definitions instead of non-nixpkgs ones; see [Submodule instances](#submodule-instances). Order: modules in the order of `modules`, each module's definitions in walk order. This is not the module system's merge order. |
 | `winners` | array of integer | Ascending indices into the listed `definitions` of the definitions that are active and have priority `highestPrio`. One entry for single-value types; several for mergeable types (lists, attrsets, submodules, ...). Empty when `highestPrio` is `null`. Also empty, with `highestPrio` set, when every winner is an omitted nixpkgs definition (e.g. a list option whose only non-nixpkgs definition is an `mkDefault` that loses to nixpkgs' normal-priority ones); `omitted.nixpkgsWinners` then says how many win, at `highestPrio`. |
 | `highestPrio` | integer or null | Lowest priority number among active definitions (lower wins). `null` if there is no active definition (the module system reports `9999` then), or if the winner is unknown: some active definition has an unknown priority (reading its value threw) or some `mkIf` condition is `"mkIf-error"`. In the unknown case `winners` is `[]` and `error` ends with `winner unknown: ...`; the module system itself would throw for such an option. |
-| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive, nixpkgsWinners }`: nixpkgs definitions that were counted instead of listed, split by `active` (`nixpkgsActive + nixpkgsInactive` is the number omitted), and how many of the active ones are winners (active at `highestPrio`). `nixpkgsWinners <= nixpkgsActive`: it is a subset, not counted a second time, so listed `winners` plus `nixpkgsWinners` is the number of winners. All `0` with `--include-all-definitions`. The option default is never counted here (it is always listed). A single winner is never omitted, so `nixpkgsWinners` is `0` for options with one winner; with several winners, nixpkgs ones are counted here (as active and in `nixpkgsWinners`). Computed after the self-check, which always sees every definition. |
+| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive, nixpkgsWinners }`: nixpkgs definitions that were counted instead of listed, split by `active` (`nixpkgsActive + nixpkgsInactive` is the number omitted), and how many of the active ones are winners (active at `highestPrio`). `nixpkgsWinners <= nixpkgsActive`: it is a subset, not counted a second time, so listed `winners` plus `nixpkgsWinners` is the number of winners. Nested options also carry `declarationActive`, `declarationInactive`, `declarationWinners` (always all three there, never at top level): the same counts for definitions of the submodule's own non-nixpkgs declaration modules (e.g. home-manager's own modules, origin `input:home-manager`), which are counted instead of listed; `declarationWinners <= declarationActive`. Dropped definitions of nixpkgs origin go to `nixpkgs*` exactly as at top level. All counters are `0` with `--include-all-definitions`. The option default is never counted here (it is always listed). A single winner is never omitted, so `nixpkgsWinners` is `0` for options with one winner; with several winners, nixpkgs ones are counted here (as active and in `nixpkgsWinners`). Computed after the self-check, which always sees every definition. |
 | `error` | string or null | `null`, or messages joined by `"; "`, in this order: per definition `N`, `definition N: throw/assert while reading its value` (the outer value threw; its priority is unknown) and `definition N: an mkIf condition threw or is not a bool` (`condition` is `"mkIf-error"`); then `winner unknown: a definition could not be classified` if `highestPrio` is `null` for that reason; then `definition N: preview hit throw/assert` (a throw/assert was hit while previewing it). The last one is set by an explicit failure flag, not by the text: a string value that contains `<error>` does not count. An excluded option has only `excluded after an uncatchable crash during reconstruct (see meta.warnings)`. `N` indexes `definitions`. `tryEval` cannot return the message of a `throw`, so the text names the stage, not the cause. |
 
-Submodule-typed options (`users.users`, `systemd.services`) and freeform options (`services.openssh.settings`) are leaves: definitions are listed per module at the declared option path, as one value each. There are no entries for `users.users.alice.shell` or `services.openssh.settings.PermitRootLogin`, and priorities inside the submodule value are not visible.
+### Submodule instances
+
+CLI `--submodule-depth N` (lib argument `submoduleDepth`, default 3). With `0` submodule-typed options stay leaves (one value each, no entries for `users.users.alice.shell`) and the document is identical to one made before nesting existed: no new fields, no `meta.submoduleDepth`. Otherwise definitions inside submodule instances are ordinary option records (`users.users.alice.shell`, `home-manager.users.<name>.programs.git.enable`) with `instance` and `parent` set, and the submodule-typed option itself is listed exactly as before, as a leaf record with its definitions.
+
+Depth counts instance levels: 1 is `users.users.alice`, 2 is e.g. `services.nginx.virtualHosts.x.locations."/"` or `home-manager.users.u.home.file."x"`.
+
+Expanded types:
+
+| Option type | Instances | `parent` / `instance` |
+|---|---|---|
+| `submodule`, `submoduleWith` | one; instance path = option path | equal |
+| `attrsOf`, `lazyAttrsOf` of one | one per name | option path / option path + name |
+| `nullOr` of one | one when not `null` | equal |
+
+On nixpkgs 25.11 `nullOr` does not expose the instance, so a `nullOr` submodule stays a leaf there; on unstable it is expanded. Everything else stays a leaf: `listOf`/`nonEmptyListOf` of a submodule (`networking.interfaces.<n>.ipv4.addresses`), `attrsOf (attrsOf submodule)`, `either`, `oneOf`, `coercedTo`, `functionTo`, `deferredModule`, and freeform keys (keys of `services.*.settings` that have no declared option). Declared options inside a freeform `settings` submodule are expanded (`services.openssh.settings.PermitRootLogin`).
+
+User side (decides scope and listing). At top level it is simply `origin != nixpkgs`. Inside an instance a module is user-side if it is a definition module whose owner is user-side; or it is imported by a user-side module and its own origin is not `nixpkgs`; or it is one of the submodule's declaration-side modules (the submodule type's own modules, e.g. home-manager's module set, nixpkgs' systemd unit options) whose origin is `user` or `user-inline` (e.g. `home-manager.sharedModules` from your flake). Declaration-side modules from nixpkgs or from an input are not user-side.
+
+Scope (the same for the default scope and `--all`; `--all` does not expand more):
+
+- An instance is expanded when a user-side definition names it and the module system has the instance. A non-lazy `attrsOf` drops a name whose definitions all sit under a false `mkIf` or lost; a `lazyAttrsOf` keeps it.
+- A nested option is listed when a user-side module of the instance defines it (also under a false `mkIf`), or when a user-side definition that never reached the instance would define it (below).
+- Listed definitions of a nested option: the user-side ones, the option default (always, last), and the single winner. The others are counted in `omitted`.
+
+Definitions that never reached an instance. A definition of the instance's value can be dropped before the instance sees it. Only user-side ones are split into the nested options, and only when the value is a plain attribute set (functions are not called, paths not imported):
+
+- Lost on priority at the option or the instance level (`users.users.dave = mkForce { ... }` in one module makes another module's `users.users.dave = { shell = ...; }` lose as a whole): the inner definitions are listed with `shadowedAt` set to that path (`users.users.dave`), `module` = the outer module that wrote them. They keep their own inner `priority`, are never winners and do not count for `highestPrio`.
+- Under a false `mkIf` at the option or instance level (`users.users.erin = mkIf false { shell = "fish"; }`): listed with `active: false`, `condition: "mkIf-false"`, `priority: null`, `module` = the outer module.
+
+The module system never evaluates these values; optgraph forces the attribute set structure under `tryEval`, and an uncatchable crash there goes through the per-instance crash recovery. Non-user definitions of this kind are neither split nor counted in the nested option: library code under a false `mkIf` may reference packages that do not exist.
+
+Self-check. Per nested option as at top level: the reconstructed `highestPrio` and winner files against the instance's own option `highestPrio` and `files` (`reconstruction-mismatch`, `selfcheck-skipped`, `selfcheck-crash`, subject = the full nested path). Per instance in addition: the instance's definition modules must line up with the reconstructed winning definitions (same count, same files, in the module system's order), and the re-collected modules must equal the instance's own module graph. If either fails, or anything else listed under `nested-degraded` happens, the option or instance stays a leaf and nothing is attributed by guesswork.
+
+Failure granularity. A failure inside an instance (its function body, modules, imports) affects only that instance. In a non-lazy `attrsOf`, listing the instances forces every instance value: a value that throws makes the whole option's nesting `nested-degraded`, one that aborts disables it (`nested-crash`, subject = the option). In a `lazyAttrsOf` a throwing instance value affects only itself. Nested options use the same crash stages (`reconstruct`, `selfcheck`, `preview`) and exclusion lists as top-level options, keyed by the full loc, so an abort in one nested option's preview disables only that preview. Two stages are new: `instance` (one instance; the CLI excludes just it) and `instances` (listing an option's instances). If the crash has no marker, bisection still bisects top-level options only and can exclude a whole top-level option.
 
 ### `definitions[]`
 
@@ -110,11 +162,12 @@ Submodule-typed options (`users.users`, `systemd.services`) and freeform options
 |---|---|---|
 | `kind` | `"definition"` or `"default"` | `"default"`: the option's own `default`, treated as `mkOptionDefault`. At most one per option, always the last entry. |
 | `file` | string or null, optional | Only present when it differs from the file of `module`, i.e. for `"default"` entries (the first declaration file, `null` if there is none) and for an explicit `mkDefinition` with its own `file`. Otherwise absent: take `modules[]` record of `module` and use its `file`. For inline user modules that file is nixpkgs' `flake.nix`; use the module's `origin` and `position` instead. |
-| `module` | string or null | `modules[].id` of the defining module, always listed in `modules`. `null` for `"default"`. |
+| `module` | string or null | `modules[].id` of the defining module, always listed in `modules`. `null` for `"default"`. In a nested option usually a nested module (`«…»` id); for a definition that never reached the instance (`shadowedAt`, or a false `mkIf` at an enclosing level) the outer module that wrote it. |
 | `priority` | integer or null | Override priority; lower wins. `1500` `mkOptionDefault` and the option default, `1000` `mkDefault`, `100` plain, `50` `mkForce`, `10` `mkVMOverride`; `mkOverride n` gives `n`. `null` when unknown: the definition is under a false (or failed) `mkIf`, which the module system does not force and neither does optgraph; or reading its outer value threw. |
 | `active` | boolean | `true` when every enclosing `mkIf` condition is `true`. Always `true` for `"default"`. A definition under `mkOverride p (mkIf false v)` stays active at priority `p`, mirroring the module system, which does not discharge a `mkIf` below an override (docs/module-system-notes.md topic 2; from code, not run through optgraph). |
 | `condition` | `"mkIf-false"`, `"mkIf-error"` or `null` | `null` iff `active`. `"mkIf-false"`: some enclosing condition is `false`. `"mkIf-error"`: a condition threw or is not a boolean (and none is `false`). |
 | `valuePreview` | string or null | Bounded textual preview, never the raw value. `null` for inactive definitions, for definitions whose value could not be read, for the options `assertions` and `warnings` (never previewed), and for all definitions of an option whose previews were disabled (`preview-crash`, partial document). `"<redacted>"` when the option path looks like a secret (see below). Format below. |
+| `shadowedAt` | string, optional | Nested options only: the definition never reached the instance because its enclosing definition lost on priority at this option or instance path (`users.users.dave`). See [Submodule instances](#submodule-instances). Such a definition is never a winner. |
 
 #### `valuePreview` format
 
@@ -146,6 +199,8 @@ Not part of `graph.json`. When the lib cannot produce a document it returns `{ f
 
 The `setDefaultModuleLocation` wrapper nodes that `nixosSystem` puts around each user module are collapsed in aligned attribution: only the wrapped module is listed.
 
+Submodule instances ([above](#submodule-instances)) follow the same two columns, with "not `nixpkgs`" replaced by "user-side": an instance is expanded when a user-side definition names it, a nested option is listed when a user-side module of the instance (or a user-side definition that never reached it) defines it, and nested modules are listed as described under [Nested modules](#nested-modules). `--all` does not expand more instances or list more nested options; it only changes what the top level lists. `--submodule-depth` limits the levels in both scopes.
+
 Options that a user module touches can have hundreds of nixpkgs definitions (in the fixture `systemd.services` has 1666, almost all under a false `mkIf`). By default those that don't win are counted in `omitted` instead of listed; the option default is the exception, it is always listed. For options with several winners (every active definition of a list option such as `assertions` or `environment.systemPackages` is a winner), nixpkgs winners are counted too (`nixpkgsWinners`), so only non-nixpkgs definitions are listed. If none of those wins, `winners` is empty while `highestPrio` is set: in the fixture, `environment.systemPackages` with the user's `mkDefault` list (priority 1000) against 39 nixpkgs definitions at 100.
 
 ## Invariants
@@ -169,6 +224,8 @@ Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture 
 The remaining checks cover the fixture's cases one by one (priorities, `mkIf` true/false/throwing, `mkForce` around a block, `mkMerge` at the leaf, `mkDefinition` with its own file, preview edge cases, origins, `disabledModules`, inline modules, string-interpolated imports, submodule and freeform leaves, crashing options).
 
 Hold by construction (code reading and the runs above, not asserted by tests):
+
+- nested: every `options[].instance` and `parent` is set together, and `instance` equals `modules[].scope` of the instance's modules; a definition with `shadowedAt` is never in `winners` and its `priority` is not used for `highestPrio`; `omitted.declarationWinners <= omitted.declarationActive`; every `modules[].owner` resolves to a record in `modules`;
 
 - `options[].path` is unique;
 - `active` is `true` exactly when `condition` is `null`;
@@ -341,3 +398,146 @@ An option with a definition that throws (`fixture.throws = throw "..."`): the de
 ```
 
 `fixture.conditionalError = lib.mkIf (throw "...") "never"` ends the same way. The definition has `active: false`, `condition: "mkIf-error"`, `priority: null`, and the option has `highestPrio: null`, `winners: []` and `error` `"definition 0: an mkIf condition threw or is not a bool; winner unknown: a definition could not be classified"`.
+
+### Nested example
+
+Same run with the default `--submodule-depth 3` (10 warnings, 56 modules, 63 options; the records below are from an earlier run of the same fixture with 55 modules and 61 options, shortened the same way). `meta` gets `"submoduleDepth": 3`, and the nesting warnings, reduced to code and subject:
+
+```json
+[
+  { "code": "nested-degraded", "subject": "fixture.forced" },
+  { "code": "nested-crash", "subject": "fixture.home.aborts" },
+  { "code": "nested-degraded", "subject": "fixture.home.broken" },
+  { "code": "nested-degraded", "subject": "fixture.lazyAccounts.bad" },
+  { "code": "nested-degraded", "subject": "fixture.ordered.frank" }
+]
+```
+
+`fixture.home.aborts = { ... }: abort "..."` only loses its own instance; the CLI's `nested-crash` message:
+
+```json
+{
+  "code": "nested-crash",
+  "message": "uncatchable crash while expanding this instance; it stays part of its option:\nerror: evaluation aborted with the following error message: 'fixture: this instance aborts'",
+  "subject": "fixture.home.aborts"
+}
+```
+
+`fixture.accounts.dave.shell` (an option of `fixture.accounts`, an `attrsOf` submodule): `mkDefault`, plain and `mkForce` definitions from three modules, and the option default. The `mkForce` definition (index 0) wins. `module` ids are nested modules; the first definition's module is the first record below:
+
+```json
+{
+  "declaredIn": [
+    "/nix/store/…-source/tests/fixture/modules/nested-options.nix"
+  ],
+  "definitions": [
+    {
+      "active": true,
+      "condition": null,
+      "kind": "definition",
+      "module": "«fixture.accounts.dave»:anon-4",
+      "priority": 50,
+      "valuePreview": "\"tcsh\""
+    },
+    {
+      "active": true,
+      "condition": null,
+      "kind": "definition",
+      "module": "«fixture.accounts.dave»:anon-5",
+      "priority": 100,
+      "valuePreview": "\"zsh\""
+    },
+    {
+      "active": true,
+      "condition": null,
+      "kind": "definition",
+      "module": "«fixture.accounts.dave»:anon-6",
+      "priority": 1000,
+      "valuePreview": "\"bash\""
+    },
+    {
+      "active": true,
+      "condition": null,
+      "file": "/nix/store/…-source/tests/fixture/modules/nested-options.nix",
+      "kind": "default",
+      "module": null,
+      "priority": 1500,
+      "valuePreview": "\"sh\""
+    }
+  ],
+  "error": null,
+  "highestPrio": 50,
+  "instance": "fixture.accounts.dave",
+  "loc": ["fixture", "accounts", "dave", "shell"],
+  "omitted": {
+    "declarationActive": 0,
+    "declarationInactive": 0,
+    "declarationWinners": 0,
+    "nixpkgsActive": 0,
+    "nixpkgsInactive": 0,
+    "nixpkgsWinners": 0
+  },
+  "parent": "fixture.accounts",
+  "path": "fixture.accounts.dave.shell",
+  "type": "string",
+  "winners": [0]
+}
+```
+
+The nested module behind the winner, and the child of the hidden wrapper in a non-shorthand submodule instance (`fixture.home` is a `submoduleWith`; `fixture.home.carol = mkForce { theme = ...; }` in `nested.nix`). `owner` is the top-level module that wrote the definition; `scope` is the instance path:
+
+```json
+{
+  "id": "«fixture.accounts.dave»:anon-4",
+  "file": "/nix/store/…-source/tests/fixture/modules/nested-force.nix",
+  "imports": [],
+  "origin": "user",
+  "disabled": false,
+  "modulesIndex": null,
+  "position": "/nix/store/…-source/tests/fixture/modules/nested-force.nix:4",
+  "scope": "fixture.accounts.dave",
+  "owner": "/nix/store/…-source/tests/fixture/modules/nested-force.nix"
+}
+```
+
+```json
+{
+  "id": "«fixture.home.carol»:anon-4:anon-1",
+  "file": "/nix/store/…-source/tests/fixture/modules/nested.nix",
+  "imports": [],
+  "origin": "user",
+  "disabled": false,
+  "modulesIndex": null,
+  "position": "/nix/store/…-source/tests/fixture/modules/nested.nix:17",
+  "scope": "fixture.home.carol",
+  "owner": "/nix/store/…-source/tests/fixture/modules/nested.nix"
+}
+```
+
+`fixture.home.carol.theme`: the instance-level `mkForce` in `nested.nix` wins as a whole, so `nested-plain.nix`'s `fixture.home.carol = { theme = ...; editor = ...; }` never reached the instance. Its `theme` is listed at index 1 with `shadowedAt`, and keeps its own priority (100) without being a winner. The `declarationActive: 1` is a definition of the instance's own declaration module (`extra/home-options.nix`, declared by the fixture's `extra` input) that is counted, not listed. Only the changed parts:
+
+```json
+{
+  "definitions": [
+    {
+      "kind": "definition",
+      "module": "«fixture.home.carol»:anon-4:anon-1",
+      "priority": 100,
+      "valuePreview": "\"forced instance\""
+    },
+    {
+      "kind": "definition",
+      "module": "/nix/store/…-source/tests/fixture/modules/nested-plain.nix",
+      "priority": 100,
+      "shadowedAt": "fixture.home.carol",
+      "valuePreview": "\"lost at the instance level\""
+    }
+  ],
+  "highestPrio": 100,
+  "instance": "fixture.home.carol",
+  "omitted": { "declarationActive": 1, "declarationInactive": 0, "declarationWinners": 0 },
+  "parent": "fixture.home",
+  "path": "fixture.home.carol.theme",
+  "winners": [0]
+}
+```
