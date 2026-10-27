@@ -20,6 +20,7 @@ usage: optgraph <flakeref>#nixosConfigurations.<host> [options]
       --include-all-definitions
                           list every definition; by default nixpkgs definitions
                           that don't win are only counted (option.omitted)
+      --pretty            indent the JSON (default: compact, one line)
       --submodule-depth N attribute definitions inside submodule instances
                           (users.users.<name>, ...) down to N levels (default 3;
                           0: submodule-typed options stay leaves)
@@ -46,7 +47,7 @@ usage_error() {
   die 1 "$*"
 }
 
-installable="" output="" html="" all=false include_all_defs=false max_retries="" time_budget="" submodule_depth=3
+installable="" output="" html="" all=false include_all_defs=false max_retries="" time_budget="" submodule_depth=3 pretty=false
 while [ $# -gt 0 ]; do
   case $1 in
   --html)
@@ -65,6 +66,10 @@ while [ $# -gt 0 ]; do
     ;;
   --include-all-definitions)
     include_all_defs=true
+    shift
+    ;;
+  --pretty)
+    pretty=true
     shift
     ;;
   --submodule-depth)
@@ -329,7 +334,9 @@ fi
 
 # Attach the trimmed crash messages to the lib's warnings; mark partial output.
 enrich() {
-  jq --argjson crashes "$crashes" --arg exhausted "$exhausted" '
+  local fmt=(-c)
+  ! $pretty || fmt=()
+  jq "${fmt[@]}" --argjson crashes "$crashes" --arg exhausted "$exhausted" '
     def code: {reconstruct: "eval-crash", module: "eval-crash", walk: "eval-crash", preview: "preview-crash", selfcheck: "selfcheck-crash", instance: "nested-crash", instances: "nested-crash"}[.stage];
     def subj: .subject.path // .subject.slot;
     ($crashes | map({key: (code + " " + subj), value: .message}) | from_entries) as $msg

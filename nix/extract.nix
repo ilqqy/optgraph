@@ -539,8 +539,14 @@ let
         "${prefix}Inactive" = length (filter (i: !(elemAt recon.definitions i).active) is);
         "${prefix}Winners" = length (filter (i: winnerSet ? ${toString i}) is);
       };
+      # The declaration counters (nested options only) are written only when
+      # not zero, and declarationOrigin only when every counted declaration
+      # definition shares one origin (e.g. "input:home-manager").
+      declOrigins = sortUnique (map (i: ctx.originOfDef (elemAt recon.definitions i)) droppedDecl);
       omitted =
-        count "nixpkgs" droppedNixpkgs // lib.optionalAttrs nested (count "declaration" droppedDecl);
+        count "nixpkgs" droppedNixpkgs
+        // lib.filterAttrs (_: n: n != 0) (count "declaration" droppedDecl)
+        // lib.optionalAttrs (length declOrigins == 1) { declarationOrigin = head declOrigins; };
 
       # Option paths that look like secrets: non-scalar values are redacted.
       sensitive =
@@ -640,11 +646,6 @@ let
             nixpkgsActive = 0;
             nixpkgsInactive = 0;
             nixpkgsWinners = 0;
-          }
-          // lib.optionalAttrs nested {
-            declarationActive = 0;
-            declarationInactive = 0;
-            declarationWinners = 0;
           };
           error = "excluded after an uncatchable crash during reconstruct (see meta.warnings)";
         };
