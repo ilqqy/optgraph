@@ -4,6 +4,8 @@
 
 All objects set `additionalProperties: false` and list every field below as required, except `definitions[].file`, which is absent when it equals its module's file, and the fields added for [submodule instances](#submodule-instances), which are optional and absent at top level (`meta.submoduleDepth`, `modules[].scope`, `modules[].owner`, `options[].instance`, `options[].parent`, `definitions[].shadowedAt`, `omitted.declaration*`): a document without nesting is valid as it was before them. Other nullable fields are present with value `null`. There is no separate schema version; `meta.toolVersion` identifies the producer.
 
+The CLI writes the document as compact JSON (one line); `--pretty` indents it (or use `jq . graph.json`). The content is the same.
+
 `optgraph --html FILE` embeds the same document, unchanged, in the viewer page's `<script type="application/json" id="optgraph-data">` element; every `<` in it is written as `\u003c`, so `JSON.parse` of the element's text gives the document back.
 
 ```
@@ -118,7 +120,7 @@ Sorted by `path` (bytewise). `_module.*` is never listed, in either scope.
 | `definitions` | array of definition | The listed definitions of the option, plus the option default as the last entry if the option has a `default` (always listed, whether it wins or loses). By default a definition is listed when it comes from a module whose origin is not `nixpkgs` (`user`, `user-inline`, `input:*` or `unknown`; active or not), or when it is the option's only winner. Every other nixpkgs definition, including nixpkgs winners of options with several winners (lists, attrsets), is only counted in `omitted`; `winners` then indexes only the listed ones, and `omitted.nixpkgsWinners` counts the others. With `--include-all-definitions` every definition found in the loaded modules is listed. Nested options list user-side definitions instead of non-nixpkgs ones; see [Submodule instances](#submodule-instances). Order: modules in the order of `modules`, each module's definitions in walk order. This is not the module system's merge order. |
 | `winners` | array of integer | Ascending indices into the listed `definitions` of the definitions that are active and have priority `highestPrio`. One entry for single-value types; several for mergeable types (lists, attrsets, submodules, ...). Empty when `highestPrio` is `null`. Also empty, with `highestPrio` set, when every winner is an omitted nixpkgs definition (e.g. a list option whose only non-nixpkgs definition is an `mkDefault` that loses to nixpkgs' normal-priority ones); `omitted.nixpkgsWinners` then says how many win, at `highestPrio`. |
 | `highestPrio` | integer or null | Lowest priority number among active definitions (lower wins). `null` if there is no active definition (the module system reports `9999` then), or if the winner is unknown: some active definition has an unknown priority (reading its value threw) or some `mkIf` condition is `"mkIf-error"`. In the unknown case `winners` is `[]` and `error` ends with `winner unknown: ...`; the module system itself would throw for such an option. |
-| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive, nixpkgsWinners }`: nixpkgs definitions that were counted instead of listed, split by `active` (`nixpkgsActive + nixpkgsInactive` is the number omitted), and how many of the active ones are winners (active at `highestPrio`). `nixpkgsWinners <= nixpkgsActive`: it is a subset, not counted a second time, so listed `winners` plus `nixpkgsWinners` is the number of winners. Nested options also carry `declarationActive`, `declarationInactive`, `declarationWinners` (always all three there, never at top level): the same counts for definitions of the submodule's own non-nixpkgs declaration modules (e.g. home-manager's own modules, origin `input:home-manager`), which are counted instead of listed; `declarationWinners <= declarationActive`. Dropped definitions of nixpkgs origin go to `nixpkgs*` exactly as at top level. All counters are `0` with `--include-all-definitions`. The option default is never counted here (it is always listed). A single winner is never omitted, so `nixpkgsWinners` is `0` for options with one winner; with several winners, nixpkgs ones are counted here (as active and in `nixpkgsWinners`). Computed after the self-check, which always sees every definition. |
+| `omitted` | object | `{ nixpkgsActive, nixpkgsInactive, nixpkgsWinners }`: nixpkgs definitions that were counted instead of listed, split by `active` (`nixpkgsActive + nixpkgsInactive` is the number omitted), and how many of the active ones are winners (active at `highestPrio`). `nixpkgsWinners <= nixpkgsActive`: it is a subset, not counted a second time, so listed `winners` plus `nixpkgsWinners` is the number of winners. Nested options can also carry `declarationActive`, `declarationInactive`, `declarationWinners` (each only when not `0`; never at top level): the same counts for definitions of the submodule's own non-nixpkgs declaration modules (e.g. home-manager's own modules, origin `input:home-manager`), which are counted instead of listed; `declarationWinners <= declarationActive`, a subset, not counted twice. `declarationOrigin` names the origin of those counted definitions when they all share one (`input:home-manager`). With several winners all of which are omitted declaration definitions, `winners` is `[]`, `highestPrio` is set and `declarationWinners` says how many win; the viewers then say "2 home-manager definitions win at priority 100 (not listed)" (fixture: `fixture.home.bob.packages`, 2 definitions of the `extra` input). Dropped definitions of nixpkgs origin go to `nixpkgs*` exactly as at top level. All counters are `0` with `--include-all-definitions`. The option default is never counted here (it is always listed). A single winner is never omitted, so `nixpkgsWinners` is `0` for options with one winner; with several winners, nixpkgs ones are counted here (as active and in `nixpkgsWinners`). Computed after the self-check, which always sees every definition. |
 | `error` | string or null | `null`, or messages joined by `"; "`, in this order: per definition `N`, `definition N: throw/assert while reading its value` (the outer value threw; its priority is unknown) and `definition N: an mkIf condition threw or is not a bool` (`condition` is `"mkIf-error"`); then `winner unknown: a definition could not be classified` if `highestPrio` is `null` for that reason; then `definition N: preview hit throw/assert` (a throw/assert was hit while previewing it). The last one is set by an explicit failure flag, not by the text: a string value that contains `<error>` does not count. An excluded option has only `excluded after an uncatchable crash during reconstruct (see meta.warnings)`. `N` indexes `definitions`. `tryEval` cannot return the message of a `throw`, so the text names the stage, not the cause. |
 
 ### Submodule instances
@@ -207,7 +209,7 @@ Options that a user module touches can have hundreds of nixpkgs definitions (in 
 
 Enforced by the JSON Schema: field presence and types, enums, `origin` pattern, unique `imports` and `winners`, `loc` non-empty, indices and `modulesIndex` non-negative.
 
-Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (135 checks; a check whose target is missing fails, it is not skipped):
+Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (139 checks; a check whose target is missing fails, it is not skipped):
 
 - every id in `imports` and every definition's `module` is the `id` of a record in `modules`, and module ids are unique;
 - a definition's `file` is absent when it equals its module's file;
@@ -470,9 +472,6 @@ Same run with the default `--submodule-depth 3` (10 warnings, 56 modules, 63 opt
   "instance": "fixture.accounts.dave",
   "loc": ["fixture", "accounts", "dave", "shell"],
   "omitted": {
-    "declarationActive": 0,
-    "declarationInactive": 0,
-    "declarationWinners": 0,
     "nixpkgsActive": 0,
     "nixpkgsInactive": 0,
     "nixpkgsWinners": 0
@@ -535,7 +534,7 @@ The nested module behind the winner, and the child of the hidden wrapper in a no
   ],
   "highestPrio": 100,
   "instance": "fixture.home.carol",
-  "omitted": { "declarationActive": 1, "declarationInactive": 0, "declarationWinners": 0 },
+  "omitted": { "declarationActive": 1, "declarationOrigin": "input:extra", "nixpkgsActive": 0, "nixpkgsInactive": 0, "nixpkgsWinners": 0 },
   "parent": "fixture.home",
   "path": "fixture.home.carol.theme",
   "winners": [0]
