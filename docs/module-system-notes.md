@@ -1237,7 +1237,9 @@ Per expanded instance:
 6. Definitions that lost at an enclosing level (outer or instance non-survivors) or sit under a false `mkIf` there are walked only if their content is a plain attrset (WHNF under `tryEval`, inside the instance marker; functions and paths are not called or imported). They are listed with their inner priority, never as winners, with `shadowedAt` (the path where they lost) or `condition: "mkIf-false"`. Otherwise they stay visible only on the parent option.
 7. Recursion: nested options of a supported type expand the same way, owners being nested modules.
 
-Failures: markers `optgraph-marker:instances:{"path":<option>}` (enumeration) and `optgraph-marker:instance:{"path":<instance>}` (collection and walk). A catchable failure makes the option or instance a leaf with `nested-degraded`. An uncatchable one goes through the CLI's crash recovery, which adds the subject to `excludeNesting`/`excludeInstances` (`nested-crash`). Nested options use the existing `reconstruct`/`selfcheck`/`preview` markers and lists, keyed by their full loc.
+Failures: markers `optgraph-marker:instances:{"loc":…,"path":<option>}` (listing an option's instances) and `optgraph-marker:instance:{"loc":…,"path":<instance>}` (one instance: instance-level classification, alignment, re-collection, walks). A catchable failure makes the option or instance a leaf with `nested-degraded`. An uncatchable one goes through the CLI's crash recovery, which adds the subject to `excludeNesting`/`excludeInstances` (`nested-crash`): only that instance stays a leaf, its siblings are expanded. Nested options use the top-level `reconstruct`/`selfcheck`/`preview` markers and lists, keyed by their full loc, so a crash in one nested option's preview disables only that preview. Listing the instances of a non-lazy `attrsOf` forces every instance value (9.3): a value that aborts right there disables the option's nesting as a whole; an abort inside an instance (its function body, its modules) affects only that instance.
+
+Implementation notes (stage 2): definitions that never reached an instance are walked only when a user-side module wrote them. Library code under a false `mkIf` may refer to packages that do not exist; forcing it gives an uncatchable `attribute missing` (seen with a home-manager module during development). `--submodule-depth 0` gives exactly the previous output (no new fields).
 
 Schema delta (all new fields optional, so existing documents stay valid; the viewers already ignore unknown fields, `app/crates/optgraph-core/src/model.rs:3-4`):
 
@@ -1265,8 +1267,8 @@ Decisions (approved 2026-10-27):
 Stages (status kept here for a resumed session):
 
 - [x] Stage 1: research, this section, plan (approved 2026-10-27)
-- [ ] Blocked: PR #12 not yet on `origin/main` (checked 2026-10-27)
-- [ ] Stage 2: extractor (`nix/`), CLI recovery for the new stages
+- [x] PR #12 merged into `feat/submodules` (2026-10-27)
+- [x] Stage 2: extractor (`nix/`), CLI recovery for the new stages (checks pinned to depth 0 until stage 4)
 - [ ] Stage 3: schema, `docs/schema.md`, README Limitations
 - [ ] Stage 4: fixture cases and assertions, `tests/e2e.sh`
 - [ ] Stage 5: viewers load and render nested options (fixture + demo flake story)

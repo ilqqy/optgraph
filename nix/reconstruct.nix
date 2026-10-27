@@ -12,8 +12,9 @@
 #  - a definition value is forced to WHNF (to read `_type`) only when every
 #    condition above it is true, and an mkIf's content only if its condition is;
 #  - values themselves are never forced here (`content` stays a thunk).
-# The walk stops at option boundaries: submodule-typed and freeform options
-# are leaves, their definitions are listed as a whole.
+# The walk stops at option boundaries: a submodule-typed option is a leaf here;
+# nix/nested.nix walks inside its instances with the same functions. Freeform
+# keys are skipped.
 { lib }:
 let
   inherit (builtins)
