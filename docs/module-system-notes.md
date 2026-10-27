@@ -1117,7 +1117,7 @@ Re-run 2026-10-27 (Nix 2.34.8, nixpkgs `c59305b`; home-manager `nix-community/ho
 - `nixpkgs@c59305b:lib/types.nix:1326-1331` (`submodule`, flag at :1329), :1417-1424 (`submoduleWith` arguments), :1428-1442 (`allModules`), :1444-1467 (`base`, name default at :1463), :1500-1512 (`merge.v2`, `extendModules` at :1503-1506, `valueMeta` at :1511), :1537 (`getSubModules = modules`).
 - `nixpkgs@c59305b:lib/types.nix:962-1036` (`attrsWith`: `pushPositions` :965-971, per-name `mergeDefinitions` :1018 and :1023, non-lazy filter :1022, `valueMeta.attrs` :1035); :1237-1293 (`nullOr`: non-null values delegate to the element's `merge.v2`, :1258-1261); :747 (`listOf`: `valueMeta.list`).
 - `nixpkgs@c59305b:lib/modules.nix:1083-1086` (declaration submodules wrapped in `setDefaultModuleLocation opt._file`), :382-394 (`extendModules` appends to `regularModules`), :402-407 (result: `options`, `config` without `_module`, `_module`, `graph`, `type`, `class`).
-- nixos-25.11 (`b6018f8`, the oldest supported release) has the same `valueMeta.attrs` and `valueMeta = { inherit configuration; }` (`lib/types.nix:885`, :1308). <!-- unverified: grep of the raw file from GitHub, not evaluated -->
+- nixos-25.11 (`b6018f8`, `lib.version` `25.11.20260630.b6018f8`, the oldest supported release) has `valueMeta.attrs` (`lib/types.nix:885`) and the submodule's `valueMeta = { inherit configuration; }` (:1308), but its `nullOr` does not forward `merge.v2`: `valueMeta` of a `nullOr submodule` option is empty.
 
 **Verified by eval** (`/tmp/sub/t1.nix`). Declarations: `u = attrsOf sub`, `l = lazyAttrsOf sub`, `s = sub`, `n = nullOr sub`, where `sub` is a `submodule ({ name, ... }: ...)` with options `x` (int, default 0), `who` (default `name`) and `inner` (`attrsOf (submodule { options.y = ...; })`). Definitions:
 
@@ -1145,8 +1145,11 @@ types ["attrsOf","lazyAttrsOf","submodule","nullOr"]  elem "submodule"  subModsO
 
 `listOf sub` (`/tmp/sub/t3.nix`): `valueMeta` has `["_internal","list"]`.
 
+The same two files on nixos-25.11 (`lib` from `builtins.getFlake "github:NixOS/nixpkgs/b6018f87da91d19d0ab4cf979885689b469cdd41"`): every line above and every line of 9.3 is identical except `nMeta []` (no `configuration` for `nullOr submodule`).
+
 **Caveats.**
 
+- `nullOr submodule` has a per-instance `configuration` on unstable only (not on 25.11, above). The extractor feature-detects `valueMeta ? configuration` instead of testing the version; without it the option stays a leaf.
 - `valueMeta` exists only on the `merge.v2` path; a custom type that wraps a submodule without forwarding `v2` (`either`, `coercedTo`, `addCheck`, ...) hides the instances.
 - Instance-level `mkOrder` (`alice = mkBefore {...}`) reorders the surviving definitions (`sortProperties`), so their order no longer follows module order. <!-- unverified: code reading (lib/modules.nix:1262-1267), not run -->
 
@@ -1242,14 +1245,27 @@ Schema delta (all new fields optional, so existing documents stay valid; the vie
 - module: `scope` (instance path; absent at top level), `owner` (id of the module that wrote the instance definition; only on instance definition modules).
 - definition: `shadowedAt` (path where the enclosing definition lost on priority).
 - omitted: `declarationActive`/`declarationInactive`: non-nixpkgs declaration-side definitions inside instances (home-manager's own modules), counted instead of listed. Listing them would multiply the output (about 10x more definitions in the prototype).
-- meta: `submoduleDepth`. Warning codes `nested-degraded`, `nested-crash`, `nested-unchecked` (reserved for freeform per-key attribution, no self-check possible, 9.4).
+- meta: `submoduleDepth` (default 3). Warning codes `nested-degraded`, `nested-crash`, `nested-unchecked` (reserved for freeform per-key attribution, no self-check possible, 9.4).
 - Scope: instances are expanded when a user-side definition names them; nested options are listed when a user-side module touches them; nested modules follow the top-level rule per scope. `--all` keeps nested expansion at the default rule (it would otherwise list ~4000 options per home-manager user).
 
 Self-check: nested winners are compared like top-level ones (`highestPrio` and winner files against the instance's option). Alignment (step 2) checks the owners. Shadowed definitions are non-winners by construction. Prototype (`/tmp/sub/proto.nix`, local): 6/6 nested options matched on `tests/fixture`.
 
+Decisions (approved 2026-10-27):
+
+- JSON budget 3x of today's on the maintainer's config (wall time 2x, RSS 3 GB unchanged); default `--submodule-depth 3`.
+- `--all` lists every declared top-level option; nested expansion stays limited to what user-side modules touch.
+- Inside instances, definitions of declaration-side modules (nixpkgs' and inputs' such as home-manager's) are counted in `omitted.declarationActive`/`declarationInactive` (and the winners counter of PR #12, nested the same way as at top level); `--include-all-definitions` lists them.
+- Stage 2 starts only once PR #12 (`omitted.nixpkgsWinners`) is on `origin/main`: `git merge origin/main` (no rebase, no force-push), then nested options get `nixpkgsWinners` in the same stage.
+- Works on 25.11 and unstable (feature detection, above); CI runs the nested fixture on both.
+- Instance-level check failures degrade the instance to a leaf with `nested-degraded`: fixture cases for an instance-level `mkBefore`/`mkAfter` reordering and `users.users = mkForce <non-attrset>`, asserting the leaf, the code and that no nested definition is attributed.
+- Per-instance crash markers with the top-level stage granularity: `instance-reconstruct`, `instance-selfcheck`, `instance-preview` (subject: instance path). The CLI excludes or degrades only that instance, never the whole option; tested with a throwing and an aborting instance.
+- optgraph-core tolerates the new fields (`#[serde(default)]`, no `deny_unknown_fields`) and has a unit test loading a nested graph. Both viewers label nested modules readably (`alice › home.nix`, never the raw `«…»` id) and keep their order in the layered layout; screenshots of fixture and demo checked.
+- Self-check evidence beyond one config: fixture instance with layered and function-style definitions, demo flake nested story; match counts in the PR.
+
 Stages (status kept here for a resumed session):
 
-- [x] Stage 1: research, this section, plan (approval pending)
+- [x] Stage 1: research, this section, plan (approved 2026-10-27)
+- [ ] Blocked: PR #12 not yet on `origin/main` (checked 2026-10-27)
 - [ ] Stage 2: extractor (`nix/`), CLI recovery for the new stages
 - [ ] Stage 3: schema, `docs/schema.md`, README Limitations
 - [ ] Stage 4: fixture cases and assertions, `tests/e2e.sh`
