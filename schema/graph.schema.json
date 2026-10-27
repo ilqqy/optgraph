@@ -131,13 +131,18 @@
         },
         "highestPrio": { "type": ["integer", "null"] },
         "omitted": {
-          "description": "nixpkgs definitions that neither win nor come from a non-nixpkgs module, counted instead of listed (zero with --include-all-definitions); never the option default, which is always listed",
+          "description": "nixpkgs definitions from nixpkgs modules that are not the only winner, counted instead of listed (zero with --include-all-definitions); never the option default, which is always listed",
           "type": "object",
           "additionalProperties": false,
-          "required": ["nixpkgsActive", "nixpkgsInactive"],
+          "required": ["nixpkgsActive", "nixpkgsInactive", "nixpkgsWinners"],
           "properties": {
             "nixpkgsActive": { "type": "integer", "minimum": 0 },
-            "nixpkgsInactive": { "type": "integer", "minimum": 0 }
+            "nixpkgsInactive": { "type": "integer", "minimum": 0 },
+            "nixpkgsWinners": {
+              "description": "How many of the nixpkgsActive ones win (active at highestPrio); <= nixpkgsActive, not counted a second time. Always 0 when the option has a single winner (it is listed). When winners is empty and this is > 0, every winner is an omitted nixpkgs definition.",
+              "type": "integer",
+              "minimum": 0
+            }
           }
         },
         "error": { "$ref": "#/$defs/nullableString" }

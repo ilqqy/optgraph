@@ -480,9 +480,13 @@ let
         }) keep
       );
       dropped = filter (i: !(keepSet ? ${toString i})) indices;
+      # Winners are active, so nixpkgsWinners <= nixpkgsActive; it is a subset
+      # of nixpkgsActive, not an extra count. Always 0 with a single winner,
+      # which is kept.
       omitted = {
         nixpkgsActive = length (filter (i: (elemAt recon.definitions i).active) dropped);
         nixpkgsInactive = length (filter (i: !(elemAt recon.definitions i).active) dropped);
+        nixpkgsWinners = length (filter (i: winnerSet ? ${toString i}) dropped);
       };
 
       # Option paths that look like secrets: non-scalar values are redacted.
@@ -579,6 +583,7 @@ let
           omitted = {
             nixpkgsActive = 0;
             nixpkgsInactive = 0;
+            nixpkgsWinners = 0;
           };
           error = "excluded after an uncatchable crash during reconstruct (see meta.warnings)";
         };

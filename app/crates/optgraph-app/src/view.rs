@@ -106,6 +106,8 @@ pub struct OptgraphView {
     pub graph_sel: Option<Sel>,
     pub bench: Option<crate::stage::Bench>,
     pub scheme: crate::loading::Scheme,
+    /// The system explicitly prefers light (the desktop portal says so).
+    pub system_light: bool,
     /// A running (or failed) `optgraph` evaluation of a flake reference.
     pub evaluation: Option<crate::evaluate::Evaluation>,
     /// --opt / --module to apply once an evaluation has loaded.
@@ -147,6 +149,7 @@ impl OptgraphView {
             graph_sel: None,
             bench: crate::stage::Bench::from_env(),
             scheme: crate::loading::Scheme::System,
+            system_light: false,
             evaluation: None,
             after_load: (None, None),
             _appearance: None,
@@ -159,8 +162,10 @@ impl OptgraphView {
 
     /// Follow the system colour scheme from now on (unless pinned).
     pub fn watch_appearance(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self._appearance = Some(cx.observe_window_appearance(window, |this, window, cx| this.apply_scheme(window, cx)));
+        self._appearance =
+            Some(cx.observe_window_appearance(window, |this, window, cx| this.system_scheme_changed(window, cx)));
         self.apply_scheme(window, cx);
+        self.system_scheme_changed(window, cx);
     }
 
     pub fn set_model(&mut self, model: Model, cx: &mut Context<Self>) {

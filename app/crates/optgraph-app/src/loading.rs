@@ -1,7 +1,9 @@
 //! Opening a graph.json (file dialog, drag and drop) and the colour scheme
-//! (follows the system unless pinned by --dark/--light or the toggle).
+//! (dark unless the system explicitly prefers light; pinned by --dark/--light
+//! or the toggle).
 
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 use gpui::{
     AnyElement, Context, ExternalPaths, FontWeight, IntoElement, PathPromptOptions, SharedString, Window,
@@ -26,6 +28,59 @@ pub fn mode_of(appearance: WindowAppearance) -> Mode {
         WindowAppearance::Dark | WindowAppearance::VibrantDark => Mode::Dark,
         WindowAppearance::Light | WindowAppearance::VibrantLight => Mode::Light,
     }
+}
+
+/// Whether the desktop portal's `org.freedesktop.appearance color-scheme`
+/// is 2 (prefer light; 0 is no preference, 1 prefer dark). GPUI reports
+/// Light for "no preference" and when there is no portal at all, so a Light
+/// appearance is checked here, with busctl or gdbus; neither: not light.
+fn portal_prefers_light() -> bool {
+    let (ns, key) = ("org.freedesktop.appearance", "color-scheme");
+    let (dest, path) = ("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop");
+    let busctl = [
+        "busctl",
+        "--user",
+        "--timeout=2",
+        "call",
+        dest,
+        path,
+        "org.freedesktop.portal.Settings",
+        "ReadOne",
+        "ss",
+        ns,
+        key,
+    ];
+    let gdbus = [
+        "gdbus",
+        "call",
+        "--session",
+        "--timeout",
+        "2",
+        "--dest",
+        dest,
+        "--object-path",
+        path,
+        "--method",
+        "org.freedesktop.portal.Settings.ReadOne",
+        ns,
+        key,
+    ];
+    for argv in [&busctl[..], &gdbus[..]] {
+        let out = Command::new(argv[0])
+            .args(&argv[1..])
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output();
+        if let Ok(o) = out
+            && o.status.success()
+        {
+            // busctl: "v u 2", gdbus: "(<<uint32 2>>,)": the last number.
+            let text = String::from_utf8_lossy(&o.stdout);
+            let last = text.split(|c: char| !c.is_ascii_digit()).rfind(|s| !s.is_empty());
+            return last == Some("2");
+        }
+    }
+    false
 }
 
 impl OptgraphView {
@@ -85,16 +140,40 @@ impl OptgraphView {
         }
     }
 
-    /// Follow the system's light/dark preference unless pinned.
+    /// Dark, or light when the system explicitly prefers it, unless pinned.
     pub fn apply_scheme(&mut self, window: &Window, cx: &mut Context<Self>) {
         let mode = match self.scheme {
             Scheme::Pinned(m) => m,
-            Scheme::System => mode_of(window.appearance()),
+            Scheme::System if self.system_light => mode_of(window.appearance()),
+            Scheme::System => Mode::Dark,
         };
         if theme(cx).mode != mode {
             cx.set_global(Theme::for_mode(mode));
             cx.notify();
         }
+    }
+
+    /// The window's appearance changed (or is first known): a Dark one is an
+    /// explicit preference; a Light one is checked with the portal, off the
+    /// main thread, and applied once known (dark until then).
+    pub fn system_scheme_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.scheme != Scheme::System {
+            return;
+        }
+        if mode_of(window.appearance()) == Mode::Dark {
+            self.system_light = false;
+            self.apply_scheme(window, cx);
+            return;
+        }
+        cx.spawn_in(window, async move |this, cx| {
+            let light = cx.background_executor().spawn(async { portal_prefers_light() }).await;
+            this.update_in(cx, |this, window, cx| {
+                this.system_light = light;
+                this.apply_scheme(window, cx);
+            })
+            .ok();
+        })
+        .detach();
     }
 
     pub fn toggle_scheme(&mut self, window: &Window, cx: &mut Context<Self>) {

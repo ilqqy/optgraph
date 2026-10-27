@@ -166,6 +166,17 @@ impl OptionEntry {
         self.omitted.nixpkgs_active + self.omitted.nixpkgs_inactive
     }
 
+    /// Winners counted in `omitted` instead of listed. 0 with a single
+    /// winner (it is always listed) and in graphs from before the field.
+    pub fn hidden_winners(&self) -> u64 {
+        self.omitted.nixpkgs_winners
+    }
+
+    /// Every winner: the listed ones and the omitted nixpkgs ones.
+    pub fn winner_count(&self) -> u64 {
+        self.winners.len() as u64 + self.omitted.nixpkgs_winners
+    }
+
     pub fn is_winner(&self, def: usize) -> bool {
         self.winners.contains(&def)
     }
@@ -176,6 +187,9 @@ impl OptionEntry {
 pub struct Omitted {
     pub nixpkgs_active: u64,
     pub nixpkgs_inactive: u64,
+    /// How many of `nixpkgs_active` win (at `highest_prio`); not counted twice.
+    #[serde(default)]
+    pub nixpkgs_winners: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
