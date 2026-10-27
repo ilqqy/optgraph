@@ -90,6 +90,8 @@ let
     and (opt("services.printing.enable") | any(.definitions[]; .condition == "mkIf-false"))
     and (opt("environment.systemPackages") | (.winners | length) > 1 and .omitted.nixpkgsActive > 0)
     and (opt("i18n.defaultLocale") | .definitions[-1].kind == "default" and .winners == [0])
+    and (opt("users.users.demo.shell") | .instance == "users.users.demo" and .highestPrio == 100 and ([.definitions[] | select(.kind == "definition") | .priority] | sort) == [100, 1000] and (.winners | length) == 1)
+    and (opt("users.users.demo.extraGroups") | (.winners | length) == 2 and any(.definitions[]; .condition == "mkIf-false"))
   '';
 in
 {
