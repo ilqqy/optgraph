@@ -24,6 +24,9 @@ pub struct Meta {
     pub attribution: Attribution,
     pub complete: bool,
     pub warnings: Vec<Warning>,
+    /// `--submodule-depth`; absent when nesting is off (or in older graphs).
+    #[serde(default)]
+    pub submodule_depth: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -143,6 +146,12 @@ pub struct Module {
     pub disabled: bool,
     pub modules_index: Option<u64>,
     pub position: Option<String>,
+    /// Path of the submodule instance a nested module belongs to.
+    #[serde(default)]
+    pub scope: Option<String>,
+    /// On an instance's definition modules: the module that wrote it.
+    #[serde(default)]
+    pub owner: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -158,6 +167,12 @@ pub struct OptionEntry {
     pub highest_prio: Option<i64>,
     pub omitted: Omitted,
     pub error: Option<String>,
+    /// Nested options: the enclosing submodule instance, and the option
+    /// whose value holds it.
+    #[serde(default)]
+    pub instance: Option<String>,
+    #[serde(default)]
+    pub parent: Option<String>,
 }
 
 impl OptionEntry {
@@ -166,15 +181,22 @@ impl OptionEntry {
         self.omitted.nixpkgs_active + self.omitted.nixpkgs_inactive
     }
 
-    /// Winners counted in `omitted` instead of listed. 0 with a single
-    /// winner (it is always listed) and in graphs from before the field.
-    pub fn hidden_winners(&self) -> u64 {
-        self.omitted.nixpkgs_winners
+    /// Definitions of a submodule's own (non-nixpkgs) declaration modules
+    /// counted instead of listed (nested options only).
+    pub fn omitted_declaration_total(&self) -> u64 {
+        self.omitted.declaration_active + self.omitted.declaration_inactive
     }
 
-    /// Every winner: the listed ones and the omitted nixpkgs ones.
+    /// Winners counted in `omitted` instead of listed (nixpkgs and, inside
+    /// instances, declaration-side ones). 0 with a single winner (it is
+    /// always listed) and in graphs from before the field.
+    pub fn hidden_winners(&self) -> u64 {
+        self.omitted.nixpkgs_winners + self.omitted.declaration_winners
+    }
+
+    /// Every winner: the listed ones and the omitted ones.
     pub fn winner_count(&self) -> u64 {
-        self.winners.len() as u64 + self.omitted.nixpkgs_winners
+        self.winners.len() as u64 + self.hidden_winners()
     }
 
     pub fn is_winner(&self, def: usize) -> bool {
@@ -190,6 +212,13 @@ pub struct Omitted {
     /// How many of `nixpkgs_active` win (at `highest_prio`); not counted twice.
     #[serde(default)]
     pub nixpkgs_winners: u64,
+    /// Nested options only: the submodule's own declaration modules.
+    #[serde(default)]
+    pub declaration_active: u64,
+    #[serde(default)]
+    pub declaration_inactive: u64,
+    #[serde(default)]
+    pub declaration_winners: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -220,6 +249,10 @@ pub struct Definition {
     pub active: bool,
     pub condition: Option<Condition>,
     pub value_preview: Option<String>,
+    /// Nested options: the definition never reached the instance; its
+    /// enclosing definition lost at this path. Never a winner.
+    #[serde(default)]
+    pub shadowed_at: Option<String>,
 }
 
 impl Definition {

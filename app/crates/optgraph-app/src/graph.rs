@@ -263,6 +263,21 @@ impl GraphState {
                     });
                 }
             }
+            // A module inside a submodule instance hangs off the module whose
+            // definition it is (the module system imports it into the instance).
+            if let Some(on) = all[mi]
+                .owner
+                .as_ref()
+                .and_then(|o| model.mod_index.get(o))
+                .and_then(|oi| by_module.get(oi))
+            {
+                links.push(Link {
+                    source: *on,
+                    target: i,
+                    dashed: false,
+                    pts: vec![],
+                });
+            }
         }
         let lay = layered_layout(
             &nodes.iter().map(|n| Size { w: n.w, h: PILL_H }).collect::<Vec<_>>(),

@@ -1271,5 +1271,5 @@ Stages (status kept here for a resumed session):
 - [x] Stage 2: extractor (`nix/`), CLI recovery for the new stages (checks pinned to depth 0 until stage 4)
 - [x] Stage 3: schema, `docs/schema.md`, README Limitations
 - [x] Stage 4: fixture cases and assertions, `tests/e2e.sh` (checks.fixture passes on unstable and nixos-25.11)
-- [ ] Stage 5: viewers load and render nested options (fixture + demo flake story)
+- [x] Stage 5: viewers load and render nested options (fixture + demo flake story)
 - [ ] Stage 6: real-config budget check, PR

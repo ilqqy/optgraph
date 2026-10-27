@@ -44,7 +44,8 @@ function analyse(model) {
       if (d.kind !== "definition") return;
       const user = defOrigin(model, d) !== "nixpkgs";
       if (user) hasUser = true;
-      if (winners.has(i)) return;
+      // A shadowed definition (nested options) never competed in the instance.
+      if (winners.has(i) || d.shadowedAt) return;
       if (!d.active) {
         if (user && d.condition === "mkIf-false") off.push(i);
       } else if (d.priority != null && (loser == null || d.priority < loser.priority)) {
@@ -107,12 +108,12 @@ function ladder(model, o) {
   const winners = new Set(o.winners);
   const hp = o.highestPrio;
   const defs = o.definitions.map((d, i) => ({ d, i }));
-  const active = defs.filter(({ d, i }) => d.active && d.priority != null && !winners.has(i));
+  const active = defs.filter(({ d, i }) => d.active && d.priority != null && !winners.has(i) && !d.shadowedAt);
   const strongestLoser = active.reduce((best, x) => (best == null || x.d.priority < best.d.priority ? x : best), null);
   const firstWinner = o.winners.length ? o.definitions[o.winners[0]] : null;
   const hidden = hiddenWinners(o);
   const winCount = o.winners.length + hidden;
-  const notListed = hidden ? ` (${hidden} nixpkgs, not listed)` : "";
+  const notListed = hidden ? ` (${hidden} ${o.omitted.declarationWinners ? "omitted" : "nixpkgs"}, not listed)` : "";
   const rows = defs.map(({ d, i }) => {
     let status;
     let reason;
@@ -122,6 +123,10 @@ function ladder(model, o) {
       else if (strongestLoser) reason = `beats ${defWho(model, strongestLoser.d)}: ${hp} < ${strongestLoser.d.priority}`;
       else if (d.kind === "default") reason = "nothing stronger is set: the default applies";
       else reason = "the only active definition";
+    } else if (d.shadowedAt) {
+      // Nested options: the instance never saw it (docs/schema.md).
+      status = "lose";
+      reason = `never reached the instance: the definition it is part of lost at ${d.shadowedAt}`;
     } else if (!d.active) {
       status = "off";
       reason = d.condition === "mkIf-error" ? "its mkIf condition threw or is not a bool" : "switched off: its mkIf condition is false";
@@ -137,7 +142,7 @@ function ladder(model, o) {
       reason = "the winners are not listed";
     } else {
       status = "lose";
-      if (!o.winners.length) reason = `beaten by ${plural(hidden, "nixpkgs definition")} at ${hp} (not listed): ${hp} < ${d.priority}`;
+      if (!o.winners.length) reason = `beaten by ${plural(hidden, o.omitted.declarationWinners ? "omitted definition" : "nixpkgs definition")} at ${hp} (not listed): ${hp} < ${d.priority}`;
       else if (winCount === 1) reason = `beaten by ${defWho(model, firstWinner)}: ${hp} < ${d.priority}`;
       else reason = `beaten by ${winCount} definitions at ${hp}${notListed}: ${hp} < ${d.priority}`;
     }
@@ -148,8 +153,9 @@ function ladder(model, o) {
 
 // Winners counted in `omitted` instead of listed (0 in graphs from before
 // the field, and whenever there is a single winner: it is always listed).
+// Inside submodule instances declaration-side winners count too.
 function hiddenWinners(o) {
-  return o.omitted.nixpkgsWinners ?? 0;
+  return (o.omitted.nixpkgsWinners ?? 0) + (o.omitted.declarationWinners ?? 0);
 }
 
 // A definition's file: its own, else its module's (docs/schema.md).
@@ -171,10 +177,28 @@ function defOrigin(model, d) {
   return m ? m.origin : d.kind === "default" ? "declaration" : "unknown";
 }
 
+// The last component of a submodule instance path: users.users.alice -> alice,
+// fileSystems."/boot" -> /boot.
+function instanceName(scope) {
+  const q = /"((?:[^"\\]|\\.)*)"$/.exec(scope);
+  if (q) return q[1];
+  const i = scope.lastIndexOf(".");
+  return i >= 0 ? scope.slice(i + 1) : scope;
+}
+
+// Where a module inside an instance lives: its file, or for inline user code
+// (whose file is nixpkgs' flake.nix) the file of its position.
+function nestedWhere(m) {
+  return m.origin === "user-inline" && m.position ? m.position.replace(/:\d+$/, "") : m.file;
+}
+
 // Inline user modules carry nixpkgs' flake.nix as their file: label them by
 // their place in nixosSystem's `modules` list (and position) instead.
+// Modules inside a submodule instance are labelled by instance and file
+// ("users.users.alice › …/users.nix"), never by their «…» id.
 function moduleLabel(m) {
   if (!m) return "?";
+  if (m.scope) return `${m.scope} › ${shortPath(nestedWhere(m))}`;
   if (m.origin === "user-inline") {
     const where = m.position ? ` (${baseName(m.position)})` : "";
     return m.modulesIndex != null ? `inline module #${m.modulesIndex}${where}` : `nested inline module${where}`;
@@ -191,6 +215,7 @@ function isUserish(m) {
 // Short label for graph nodes: the file name, or the inline index.
 function moduleShortLabel(m) {
   if (!m) return "?";
+  if (m.scope) return `${instanceName(m.scope)} › ${baseName(nestedWhere(m))}`;
   if (m.origin === "user-inline") return m.modulesIndex != null ? `inline #${m.modulesIndex}` : "inline (nested)";
   const anon = m.id !== m.file;
   return anon ? `${baseName(m.position || m.file)} (anon)` : baseName(m.file);

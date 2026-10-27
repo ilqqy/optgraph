@@ -1,0 +1,3139 @@
+{
+ "stats": {
+  "modules": 56,
+  "options": 63,
+  "definitions": 85,
+  "overrides": 8,
+  "switchedOff": 7,
+  "errors": 4
+ },
+ "overrides": [
+  10,
+  26,
+  32,
+  38,
+  43,
+  51,
+  59,
+  3
+ ],
+ "withUser": [
+  0,
+  1,
+  2,
+  4,
+  5,
+  6,
+  8,
+  9,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  27,
+  28,
+  29,
+  30,
+  31,
+  33,
+  34,
+  35,
+  36,
+  37,
+  39,
+  40,
+  41,
+  42,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  50,
+  52,
+  53,
+  54,
+  55,
+  56,
+  57,
+  58,
+  60,
+  61,
+  62
+ ],
+ "nixpkgsOnly": [
+  7
+ ],
+ "switchedOff": [
+  [
+   9,
+   0
+  ],
+  [
+   12,
+   0
+  ],
+  [
+   14,
+   0
+  ],
+  [
+   38,
+   2
+  ],
+  [
+   43,
+   3
+  ],
+  [
+   60,
+   0
+  ],
+  [
+   61,
+   0
+  ]
+ ],
+ "errors": [
+  7,
+  15,
+  34,
+  48
+ ],
+ "options": [
+  {
+   "path": "assertions",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 906 others at priority 100 (906 nixpkgs, not listed)"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by 907 definitions at 100 (906 nixpkgs, not listed): 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "boot.loader.grub.enable",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "environment.pathsToLink",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 15 others at priority 100 (15 nixpkgs, not listed)"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by 16 definitions at 100 (15 nixpkgs, not listed): 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "environment.systemPackages",
+   "override": true,
+   "userVsUser": false,
+   "beats": "normal (nixpkgs) beats mkDefault (user)",
+   "beatsModules": "normal in nixpkgs (39 not listed) beats mkDefault in lists.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "lose",
+     "beaten by 39 nixpkgs definitions at 100 (not listed): 100 < 1000"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by 39 nixpkgs definitions at 100 (not listed): 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fileSystems",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fileSystems.\"/\".device",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by / › configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fileSystems.\"/\".fsType",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.aborting",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": []
+  },
+  {
+   "path": "fixture.accounts",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     2,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by 3 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.accounts.dave.greeting",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.accounts.dave.shell",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in dave › nested-force.nix beats normal in dave › nested-plain.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats dave › nested-plain.nix: 50 < 100"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by dave › nested-force.nix: 50 < 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by dave › nested-force.nix: 50 < 1000"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by dave › nested-force.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.accounts.erin.greeting",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by erin › nested-plain.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.accounts.erin.shell",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.apiToken",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.conditional",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.conditionalError",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "off",
+     "its mkIf condition threw or is not a bool"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.conditionalTrue",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.forced",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 50 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nested.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.fromExtra",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.fromExtraInline",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.fromInterpolated",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     2,
+     "win",
+     "merged with 2 others at priority 100"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by 3 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.alice.editor",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by alice › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.alice.files",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by 2 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.alice.files.notes.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.alice.files.todo.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.alice.theme",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in alice › nested-force.nix beats normal in alice › nested-plain.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats alice › nested-plain.nix: 50 < 100"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by alice › nested-force.nix: 50 < 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by alice › nested-force.nix: 50 < 1000"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by alice › nested-force.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.bob.editor",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by bob › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.carol.editor",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "lose",
+     "never reached the instance: the definition it is part of lost at fixture.home.carol"
+    ],
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.home.carol.theme",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "never reached the instance: the definition it is part of lost at fixture.home.carol"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by carol › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.inlineAttrs",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.inlineFunction",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.layered",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in layers.nix beats normal in prio-plain.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats prio-plain.nix: 50 < 100"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by layers.nix: 50 < 100"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.lazy",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.lazyAccounts",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.lazyAccounts.fine.shell",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fine › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.maybe",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.maybe.shell",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by maybe › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.merged",
+   "override": true,
+   "userVsUser": true,
+   "beats": "normal (user) beats mkDefault (user)",
+   "beatsModules": "normal in wrappers.nix beats mkDefault in wrappers.nix",
+   "off": [
+    2
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats wrappers.nix: 100 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by wrappers.nix: 100 < 1000"
+    ],
+    [
+     2,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.nestedInline",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.ordered",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by 2 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.packageSet",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.previews",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.prio",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in prio-force.nix beats normal in prio-plain.nix",
+   "off": [
+    3
+   ],
+   "ladder": [
+    [
+     2,
+     "win",
+     "beats prio-plain.nix: 50 < 100"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by prio-force.nix: 50 < 100"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by prio-force.nix: 50 < 1000"
+    ],
+    [
+     4,
+     "lose",
+     "beaten by prio-force.nix: 50 < 1500"
+    ],
+    [
+     3,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.secretEnabled",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.single",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 1 other at priority 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by 2 definitions at 100: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.single.greeting",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by single › nested-plain.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.single.shell",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by single › nested.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.throws",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "unknown",
+     "reading its value threw: priority unknown"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.viaDefinition",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "fixture.whnfAbort",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "networking.hostName",
+   "override": true,
+   "userVsUser": true,
+   "beats": "normal (user) beats mkDefault (input:extra)",
+   "beatsModules": "normal in configuration.nix beats mkDefault in module.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats module.nix: 100 < 1000"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1000"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "nixpkgs.hostPlatform",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ]
+  },
+  {
+   "path": "services.openssh.settings",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by services.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "system.stateVersion",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by configuration.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "systemd.services",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 46 others at priority 100 (46 nixpkgs, not listed)"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by 47 definitions at 100 (46 nixpkgs, not listed): 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "systemd.services.fixture-hello.description",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fixture-hello › services.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "systemd.services.fixture-hello.script",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by fixture-hello › services.nix: 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "users.users",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 13 others at priority 100 (11 nixpkgs, not listed)"
+    ],
+    [
+     1,
+     "win",
+     "merged with 13 others at priority 100 (11 nixpkgs, not listed)"
+    ],
+    [
+     2,
+     "win",
+     "merged with 13 others at priority 100 (11 nixpkgs, not listed)"
+    ],
+    [
+     3,
+     "lose",
+     "beaten by 14 definitions at 100 (11 nixpkgs, not listed): 100 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "users.users.alice.description",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in alice › users-force.nix beats normal in alice › users.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats alice › users.nix: 50 < 100"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by alice › users-force.nix: 50 < 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by alice › users-force.nix: 50 < 1500"
+    ]
+   ]
+  },
+  {
+   "path": "users.users.alice.extraGroups",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "nothing stronger is set: the default applies"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "users.users.alice.home",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [
+    0
+   ],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats the default: 1000 < 1500"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by alice › users-groups.nix: 1000 < 1500"
+    ],
+    [
+     0,
+     "off",
+     "switched off: its mkIf condition is false"
+    ]
+   ]
+  },
+  {
+   "path": "users.users.alice.isNormalUser",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by alice › users.nix: 100 < 1500"
+    ]
+   ]
+  }
+ ],
+ "modules": [
+  [
+   "configuration.nix",
+   "…/tests/fixture/configuration.nix"
+  ],
+  [
+   "module.nix",
+   "…/tests/fixture/extra/module.nix"
+  ],
+  [
+   "flake.nix:10 (anon)",
+   "…/tests/fixture/extra/flake.nix:10 (anonymous)"
+  ],
+  [
+   "inline #3",
+   "inline module #3 (flake.nix:19)"
+  ],
+  [
+   "inline #4",
+   "inline module #4 (flake.nix:23)"
+  ],
+  [
+   "interpolated.nix",
+   "…/tests/fixture/./extra/interpolated.nix"
+  ],
+  [
+   "options.nix",
+   "…/tests/fixture/modules/options.nix"
+  ],
+  [
+   "prio-default.nix",
+   "…/tests/fixture/modules/prio-default.nix"
+  ],
+  [
+   "prio-plain.nix",
+   "…/tests/fixture/modules/prio-plain.nix"
+  ],
+  [
+   "prio-force.nix",
+   "…/tests/fixture/modules/prio-force.nix"
+  ],
+  [
+   "conditional.nix",
+   "…/tests/fixture/modules/conditional.nix"
+  ],
+  [
+   "empty.nix",
+   "…/tests/fixture/modules/empty.nix"
+  ],
+  [
+   "users.nix",
+   "…/tests/fixture/modules/users.nix"
+  ],
+  [
+   "users-force.nix",
+   "…/tests/fixture/modules/users-force.nix"
+  ],
+  [
+   "services.nix",
+   "…/tests/fixture/modules/services.nix"
+  ],
+  [
+   "broken.nix",
+   "…/tests/fixture/modules/broken.nix"
+  ],
+  [
+   "disabler.nix",
+   "…/tests/fixture/modules/disabler.nix"
+  ],
+  [
+   "layers.nix",
+   "…/tests/fixture/modules/layers.nix"
+  ],
+  [
+   "wrappers.nix",
+   "…/tests/fixture/modules/wrappers.nix"
+  ],
+  [
+   "lazy.nix",
+   "…/tests/fixture/modules/lazy.nix"
+  ],
+  [
+   "secrets.nix",
+   "…/tests/fixture/modules/secrets.nix"
+  ],
+  [
+   "lists.nix",
+   "…/tests/fixture/modules/lists.nix"
+  ],
+  [
+   "nested-options.nix",
+   "…/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "nested.nix",
+   "…/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "nested-plain.nix",
+   "…/tests/fixture/modules/nested-plain.nix"
+  ],
+  [
+   "nested-force.nix",
+   "…/tests/fixture/modules/nested-force.nix"
+  ],
+  [
+   "home.nix",
+   "…/tests/fixture/extra/home.nix"
+  ],
+  [
+   "inline (nested)",
+   "nested inline module (flake.nix:20)"
+  ],
+  [
+   "disabled.nix",
+   "…/tests/fixture/modules/disabled.nix"
+  ],
+  [
+   "/ › configuration.nix",
+   "fileSystems.\"/\" › …/tests/fixture/configuration.nix"
+  ],
+  [
+   "dave › nested-force.nix",
+   "fixture.accounts.dave › …/tests/fixture/modules/nested-force.nix"
+  ],
+  [
+   "dave › nested-plain.nix",
+   "fixture.accounts.dave › …/tests/fixture/modules/nested-plain.nix"
+  ],
+  [
+   "dave › nested.nix",
+   "fixture.accounts.dave › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "dave › nested-options.nix",
+   "fixture.accounts.dave › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "erin › nested-plain.nix",
+   "fixture.accounts.erin › …/tests/fixture/modules/nested-plain.nix"
+  ],
+  [
+   "erin › nested-options.nix",
+   "fixture.accounts.erin › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "alice › nested-force.nix",
+   "fixture.home.alice › …/tests/fixture/modules/nested-force.nix"
+  ],
+  [
+   "alice › nested-plain.nix",
+   "fixture.home.alice › …/tests/fixture/modules/nested-plain.nix"
+  ],
+  [
+   "alice › nested.nix",
+   "fixture.home.alice › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "alice › alice-extra.nix",
+   "fixture.home.alice › …/tests/fixture/modules/nested/alice-extra.nix"
+  ],
+  [
+   "todo › nested.nix",
+   "fixture.home.alice.files.todo › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "notes › alice-extra.nix",
+   "fixture.home.alice.files.notes › …/tests/fixture/modules/nested/alice-extra.nix"
+  ],
+  [
+   "bob › nested.nix",
+   "fixture.home.bob › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "carol › nested.nix",
+   "fixture.home.carol › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "fine › nested.nix",
+   "fixture.lazyAccounts.fine › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "fine › nested-options.nix",
+   "fixture.lazyAccounts.fine › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "maybe › nested.nix",
+   "fixture.maybe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "maybe › nested-options.nix",
+   "fixture.maybe › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "single › nested-plain.nix",
+   "fixture.single › …/tests/fixture/modules/nested-plain.nix"
+  ],
+  [
+   "single › nested.nix",
+   "fixture.single › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "single › nested-options.nix",
+   "fixture.single › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
+   "settings › services.nix",
+   "services.openssh.settings › …/tests/fixture/modules/services.nix"
+  ],
+  [
+   "fixture-hello › services.nix",
+   "systemd.services.fixture-hello › …/tests/fixture/modules/services.nix"
+  ],
+  [
+   "alice › users-force.nix",
+   "users.users.alice › …/tests/fixture/modules/users-force.nix"
+  ],
+  [
+   "alice › users.nix",
+   "users.users.alice › …/tests/fixture/modules/users.nix"
+  ],
+  [
+   "alice › users-groups.nix",
+   "users.users.alice › …/nixos/modules/config/users-groups.nix"
+  ]
+ ],
+ "palette": [
+  [
+   "",
+   [
+    [
+     "overrides",
+     8,
+     [
+      [
+       "option",
+       10,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       26,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       32,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       38,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       43,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       51,
+       [],
+       null,
+       0
+      ]
+     ]
+    ],
+    [
+     "off",
+     5,
+     [
+      [
+       "option",
+       9,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       12,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       14,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       60,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       61,
+       [],
+       null,
+       0
+      ]
+     ]
+    ],
+    [
+     "errors",
+     4,
+     [
+      [
+       "option",
+       7,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       15,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       34,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       48,
+       [],
+       null,
+       0
+      ]
+     ]
+    ],
+    [
+     "options",
+     46,
+     [
+      [
+       "option",
+       0,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       1,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       2,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       4,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       5,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       6,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       8,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       11,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       13,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       16,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       17,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       18,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       19,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       20,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       21,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       22,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       23,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       24,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       25,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       27,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       28,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       29,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       30,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       31,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       33,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       35,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       36,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       37,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       39,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       40,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       41,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       42,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       44,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       45,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       46,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       47,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       49,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       50,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       52,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       53,
+       [],
+       null,
+       0
+      ]
+     ]
+    ],
+    [
+     "modules",
+     55,
+     [
+      [
+       "module",
+       0,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       1,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       2,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       3,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       4,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       5,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       6,
+       [],
+       "label",
+       0
+      ],
+      [
+       "module",
+       7,
+       [],
+       "label",
+       0
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "fire",
+   [
+    [
+     "overrides",
+     5,
+     [
+      [
+       "option",
+       43,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.7999999999999998
+      ],
+      [
+       "option",
+       38,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5999999999999999
+      ],
+      [
+       "option",
+       32,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5
+      ],
+      [
+       "option",
+       26,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       10,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.7000000000000002
+      ]
+     ]
+    ],
+    [
+     "off",
+     3,
+     [
+      [
+       "option",
+       14,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.09999999999999987
+      ],
+      [
+       "option",
+       12,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.7000000000000002
+      ],
+      [
+       "option",
+       9,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -1
+      ]
+     ]
+    ],
+    [
+     "errors",
+     4,
+     [
+      [
+       "option",
+       48,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5999999999999999
+      ],
+      [
+       "option",
+       7,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.3999999999999999
+      ],
+      [
+       "option",
+       34,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0
+      ],
+      [
+       "option",
+       15,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ]
+     ]
+    ],
+    [
+     "options",
+     34,
+     [
+      [
+       "option",
+       21,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.7999999999999998
+      ],
+      [
+       "option",
+       33,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.7999999999999998
+      ],
+      [
+       "option",
+       36,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.7
+      ],
+      [
+       "option",
+       17,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5999999999999999
+      ],
+      [
+       "option",
+       45,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5999999999999999
+      ],
+      [
+       "option",
+       40,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.5
+      ],
+      [
+       "option",
+       8,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.3999999999999999
+      ],
+      [
+       "option",
+       13,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.3999999999999999
+      ],
+      [
+       "option",
+       42,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.3999999999999999
+      ],
+      [
+       "option",
+       18,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.2999999999999998
+      ],
+      [
+       "option",
+       50,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.2999999999999998
+      ],
+      [
+       "option",
+       41,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.19999999999999996
+      ],
+      [
+       "option",
+       30,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.09999999999999987
+      ],
+      [
+       "option",
+       37,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0.09999999999999987
+      ],
+      [
+       "option",
+       39,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0
+      ],
+      [
+       "option",
+       47,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0
+      ],
+      [
+       "option",
+       44,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.10000000000000009
+      ],
+      [
+       "option",
+       49,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.10000000000000009
+      ],
+      [
+       "option",
+       31,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.20000000000000018
+      ],
+      [
+       "option",
+       16,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       19,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       27,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       46,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       20,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       23,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       29,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       22,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.5
+      ],
+      [
+       "option",
+       28,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.5
+      ],
+      [
+       "option",
+       11,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -1
+      ],
+      [
+       "option",
+       35,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -1.1
+      ],
+      [
+       "option",
+       25,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -1.4000000000000004
+      ],
+      [
+       "option",
+       24,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -1.5
+      ],
+      [
+       "option",
+       57,
+       [
+        17,
+        18,
+        22,
+        23
+       ],
+       null,
+       -1.7000000000000002
+      ],
+      [
+       "option",
+       56,
+       [
+        17,
+        18,
+        22,
+        23
+       ],
+       null,
+       -2.2
+      ]
+     ]
+    ],
+    [
+     "modules",
+     52,
+     [
+      [
+       "module",
+       52,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       "label",
+       -0.8000000000000003
+      ],
+      [
+       "module",
+       26,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21
+      ],
+      [
+       "module",
+       1,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.2
+      ],
+      [
+       "module",
+       19,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.2
+      ],
+      [
+       "module",
+       0,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ],
+      [
+       "module",
+       11,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ],
+      [
+       "module",
+       12,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ],
+      [
+       "module",
+       21,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "nfe",
+   [
+    [
+     "options",
+     1,
+     [
+      [
+       "option",
+       35,
+       [
+        17,
+        21,
+        24
+       ],
+       null,
+       -3.1
+      ]
+     ]
+    ],
+    [
+     "modules",
+     19,
+     [
+      [
+       "module",
+       25,
+       [
+        0,
+        7,
+        11
+       ],
+       "label",
+       -0.6000000000000001
+      ],
+      [
+       "module",
+       30,
+       [
+        7,
+        14,
+        18
+       ],
+       "label",
+       -6.300000000000001
+      ],
+      [
+       "module",
+       36,
+       [
+        8,
+        15,
+        19
+       ],
+       "label",
+       -6.4
+      ],
+      [
+       "module",
+       44,
+       [
+        17,
+        21,
+        24
+       ],
+       "path",
+       -26.2
+      ],
+      [
+       "module",
+       45,
+       [
+        17,
+        21,
+        24
+       ],
+       "path",
+       -27
+      ],
+      [
+       "module",
+       27,
+       [
+        0,
+        22,
+        26
+       ],
+       "path",
+       -31.5
+      ],
+      [
+       "module",
+       41,
+       [
+        25,
+        41,
+        47
+       ],
+       "path",
+       -32.9
+      ],
+      [
+       "module",
+       49,
+       [
+        10,
+        25,
+        31
+       ],
+       "path",
+       -35.1
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "core",
+   [
+    [
+     "off",
+     2,
+     [
+      [
+       "option",
+       9,
+       [
+        9,
+        11,
+        23,
+        24
+       ],
+       null,
+       -14
+      ],
+      [
+       "option",
+       12,
+       [
+        9,
+        11,
+        18,
+        24
+       ],
+       null,
+       -14.7
+      ]
+     ]
+    ],
+    [
+     "options",
+     3,
+     [
+      [
+       "option",
+       16,
+       [
+        8,
+        9,
+        20,
+        22
+       ],
+       null,
+       -8.3
+      ],
+      [
+       "option",
+       62,
+       [
+        15,
+        21,
+        22,
+        28
+       ],
+       null,
+       -13
+      ],
+      [
+       "option",
+       11,
+       [
+        9,
+        11,
+        18,
+        24
+       ],
+       null,
+       -15
+      ]
+     ]
+    ],
+    [
+     "modules",
+     15,
+     [
+      [
+       "module",
+       53,
+       [
+        3,
+        15,
+        16,
+        18
+       ],
+       "label",
+       -13.3
+      ],
+      [
+       "module",
+       36,
+       [
+        3,
+        16,
+        17,
+        19
+       ],
+       "label",
+       -13.4
+      ],
+      [
+       "module",
+       43,
+       [
+        13,
+        16,
+        34,
+        35
+       ],
+       "path",
+       -32.5
+      ],
+      [
+       "module",
+       51,
+       [
+        5,
+        9,
+        41,
+        42
+       ],
+       "path",
+       -34.4
+      ],
+      [
+       "module",
+       32,
+       [
+        9,
+        11,
+        37,
+        38
+       ],
+       "path",
+       -36.8
+      ],
+      [
+       "module",
+       44,
+       [
+        13,
+        15,
+        41,
+        42
+       ],
+       "path",
+       -37.2
+      ],
+      [
+       "module",
+       30,
+       [
+        9,
+        11,
+        37,
+        38
+       ],
+       "path",
+       -37.4
+      ],
+      [
+       "module",
+       31,
+       [
+        9,
+        11,
+        37,
+        38
+       ],
+       "path",
+       -37.4
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "boot.l",
+   [
+    [
+     "options",
+     1,
+     [
+      [
+       "option",
+       1,
+       [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+       ],
+       null,
+       1047.7
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "hardening",
+   []
+  ],
+  [
+   "enable",
+   [
+    [
+     "options",
+     2,
+     [
+      [
+       "option",
+       1,
+       [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+       ],
+       null,
+       1055.7
+      ],
+      [
+       "option",
+       44,
+       [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+       ],
+       null,
+       1013.9
+      ]
+     ]
+    ]
+   ]
+  ],
+  [
+   "zz",
+   []
+  ]
+ ]
+}

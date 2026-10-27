@@ -585,6 +585,30 @@ impl OptgraphView {
                     .into_any_element(),
             ));
         }
+        let decl_n = o.omitted_declaration_total();
+        if decl_n > 0 {
+            facts.push((
+                "not listed",
+                div()
+                    .child(format!(
+                        "{} of the submodule's own modules ({} active, {} inactive); optgraph --include-all-definitions lists them",
+                        plural(decl_n, "definition", None),
+                        o.omitted.declaration_active,
+                        o.omitted.declaration_inactive
+                    ))
+                    .into_any_element(),
+            ));
+        }
+        if let Some(inst) = &o.instance {
+            facts.push((
+                "instance",
+                div()
+                    .font_family(FONT_MONO)
+                    .text_size(px(FS_XS))
+                    .child(inst.clone())
+                    .into_any_element(),
+            ));
+        }
         out.push(facts_list(t, facts, true).into_any_element());
         out
     }

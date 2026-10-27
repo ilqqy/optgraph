@@ -173,6 +173,8 @@ function renderOption(model, oi, onModule, onCopyLink) {
   const o = model.options[oi];
   const rows = ladder(model, o);
   const omittedN = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
+  // Inside submodule instances: the submodule's own (non-nixpkgs) declaration modules.
+  const declN = (o.omitted.declarationActive ?? 0) + (o.omitted.declarationInactive ?? 0);
   // Omitted nixpkgs winners count as winners; when every winner is one of
   // them, `winners` is empty.
   const hidden = hiddenWinners(o);
@@ -343,6 +345,13 @@ function renderOption(model, oi, onModule, onCopyLink) {
           h("span", {}, `${plural(omittedN, "nixpkgs definition")} (${o.omitted.nixpkgsActive} active, ${o.omitted.nixpkgsInactive} inactive); optgraph --include-all-definitions lists them`),
         ]
       : null,
+    declN
+      ? [
+          "not listed",
+          h("span", {}, `${plural(declN, "definition")} of the submodule's own modules (${o.omitted.declarationActive} active, ${o.omitted.declarationInactive} inactive); optgraph --include-all-definitions lists them`),
+        ]
+      : null,
+    o.instance ? ["instance", h("code", { title: `in ${o.parent}` }, o.instance)] : null,
   ].filter(Boolean);
 
   return [
