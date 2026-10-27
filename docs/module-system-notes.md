@@ -1272,4 +1272,4 @@ Stages (status kept here for a resumed session):
 - [x] Stage 3: schema, `docs/schema.md`, README Limitations
 - [x] Stage 4: fixture cases and assertions, `tests/e2e.sh` (checks.fixture passes on unstable and nixos-25.11)
 - [x] Stage 5: viewers load and render nested options (fixture + demo flake story)
-- [ ] Stage 6: real-config budget check, PR
+- [ ] Stage 6: real-config budget check, PR. Checked 2026-10-27: wall time and RSS within budget, JSON over the 3x budget at depth 2 and 3 (within it at depth 1); stopped for a decision before the PR (numbers in the session report, not in the repo).
