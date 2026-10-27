@@ -43,7 +43,16 @@ jq_check "full: preview-crash message carries the abort" "$out/graph.json" \
   'any(.meta.warnings[]; .code == "preview-crash" and .subject == "fixture.whnfAbort" and (.message | contains("aborts when forced to WHNF")))'
 jq_check "full: selfcheck-crash message carries the abort" "$out/graph.json" \
   'any(.meta.warnings[]; .code == "selfcheck-crash" and .subject == "fixture.whnfAbort" and (.message | contains("aborts when forced to WHNF")))'
+jq_check "full: nested-crash message carries the instance's abort" "$out/graph.json" \
+  'any(.meta.warnings[]; .code == "nested-crash" and .subject == "fixture.home.aborts" and (.message | contains("fixture: this instance aborts")))'
 echo "     full: $(evaluations full)"
+
+# 1c. --submodule-depth 0: submodule-typed options stay leaves, no new fields.
+expect_exit 0 depth0 "$optgraph" "$fixture" -o "$out/depth0.json" --submodule-depth 0
+check-jsonschema --schemafile schema/graph.schema.json "$out/depth0.json" && pass "depth0: schema" || fail "depth0: schema"
+jq_check "depth0: no nested options or modules, no submoduleDepth" "$out/depth0.json" \
+  '(.meta | has("submoduleDepth") | not) and all(.options[]; has("instance") | not) and all(.modules[]; has("scope") | not) and (.meta.warnings | map(.code) | index("nested-crash") | not)'
+expect_exit 1 bad-depth "$optgraph" "$fixture" --submodule-depth x
 
 # 1a. --html: the same graph embedded into the viewer, -o still written.
 expect_exit 0 html "$optgraph" "$fixture" -o "$out/html.json" --html "$out/graph.html"
@@ -57,20 +66,24 @@ fi
 # 1b. --include-all-definitions: nothing omitted, more definitions listed.
 expect_exit 0 include-all "$optgraph" "$fixture" -o "$out/include-all.json" --include-all-definitions
 check-jsonschema --schemafile schema/graph.schema.json "$out/include-all.json" && pass "include-all: schema" || fail "include-all: schema"
-jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; .omitted == {nixpkgsActive: 0, nixpkgsInactive: 0, nixpkgsWinners: 0})'
+jq_check "include-all: nothing omitted" "$out/include-all.json" 'all(.options[]; [.omitted[]] | all(. == 0))'
 # Nothing double counted: listed + omitted definitions, and listed + omitted
 # winners, add up to what --include-all-definitions lists.
 jq_check "include-all: listed + omitted = all, winners too" "$out/include-all.json" --slurpfile d "$out/graph.json" \
   '([.options[] | {key: .path, value: {defs: (.definitions | length), winners: (.winners | length)}}] | from_entries) as $all
-   | all($d[0].options[]; $all[.path] as $a | (.definitions | length) + .omitted.nixpkgsActive + .omitted.nixpkgsInactive == $a.defs and (.winners | length) + .omitted.nixpkgsWinners == $a.winners)'
+   | all($d[0].options[]; $all[.path] as $a | .omitted as $o
+       | (.definitions | length) + $o.nixpkgsActive + $o.nixpkgsInactive + ($o.declarationActive // 0) + ($o.declarationInactive // 0) == $a.defs
+       and (.winners | length) + $o.nixpkgsWinners + ($o.declarationWinners // 0) == $a.winners)'
 jq_check "include-all: inactive nixpkgs definitions listed" "$out/include-all.json" \
   '(.options[] | select(.path == "systemd.services") | .definitions | length) > 1000'
 
-# 2. Bisection fallback (markers ignored): both aborting options get excluded.
+# 2. Bisection fallback (markers ignored): both aborting options get excluded,
+# and so does the whole top-level option holding the aborting instance
+# (bisection only knows top-level options).
 OPTGRAPH_LOCALIZE=bisect expect_exit 0 bisect "$optgraph" "$fixture" -o "$out/bisect.json"
 check-jsonschema --schemafile schema/graph.schema.json "$out/bisect.json" && pass "bisect: schema" || fail "bisect: schema"
-jq_check "bisect: both aborting options excluded" "$out/bisect.json" \
-  '[.meta.warnings[] | select(.code == "eval-crash") | .subject] | sort == ["fixture.aborting", "fixture.whnfAbort"]'
+jq_check "bisect: both aborting options and fixture.home excluded" "$out/bisect.json" \
+  '[.meta.warnings[] | select(.code == "eval-crash") | .subject] | sort == ["fixture.aborting", "fixture.home", "fixture.whnfAbort"]'
 jq_check "bisect: complete" "$out/bisect.json" '.meta.complete == true'
 echo "     bisect: $(evaluations bisect)"
 

@@ -17,6 +17,10 @@
     ./modules/lazy.nix
     ./modules/secrets.nix
     ./modules/lists.nix
+    ./modules/nested-options.nix
+    ./modules/nested.nix
+    ./modules/nested-plain.nix
+    ./modules/nested-force.nix
   ];
 
   boot.loader.grub.enable = false;

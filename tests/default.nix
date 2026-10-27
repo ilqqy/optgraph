@@ -44,8 +44,13 @@ let
     ];
     host = "test";
     generatedAt = "1970-01-01T00:00:00Z";
-    # Submodule-typed options stay leaves, as the assertions expect.
-    submoduleDepth = 0;
+    excludeInstances = [
+      [
+        "fixture"
+        "home"
+        "aborts"
+      ]
+    ];
   };
 
   graphJson = pkgs.writeText "graph.json" (builtins.toJSON graph);
@@ -71,7 +76,6 @@ let
         };
         host = "demo";
         generatedAt = "1970-01-01T00:00:00Z";
-        submoduleDepth = 0;
       }
     )
   );

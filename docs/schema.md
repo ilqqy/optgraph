@@ -207,7 +207,7 @@ Options that a user module touches can have hundreds of nixpkgs definitions (in 
 
 Enforced by the JSON Schema: field presence and types, enums, `origin` pattern, unique `imports` and `winners`, `loc` non-empty, indices and `modulesIndex` non-negative.
 
-Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (93 checks; a check whose target is missing fails, it is not skipped):
+Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (135 checks; a check whose target is missing fails, it is not skipped):
 
 - every id in `imports` and every definition's `module` is the `id` of a record in `modules`, and module ids are unique;
 - a definition's `file` is absent when it equals its module's file;
@@ -221,7 +221,7 @@ Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture 
 
 `tests/e2e.sh` also checks, per option, that the default scope's listed plus omitted definitions, and its listed plus omitted winners, add up to what `--include-all-definitions` lists.
 
-The remaining checks cover the fixture's cases one by one (priorities, `mkIf` true/false/throwing, `mkForce` around a block, `mkMerge` at the leaf, `mkDefinition` with its own file, preview edge cases, origins, `disabledModules`, inline modules, string-interpolated imports, submodule and freeform leaves, crashing options).
+The remaining checks cover the fixture's cases one by one (priorities, `mkIf` true/false/throwing, `mkForce` around a block, `mkMerge` at the leaf, `mkDefinition` with its own file, preview edge cases, origins, `disabledModules`, inline modules, string-interpolated imports, submodule-typed options as leaves next to their instances, freeform leaves, crashing options, and every nested case: layered and function-style instances, imports inside an instance, shadowed and `mkIf`-false enclosing definitions, nested submodules, `lazyAttrsOf`, single and `nullOr` submodules, and the instances that degrade or crash).
 
 Hold by construction (code reading and the runs above, not asserted by tests):
 
@@ -234,7 +234,7 @@ Hold by construction (code reading and the runs above, not asserted by tests):
 
 ## Example
 
-Run: `nix run . -- ./tests/fixture#nixosConfigurations.test -o /tmp/graph.json` (5 warnings, 24 modules, 30 options). Store paths are shortened to `/nix/store/…-source/...`. In the module record below, `file` is nixpkgs' `flake.nix`, `position` is the fixture's own.
+Run: `nix run . -- ./tests/fixture#nixosConfigurations.test -o /tmp/graph.json` (at `--submodule-depth 0`: 5 warnings, 29 modules, 39 options; re-run 2026-10-27, the records below are unchanged). Store paths are shortened to `/nix/store/…-source/...`. In the module record below, `file` is nixpkgs' `flake.nix`, `position` is the fixture's own.
 
 `meta`, warnings reduced to code and subject:
 
@@ -401,7 +401,7 @@ An option with a definition that throws (`fixture.throws = throw "..."`): the de
 
 ### Nested example
 
-Same run with the default `--submodule-depth 3` (10 warnings, 56 modules, 63 options; the records below are from an earlier run of the same fixture with 55 modules and 61 options, shortened the same way). `meta` gets `"submoduleDepth": 3`, and the nesting warnings, reduced to code and subject:
+Same run with the default `--submodule-depth 3` (10 warnings, 56 modules, 63 options; re-run 2026-10-27). `meta` gets `"submoduleDepth": 3`, and the nesting warnings, reduced to code and subject:
 
 ```json
 [
