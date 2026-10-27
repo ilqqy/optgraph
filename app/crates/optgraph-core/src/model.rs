@@ -194,6 +194,23 @@ impl OptionEntry {
         self.omitted.nixpkgs_winners + self.omitted.declaration_winners
     }
 
+    /// Who the omitted winners are: "nixpkgs", the input that declares the
+    /// submodule ("home-manager" for input:home-manager), or "omitted" when
+    /// both kinds win. Same as the web viewer's `hiddenKind`.
+    pub fn hidden_kind(&self) -> String {
+        let o = &self.omitted;
+        if o.declaration_winners == 0 {
+            return "nixpkgs".into();
+        }
+        if o.nixpkgs_winners > 0 {
+            return "omitted".into();
+        }
+        match o.declaration_origin.as_deref().and_then(|s| s.strip_prefix("input:")) {
+            Some(name) => name.to_string(),
+            None => "declaration".into(),
+        }
+    }
+
     /// Every winner: the listed ones and the omitted ones.
     pub fn winner_count(&self) -> u64 {
         self.winners.len() as u64 + self.hidden_winners()
@@ -204,7 +221,7 @@ impl OptionEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Omitted {
     pub nixpkgs_active: u64,
@@ -219,6 +236,9 @@ pub struct Omitted {
     pub declaration_inactive: u64,
     #[serde(default)]
     pub declaration_winners: u64,
+    /// The origin shared by the counted declaration definitions, if one.
+    #[serde(default)]
+    pub declaration_origin: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

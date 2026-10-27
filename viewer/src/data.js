@@ -65,7 +65,7 @@ function analyse(model) {
       // "mkForce (user) beats mkDefault (input:shared)"
       beats: `${prioName(o.highestPrio)} (${wo}) beats ${prioName(loser.priority)} (${lo})`,
       // "mkForce" in "hardening.nix" beats "mkDefault" in "dev-tools.nix"
-      beatsParts: { win: prioName(o.highestPrio), winWho: winner ? defWho(model, winner) : `nixpkgs (${hidden} not listed)`, lose: prioName(loser.priority), loseWho: defWho(model, loser) },
+      beatsParts: { win: prioName(o.highestPrio), winWho: winner ? defWho(model, winner) : `${hiddenKind(o)} (${hidden} not listed)`, lose: prioName(loser.priority), loseWho: defWho(model, loser) },
       off,
     };
   });
@@ -113,7 +113,7 @@ function ladder(model, o) {
   const firstWinner = o.winners.length ? o.definitions[o.winners[0]] : null;
   const hidden = hiddenWinners(o);
   const winCount = o.winners.length + hidden;
-  const notListed = hidden ? ` (${hidden} ${o.omitted.declarationWinners ? "omitted" : "nixpkgs"}, not listed)` : "";
+  const notListed = hidden ? ` (${hidden} ${hiddenKind(o)}, not listed)` : "";
   const rows = defs.map(({ d, i }) => {
     let status;
     let reason;
@@ -142,13 +142,24 @@ function ladder(model, o) {
       reason = "the winners are not listed";
     } else {
       status = "lose";
-      if (!o.winners.length) reason = `beaten by ${plural(hidden, o.omitted.declarationWinners ? "omitted definition" : "nixpkgs definition")} at ${hp} (not listed): ${hp} < ${d.priority}`;
+      if (!o.winners.length) reason = `beaten by ${plural(hidden, `${hiddenKind(o)} definition`)} at ${hp} (not listed): ${hp} < ${d.priority}`;
       else if (winCount === 1) reason = `beaten by ${defWho(model, firstWinner)}: ${hp} < ${d.priority}`;
       else reason = `beaten by ${winCount} definitions at ${hp}${notListed}: ${hp} < ${d.priority}`;
     }
     return { d, i, status, reason };
   });
   return rows.sort((a, b) => (a.d.priority ?? Infinity) - (b.d.priority ?? Infinity) || a.i - b.i);
+}
+
+// Who the winners counted in `omitted` are: "nixpkgs", the input that
+// declares a submodule ("home-manager" for input:home-manager, nested options
+// only), or "omitted" when both kinds win.
+function hiddenKind(o) {
+  const dcl = o.omitted.declarationWinners ?? 0;
+  if (!dcl) return "nixpkgs";
+  if (o.omitted.nixpkgsWinners) return "omitted";
+  const org = o.omitted.declarationOrigin;
+  return org && org.startsWith("input:") ? org.slice(6) : "declaration";
 }
 
 // Winners counted in `omitted` instead of listed (0 in graphs from before

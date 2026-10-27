@@ -351,7 +351,7 @@ impl OptgraphView {
                 }
             )))
         } else if o.winners.is_empty() && hidden > 0 {
-            let who = plural(hidden, "nixpkgs definition", None);
+            let who = plural(hidden, &format!("{} definition", o.hidden_kind()), None);
             let code = o.highest_prio.unwrap_or_default().to_string();
             let tail = if losers > 0 {
                 format!(", over {}.", plural(losers, "weaker definition", None))
@@ -441,8 +441,9 @@ impl OptgraphView {
                 prio_name(o.highest_prio)
             );
             if hidden > 0 {
-                merged_title.push_str(&format!(" and {}", plural(hidden, "nixpkgs definition", None)));
-                sub.push_str(" The nixpkgs ones are not listed.");
+                let kind = o.hidden_kind();
+                merged_title.push_str(&format!(" and {}", plural(hidden, &format!("{kind} definition"), None)));
+                sub.push_str(&format!(" The {kind} ones are not listed."));
             }
             let dots = o.winners.iter().take(8).map(|&w| {
                 let origin = model.def_module(&o.definitions[w]).map(|m| m.origin.clone());
@@ -591,8 +592,13 @@ impl OptgraphView {
                 "not listed",
                 div()
                     .child(format!(
-                        "{} of the submodule's own modules ({} active, {} inactive); optgraph --include-all-definitions lists them",
+                        "{} of the submodule's own modules{}: {} active, {} inactive; optgraph --include-all-definitions lists them",
                         plural(decl_n, "definition", None),
+                        o.omitted
+                            .declaration_origin
+                            .as_deref()
+                            .map(|s| format!(" ({s})"))
+                            .unwrap_or_default(),
                         o.omitted.declaration_active,
                         o.omitted.declaration_inactive
                     ))

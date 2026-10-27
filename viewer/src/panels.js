@@ -197,7 +197,7 @@ function renderOption(model, oi, onModule, onCopyLink) {
     verdict = h(
       "p",
       { class: "verdict" },
-      h("b", {}, plural(hidden, "nixpkgs definition")),
+      h("b", {}, plural(hidden, `${hiddenKind(o)} definition`)),
       " win at priority ",
       h("code", { class: "t-win" }, String(o.highestPrio)),
       " (not listed)",
@@ -237,13 +237,13 @@ function renderOption(model, oi, onModule, onCopyLink) {
             "div",
             { class: "merged-title" },
             `Merged from ${plural(new Set(o.winners.map((i) => o.definitions[i].module ?? "default")).size, "module")}`,
-            hidden ? ` and ${plural(hidden, "nixpkgs definition")}` : "",
+            hidden ? ` and ${plural(hidden, `${hiddenKind(o)} definition`)}` : "",
           ),
           h(
             "div",
             { class: "merged-sub" },
             `Every active definition at priority ${o.highestPrio} (${prioName(o.highestPrio)}) is a winner; the values are merged.`,
-            hidden ? " The nixpkgs ones are not listed." : "",
+            hidden ? ` The ${hiddenKind(o)} ones are not listed.` : "",
           ),
         ),
         h("div", { class: "merged-dots", "aria-hidden": "true" }, ...o.winners.slice(0, 8).map((i) => originDot(defOrigin(model, o.definitions[i])))),
@@ -348,7 +348,7 @@ function renderOption(model, oi, onModule, onCopyLink) {
     declN
       ? [
           "not listed",
-          h("span", {}, `${plural(declN, "definition")} of the submodule's own modules (${o.omitted.declarationActive} active, ${o.omitted.declarationInactive} inactive); optgraph --include-all-definitions lists them`),
+          h("span", {}, `${plural(declN, "definition")} of the submodule's own modules${o.omitted.declarationOrigin ? ` (${o.omitted.declarationOrigin})` : ""}: ${o.omitted.declarationActive ?? 0} active, ${o.omitted.declarationInactive ?? 0} inactive; optgraph --include-all-definitions lists them`),
         ]
       : null,
     o.instance ? ["instance", h("code", { title: `in ${o.parent}` }, o.instance)] : null,

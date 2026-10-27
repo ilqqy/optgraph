@@ -333,7 +333,10 @@ impl Model {
             user_vs_user: wo != "nixpkgs" && lo != "nixpkgs",
             beats: Some(Beats {
                 win: prio_name(o.highest_prio),
-                win_who: winner.map_or_else(|| format!("nixpkgs ({hidden} not listed)"), |w| self.def_who(w)),
+                win_who: winner.map_or_else(
+                    || format!("{} ({hidden} not listed)", o.hidden_kind()),
+                    |w| self.def_who(w),
+                ),
                 win_origin: wo,
                 lose: prio_name(loser.priority),
                 lose_who: self.def_who(loser),
@@ -368,11 +371,7 @@ impl Model {
         let first_winner = o.winners.first().map(|&w| &o.definitions[w]);
         let hidden = o.hidden_winners();
         let win_count = o.winner_count();
-        let omitted_kind = if o.omitted.declaration_winners > 0 {
-            "omitted"
-        } else {
-            "nixpkgs"
-        };
+        let omitted_kind = o.hidden_kind();
         let not_listed = if hidden > 0 {
             format!(" ({hidden} {omitted_kind}, not listed)")
         } else {
@@ -422,15 +421,7 @@ impl Model {
                     let reason = match first_winner {
                         None => format!(
                             "beaten by {} at {hp_s} (not listed): {hp_s} < {p}",
-                            plural(
-                                hidden,
-                                if o.omitted.declaration_winners > 0 {
-                                    "omitted definition"
-                                } else {
-                                    "nixpkgs definition"
-                                },
-                                None
-                            )
+                            plural(hidden, &format!("{omitted_kind} definition"), None)
                         ),
                         Some(w) if win_count == 1 => format!("beaten by {}: {hp_s} < {p}", self.def_who(w)),
                         Some(_) => format!("beaten by {win_count} definitions at {hp_s}{not_listed}: {hp_s} < {p}"),

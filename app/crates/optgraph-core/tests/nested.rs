@@ -179,3 +179,27 @@ fn nested_graph_matches_the_viewer() {
         assert_eq!(module_label(mo), em[1].as_str().unwrap());
     }
 }
+
+#[test]
+fn all_winners_are_omitted_declaration_definitions() {
+    let m = model();
+    let oi = option(&m, "fixture.home.bob.packages");
+    let o = &m.graph.options[oi];
+    assert!(o.winners.is_empty());
+    assert_eq!(o.highest_prio, Some(100));
+    assert_eq!((o.omitted.declaration_winners, o.omitted.declaration_active), (2, 2));
+    assert_eq!(o.omitted.declaration_origin.as_deref(), Some("input:extra"));
+    assert_eq!(o.hidden_winners(), 2);
+    assert_eq!(o.hidden_kind(), "extra");
+    let user = o
+        .definitions
+        .iter()
+        .position(|d| d.priority == Some(1000))
+        .expect("the user's mkDefault");
+    let row = m.ladder(oi).into_iter().find(|r| r.def == user).expect("its row");
+    assert_eq!(row.status, Status::Lose);
+    assert_eq!(
+        row.reason,
+        "beaten by 2 extra definitions at 100 (not listed): 100 < 1000"
+    );
+}
