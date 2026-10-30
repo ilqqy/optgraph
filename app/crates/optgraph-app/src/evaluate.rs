@@ -128,15 +128,17 @@ impl OptgraphView {
                     self.evaluation = None;
                     self.set_model(Model::new(g), cx);
                     match std::mem::take(&mut self.after_load) {
-                        (Some(p), _) => {
+                        (Some(p), _, inst) => {
+                            self.apply_instance_arg(inst, cx);
                             if !self.select_option_path(&p, cx) {
                                 self.load_error = Some(format!("no option {p} in this graph"));
                             }
                         }
-                        (None, Some(i)) if i < self.model.as_ref().map_or(0, |m| m.modules().len()) => {
+                        (None, Some(i), inst) if i < self.model.as_ref().map_or(0, |m| m.modules().len()) => {
+                            self.apply_instance_arg(inst, cx);
                             self.select(crate::view::Sel::Module(i), cx)
                         }
-                        _ => {}
+                        (_, _, inst) => self.apply_instance_arg(inst, cx),
                     }
                     window.set_window_title(&format!("optgraph: {}", host.unwrap_or_else(|| "graph".into())));
                 }

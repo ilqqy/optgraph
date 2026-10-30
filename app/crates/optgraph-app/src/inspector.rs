@@ -5,13 +5,14 @@ use gpui::{
     AnyElement, Context, FontWeight, HighlightStyle, IntoElement, MouseButton, Pixels, StyledText, div,
     linear_color_stop, linear_gradient, prelude::*, px,
 };
+use optgraph_core::instances::CrumbTarget;
 use optgraph_core::text::{plural, prio_name, priority_name, short_path, tail_path, thousands};
 use optgraph_core::{Model, Status, ValueView, module_label, module_short_label, omitted_badge, value_view};
 
 use crate::theme::{FONT_MONO, FS_2XL, FS_LG, FS_MD, FS_SM, FS_XL, FS_XS, R_LG, R_MD, R_SM, Theme};
 use crate::ui::{
-    dashed_badge, icon, kbd, mini_status, origin_chip, origin_dot, overline, shadow_1, shadow_2, small_button,
-    status_badge,
+    dashed_badge, icon, instance_chip, kbd, mini_status, origin_chip, origin_dot, overline, shadow_1, shadow_2,
+    small_button, status_badge,
 };
 use crate::view::{Confirm, OptgraphView, Sel};
 
@@ -287,7 +288,11 @@ impl OptgraphView {
         // of them, `winners` is empty.
         let hidden = o.hidden_winners();
         let multi = o.winner_count() > 1;
-        let losers = rows.iter().filter(|r| r.status == Status::Lose).count() as u64;
+        // A dropped definition (shadowedAt) never competed: it is not "weaker".
+        let losers = rows
+            .iter()
+            .filter(|r| r.status == Status::Lose && o.definitions[r.def].shadowed_at.is_none())
+            .count() as u64;
         let offs = rows.iter().filter(|r| r.status == Status::Off).count() as u64;
         let winner = (o.winners.len() == 1).then(|| &o.definitions[o.winners[0]]);
         let type_ = o.type_.clone().unwrap_or_else(|| "?".into());
@@ -302,11 +307,13 @@ impl OptgraphView {
             .min_h(px(26.))
             .child(
                 div()
+                    .flex_1()
+                    .min_w_0()
                     .flex()
                     .items_center()
                     .gap(px(6.))
                     .child(overline(t, "Option"))
-                    .child(type_chip(t, &type_)),
+                    .child(type_chip(t, &type_).min_w_0().truncate()),
             )
             .child(
                 small_button(t)
@@ -399,7 +406,10 @@ impl OptgraphView {
             Some(StyledText::new("No winner is listed."))
         };
 
-        let mut out: Vec<AnyElement> = vec![head.into_any_element(), title.into_any_element()];
+        let crumbs = self.render_crumbs(t, model, oi, cx);
+        let mut out: Vec<AnyElement> = vec![head.into_any_element()];
+        out.extend(crumbs);
+        out.push(title.into_any_element());
         if let Some(v) = verdict {
             out.push(
                 div()
@@ -605,18 +615,64 @@ impl OptgraphView {
                     .into_any_element(),
             ));
         }
-        if let Some(inst) = &o.instance {
-            facts.push((
-                "instance",
-                div()
-                    .font_family(FONT_MONO)
-                    .text_size(px(FS_XS))
-                    .child(inst.clone())
-                    .into_any_element(),
-            ));
-        }
         out.push(facts_list(t, facts, true).into_any_element());
         out
+    }
+
+    /// A nested option's breadcrumb: the option holding the instance (jumps
+    /// to its ladder), the instance (filters the sidebar to it), the option's
+    /// path below the instance; and a chip with the instance's full path.
+    fn render_crumbs(&mut self, t: &Theme, model: &Model, oi: usize, cx: &mut Context<Self>) -> Option<AnyElement> {
+        let is = &model.instances;
+        let inst = is.of_option[oi]?;
+        let o = &model.options()[oi];
+        let mut row = div()
+            .mt(px(6.))
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(4.))
+            .font_family(FONT_MONO)
+            .text_size(px(FS_SM));
+        for (k, c) in is.breadcrumb(oi, &o.path).into_iter().enumerate() {
+            if k > 0 {
+                row = row.child(div().text_color(t.text3).child("›"));
+            }
+            let seg = div().id(("crumb", k)).rounded(px(R_SM)).px(px(3.)).child(c.text);
+            row = row.child(match c.target {
+                CrumbTarget::Here => seg.text_color(t.text).font_weight(FontWeight::MEDIUM),
+                CrumbTarget::Option(p) => seg
+                    .text_color(t.text2)
+                    .cursor_pointer()
+                    .hover(|s| s.bg(t.s3).text_color(t.text))
+                    .tooltip(crate::ui::tip(format!("Open {}", model.options()[p].path)))
+                    .on_click(cx.listener(move |this, _, _, cx| this.select(Sel::Option(p), cx))),
+                CrumbTarget::Instance(i) => seg
+                    .text_color(t.accent)
+                    .cursor_pointer()
+                    .hover(|s| s.bg(t.s3))
+                    .tooltip(crate::ui::tip(format!("Show only {}", is.list[i].path)))
+                    .on_click(cx.listener(move |this, _, _, cx| this.set_instance_filter(Some(i), cx))),
+            });
+        }
+        let path = is.list[inst].path.clone();
+        Some(
+            div()
+                .flex()
+                .flex_col()
+                .child(row)
+                .child(
+                    div()
+                        .id("instance-chip")
+                        .mt(px(5.))
+                        .flex()
+                        .cursor_pointer()
+                        .tooltip(crate::ui::tip("Show only this instance in the sidebar"))
+                        .on_click(cx.listener(move |this, _, _, cx| this.set_instance_filter(Some(inst), cx)))
+                        .child(instance_chip(t, &path).max_w(px(420.))),
+                )
+                .into_any_element(),
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1030,6 +1086,36 @@ impl OptgraphView {
         }
         if let Some(p) = &m.position {
             facts.push(("position", code_fact(p.clone())));
+        }
+        if let Some(i) = model.instances.of_module[mi] {
+            let path = model.instances.list[i].path.clone();
+            facts.push((
+                "instance",
+                div()
+                    .id("module-instance")
+                    .flex()
+                    .cursor_pointer()
+                    .tooltip(crate::ui::tip("Show only this instance in the sidebar"))
+                    .on_click(cx.listener(move |this, _, _, cx| this.set_instance_filter(Some(i), cx)))
+                    .child(instance_chip(t, &path).max_w(px(320.)))
+                    .into_any_element(),
+            ));
+        }
+        if let Some(&owner) = m.owner.as_deref().and_then(|o| model.mod_index.get(o)) {
+            let label = module_short_label(&model.modules()[owner]);
+            facts.push((
+                "written by",
+                div()
+                    .id("module-owner")
+                    .font_family(FONT_MONO)
+                    .text_size(px(FS_XS))
+                    .text_color(t.text2)
+                    .cursor_pointer()
+                    .hover(|s| s.text_color(t.text))
+                    .on_click(cx.listener(move |this, _, _, cx| this.select(Sel::Module(owner), cx)))
+                    .child(label)
+                    .into_any_element(),
+            ));
         }
         let mut out: Vec<AnyElement> = vec![
             div()

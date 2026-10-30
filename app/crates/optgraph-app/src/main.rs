@@ -1,6 +1,6 @@
 //! optgraph-app: the native viewer of optgraph's graph.json.
 //!
-//!   optgraph-app graph.json [--opt <option path>] [--module <index>]
+//!   optgraph-app graph.json [--opt <option path>] [--module <index>] [--instance <name>]
 //!   optgraph-app - < graph.json
 
 mod assets;
@@ -26,7 +26,8 @@ use crate::theme::Theme;
 use crate::view::{OptgraphView, Sel};
 
 const USAGE: &str = "usage: optgraph-app [graph.json | - | <flakeref>#nixosConfigurations.<host>]
-                    [--opt <option path>] [--module <index>] [--light | --dark]
+                    [--opt <option path>] [--module <index>] [--instance <name>]
+                    [--light | --dark]
 
 Shows who set each option of a NixOS configuration, at what priority, and
 why the other definitions lost. graph.json is made by optgraph; - reads it
@@ -35,6 +36,8 @@ optgraph on PATH) and shows its progress.
 
   --opt <path>      select an option, e.g. networking.firewall.enable
   --module <index>  select a module by its index in graph.json's modules
+  --instance <name> show only this submodule instance in the sidebar: its
+                    path (home-manager.users.ilya) or its name (ilya), if unique
   --light, --dark   colour scheme (default: dark, light when the system
                     explicitly prefers light)
 
@@ -45,6 +48,7 @@ struct Args {
     source: Option<PathBuf>,
     opt: Option<String>,
     module: Option<usize>,
+    instance: Option<String>,
     scheme: Option<theme::Mode>,
 }
 
@@ -53,6 +57,7 @@ fn parse_args() -> Result<Args, String> {
         source: None,
         opt: None,
         module: None,
+        instance: None,
         scheme: None,
     };
     let mut it = std::env::args().skip(1);
@@ -64,6 +69,7 @@ fn parse_args() -> Result<Args, String> {
                 let v = it.next().ok_or("--module needs an index")?;
                 args.module = Some(v.parse().map_err(|_| format!("--module: not an index: {v}"))?);
             }
+            "--instance" => args.instance = Some(it.next().ok_or("--instance needs a name")?),
             "--light" => args.scheme = Some(theme::Mode::Light),
             "--dark" => args.scheme = Some(theme::Mode::Dark),
             s if s.starts_with("--") => return Err(format!("unknown option {s}")),
@@ -117,6 +123,20 @@ fn main() -> ExitCode {
         eprintln!("optgraph-app: no module #{i} (the graph has {})", m.modules().len());
         return ExitCode::from(2);
     }
+    let mut instance = None;
+    if let (Some(m), Some(q)) = (&model, &args.instance) {
+        match m.instances.find(q) {
+            Ok(i) => instance = Some(i),
+            Err(paths) if paths.is_empty() => {
+                eprintln!("optgraph-app: no instance {q} in this graph");
+                return ExitCode::from(2);
+            }
+            Err(paths) => {
+                eprintln!("optgraph-app: --instance {q} is ambiguous: {}", paths.join(", "));
+                return ExitCode::from(2);
+            }
+        }
+    }
     let source = args
         .source
         .as_ref()
@@ -146,6 +166,7 @@ fn main() -> ExitCode {
             let bounds = Bounds::centered(None, size(px(1440.), px(900.)), cx);
             let opt = args.opt.clone();
             let module = args.module;
+            let instance_arg = args.instance.clone();
             let scheme = args.scheme;
             let window = cx
                 .open_window(
@@ -176,8 +197,11 @@ fn main() -> ExitCode {
                     }
                     view.watch_appearance(window, cx);
                     if let Some(target) = flake_ref.clone() {
-                        view.after_load = (opt.clone(), module);
+                        view.after_load = (opt.clone(), module, instance_arg.clone());
                         view.start_evaluation(target, window, cx);
+                    }
+                    if instance.is_some() {
+                        view.set_instance_filter(instance, cx);
                     }
                     if let Some(p) = &opt {
                         view.select_option_path(p, cx);

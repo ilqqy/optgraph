@@ -40,6 +40,12 @@ const ICONS: &[(&str, &str)] = &[
     ("diamond", r#"<path d="M8 2.5 13.5 8 8 13.5 2.5 8z"/>"#),
     ("chevron", r#"<path d="m4.5 6.5 3.5 3.5 3.5-3.5"/>"#),
     ("chevron-up", r#"<path d="m4.5 9.5 3.5-3.5 3.5 3.5"/>"#),
+    ("chevron-right", r#"<path d="m6.5 4.5 3.5 3.5-3.5 3.5"/>"#),
+    (
+        "instance",
+        r#"<rect x="2.5" y="2.5" width="11" height="11" rx="3"/><path d="M5.5 6.5h5M5.5 9.5h3"/>"#,
+    ),
+    ("filter", r#"<path d="M2.5 3.5h11L9.5 8.5v4l-3 1.5V8.5z"/>"#),
     (
         "merge",
         r#"<circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="8" r="1.5"/><path d="M4 5v6M4 5c0 2 2 3 6.5 3"/>"#,

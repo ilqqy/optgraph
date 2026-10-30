@@ -5,7 +5,9 @@
 //! (winner, lost, mkIf false) with priority chips, dims the rest in tiers
 //! and fits the camera to them and their import ancestors; defining
 //! modules are drawn at least at 12 px labels (pinned), and ancestors that
-//! don't fit get chips at the viewport edge.
+//! don't fit get chips at the viewport edge. The modules of a submodule
+//! instance are drawn inside a rounded cluster attached to their owner, or as
+//! one pill with a count when the instance is collapsed.
 
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -15,8 +17,8 @@ use gpui::{
     App, BorderStyle, Bounds, BoxShadow, Corners, Font, FontWeight, Hsla, PathBuilder, Pixels, SharedString, TextRun,
     Window, point, px, quad, size,
 };
-use optgraph_core::layout::{Point as LPoint, Size, layered_layout};
-use optgraph_core::{Model, ModuleStatus, OriginClass, Status, module_short_label, ring_text};
+use optgraph_core::layout::{CLUSTER_HEAD, ClusterSpec, Point as LPoint, Size, clustered_layout};
+use optgraph_core::{Model, ModuleStatus, OriginClass, Status, module_short_label, nested_file_label, ring_text};
 
 use crate::theme::{FONT_MONO, FONT_UI, Theme};
 
@@ -35,6 +37,10 @@ const MIN_K: f64 = 0.12;
 const MAX_K: f64 = 4.;
 /// Pixels kept free at the bottom when fitting (the legend).
 const RESERVE_BOTTOM: f64 = 44.;
+/// An instance with more modules than this starts collapsed into one pill.
+pub const COLLAPSE_OVER: usize = 6;
+/// Cluster labels longer than this keep their end.
+const LABEL_MAX: usize = 40;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cam {
@@ -45,9 +51,15 @@ pub struct Cam {
 
 #[derive(Clone, Debug)]
 pub struct Node {
-    /// Index in graph.json's modules.
+    /// Index in graph.json's modules (a collapsed pill: its first module).
     pub module: usize,
     pub label: SharedString,
+    /// The label outside its cluster: "alice › home.nix".
+    pub full: SharedString,
+    /// A collapsed instance's pill: the instance.
+    pub collapsed: Option<usize>,
+    /// Inside a cluster: its index in `GraphData::clusters`.
+    pub in_box: Option<usize>,
     pub class: OriginClass,
     pub disabled: bool,
     /// Left edge, centre line, width (world units).
@@ -60,14 +72,32 @@ pub struct Node {
 pub struct Link {
     pub source: usize,
     pub target: usize,
+    /// More targets of one owner link: the other modules this owner wrote in
+    /// the same cluster (the line ends on the cluster's side).
+    pub also: Vec<usize>,
     pub dashed: bool,
     pub pts: Vec<LPoint>,
 }
 
-/// The laid-out graph: fixed for a model.
+/// An expanded instance: a rounded box around its modules.
+#[derive(Clone, Debug)]
+pub struct Cluster {
+    /// Index into `Model::instances.list`.
+    pub inst: usize,
+    pub label: SharedString,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    /// Node indices.
+    pub members: Vec<usize>,
+}
+
+/// The laid-out graph: fixed until an instance is expanded or collapsed.
 pub struct GraphData {
     pub nodes: Vec<Node>,
     pub links: Vec<Link>,
+    pub clusters: Vec<Cluster>,
     pub by_module: HashMap<usize, usize>,
     /// Per node: indices of the links into it.
     pub parents: Vec<Vec<usize>>,
@@ -110,6 +140,7 @@ pub struct Frame {
     pub path: Option<Rc<HashSet<usize>>>,
     pub via: Option<Rc<HashSet<usize>>>,
     pub hover: Option<usize>,
+    pub hover_cluster: Option<usize>,
     pub selected: Option<usize>,
 }
 
@@ -133,7 +164,19 @@ pub struct GraphState {
     pub via: Option<Rc<HashSet<usize>>>,
     fade_at: Instant,
     pub hover: Option<usize>,
+    /// A cluster's label row under the pointer.
+    pub hover_cluster: Option<usize>,
     pub selected: Option<usize>,
+    /// Instances the user opened or closed, overriding the default.
+    user_open: HashMap<usize, bool>,
+    /// Instances opened for what is selected or filtered.
+    auto_open: HashSet<usize>,
+    /// The layout no longer matches the open instances.
+    pub dirty: bool,
+    /// After a rebuild: keep this instance's corner at this stage point.
+    anchor: Option<(usize, f64, f64)>,
+    /// The next camera move jumps (the layout just changed under it).
+    quiet: bool,
     pub drag: Option<Drag>,
     /// Stage size in pixels (from the window layout).
     pub width: f64,
@@ -151,6 +194,8 @@ enum Goal {
         context: Vec<usize>,
         max_k: f64,
     },
+    /// These nodes with their clusters, nothing pinned.
+    Nodes(Vec<usize>),
 }
 
 impl Default for GraphState {
@@ -166,7 +211,13 @@ impl Default for GraphState {
             via: None,
             fade_at: Instant::now() - Duration::from_secs(10),
             hover: None,
+            hover_cluster: None,
             selected: None,
+            user_open: HashMap::new(),
+            auto_open: HashSet::new(),
+            dirty: false,
+            anchor: None,
+            quiet: false,
             drag: None,
             width: 0.,
             height: 0.,
@@ -187,6 +238,24 @@ fn mono_font() -> Font {
     Font {
         weight: FontWeight::SEMIBOLD,
         ..gpui::font(FONT_MONO)
+    }
+}
+
+fn cluster_font() -> Font {
+    Font {
+        weight: FontWeight::MEDIUM,
+        ..gpui::font(FONT_MONO)
+    }
+}
+
+/// A cluster's label, its end kept when long.
+fn short_label(label: &str) -> String {
+    let n = label.chars().count();
+    if n <= LABEL_MAX {
+        label.to_string()
+    } else {
+        let tail: String = label.chars().skip(n - (LABEL_MAX - 1)).collect();
+        format!("…{tail}")
     }
 }
 
@@ -219,7 +288,90 @@ impl GraphState {
     /// Lays out the model's modules (all, or the non-nixpkgs ones above
     /// GRAPH_LIMIT).
     pub fn set_model(&mut self, model: &Model, window: &Window) {
+        self.build(model, window);
+        self.clear();
+        self.goal(Goal::Fit, false);
+    }
+
+    /// Is this instance's cluster open: forced by the selection, else the
+    /// user's choice, else open when small.
+    fn is_open(&self, model: &Model, inst: usize) -> bool {
+        self.auto_open.contains(&inst)
+            || self
+                .user_open
+                .get(&inst)
+                .copied()
+                .unwrap_or(model.instances.list[inst].total_modules <= COLLAPSE_OVER)
+    }
+
+    /// The instances that must be open; true if the layout has to change.
+    pub fn set_auto_open(&mut self, model: &Model, open: HashSet<usize>) {
+        if open != self.auto_open {
+            let was: Vec<bool> = (0..model.instances.list.len())
+                .map(|i| self.is_open(model, i))
+                .collect();
+            self.auto_open = open;
+            if (0..was.len()).any(|i| was[i] != self.is_open(model, i)) {
+                self.dirty = true;
+            }
+        }
+    }
+
+    /// A click on a collapsed pill or a cluster's label row; (sx, sy) is the
+    /// stage point its corner stays at.
+    pub fn toggle_instance(&mut self, model: &Model, inst: usize, sx: f64, sy: f64) {
+        let open = self.is_open(model, inst);
+        self.user_open.insert(inst, !open);
+        if open {
+            self.auto_open.remove(&inst);
+        }
+        self.anchor = Some((inst, sx, sy));
+        self.dirty = true;
+    }
+
+    /// Rebuilds the layout for the open instances. The caller re-applies the
+    /// selection (node indices change).
+    pub fn rebuild(&mut self, model: &Model, window: &Window) {
+        self.build(model, window);
+        self.dirty = false;
+        self.quiet = true;
+        self.clear();
+    }
+
+    /// True while an anchor holds the camera: selections then only change
+    /// the rings.
+    fn holding(&self) -> bool {
+        self.anchor.is_some()
+    }
+
+    /// Applies the anchor after a rebuild and the re-applied selection.
+    pub fn settle(&mut self) {
+        self.quiet = false;
+        let Some((inst, sx, sy)) = self.anchor.take() else {
+            return;
+        };
+        let Some(data) = &self.data else { return };
+        let corner = data
+            .clusters
+            .iter()
+            .find(|c| c.inst == inst)
+            .map(|c| (c.x, c.y))
+            .or_else(|| {
+                data.nodes
+                    .iter()
+                    .find(|n| n.collapsed == Some(inst))
+                    .map(|n| (n.x, n.y - PILL_H / 2.))
+            });
+        if let Some((wx, wy)) = corner {
+            self.anim = None;
+            self.cam.x = sx - wx * self.cam.k;
+            self.cam.y = sy - wy * self.cam.k;
+        }
+    }
+
+    fn build(&mut self, model: &Model, window: &Window) {
         let all = model.modules();
+        let is = &model.instances;
         let too_many = all.len() > GRAPH_LIMIT;
         let shown: Vec<usize> = (0..all.len())
             .filter(|&i| !too_many || all[i].origin.is_userish())
@@ -231,57 +383,156 @@ impl GraphState {
                 optgraph_core::text::thousands(shown.len() as u64)
             )
         });
+        let pill_w =
+            |label: &str| text_width(window, label, ui_font(FontWeight::MEDIUM), 12.).ceil() + 2. * PILL_PAD + 14.;
         let mut by_module = HashMap::new();
-        let mut nodes: Vec<Node> = shown
-            .iter()
-            .enumerate()
-            .map(|(i, &mi)| {
-                let m = &all[mi];
-                by_module.insert(mi, i);
-                let label = module_short_label(m);
-                let w = text_width(window, &label, ui_font(FontWeight::MEDIUM), 12.).ceil() + 2. * PILL_PAD + 14.;
-                Node {
-                    module: mi,
-                    label: label.into(),
-                    class: m.origin.class(),
-                    disabled: m.disabled,
-                    x: 0.,
-                    y: 0.,
-                    w,
+        let mut nodes: Vec<Node> = Vec::with_capacity(shown.len());
+        let mut pill_of: HashMap<usize, usize> = HashMap::new();
+        let mut box_of: HashMap<usize, usize> = HashMap::new();
+        let mut clusters: Vec<Cluster> = Vec::new();
+        // Several anonymous modules of one file in a cluster: told apart by line.
+        let mut same_file: HashMap<(usize, String), usize> = HashMap::new();
+        for &mi in &shown {
+            if let Some(i) = is.of_module[mi] {
+                *same_file.entry((i, nested_file_label(&all[mi]))).or_default() += 1;
+            }
+        }
+        for &mi in &shown {
+            let m = &all[mi];
+            // A module of a closed instance, or below one, is in the
+            // outermost closed instance's pill.
+            let inst = is.of_module[mi];
+            let closed = inst.and_then(|i| is.chain(i).into_iter().find(|&a| !self.is_open(model, a)));
+            if let Some(a) = closed {
+                let n = *pill_of.entry(a).or_insert_with(|| {
+                    let label = format!("{} · {}", short_label(is.label(a)), is.list[a].total_modules);
+                    nodes.push(Node {
+                        module: mi,
+                        w: pill_w(&label),
+                        label: label.clone().into(),
+                        full: label.into(),
+                        collapsed: Some(a),
+                        in_box: None,
+                        class: m.origin.class(),
+                        disabled: false,
+                        x: 0.,
+                        y: 0.,
+                    });
+                    nodes.len() - 1
+                });
+                by_module.insert(mi, n);
+                continue;
+            }
+            let n = nodes.len();
+            let in_box = inst.map(|i| {
+                *box_of.entry(i).or_insert_with(|| {
+                    clusters.push(Cluster {
+                        inst: i,
+                        label: short_label(is.label(i)).into(),
+                        x: 0.,
+                        y: 0.,
+                        w: 0.,
+                        h: 0.,
+                        members: Vec::new(),
+                    });
+                    clusters.len() - 1
+                })
+            });
+            if let Some(c) = in_box {
+                clusters[c].members.push(n);
+            }
+            let full = module_short_label(m);
+            // Inside a cluster the instance is on the cluster's label.
+            let label = match (in_box.is_some(), inst) {
+                (true, Some(i)) => {
+                    let file = nested_file_label(m);
+                    match &m.position {
+                        Some(p) if same_file[&(i, file.clone())] > 1 => optgraph_core::text::base_name(p),
+                        _ => file,
+                    }
                 }
-            })
-            .collect();
+                _ => full.clone(),
+            };
+            by_module.insert(mi, n);
+            nodes.push(Node {
+                module: mi,
+                w: pill_w(&label),
+                label: label.into(),
+                full: full.into(),
+                collapsed: None,
+                in_box,
+                class: m.origin.class(),
+                disabled: m.disabled,
+                x: 0.,
+                y: 0.,
+            });
+        }
         let mut links: Vec<Link> = Vec::new();
-        for (i, &mi) in shown.iter().enumerate() {
+        let mut seen: HashSet<(usize, usize)> = HashSet::new();
+        // One line per owner and cluster: (owner node, cluster) -> link.
+        let mut owner_link: HashMap<(usize, usize), usize> = HashMap::new();
+        for &mi in &shown {
+            let s = by_module[&mi];
             for t in &all[mi].imports {
-                if let Some(&tn) = model.mod_index.get(t).and_then(|ti| by_module.get(ti)) {
+                if let Some(&tn) = model.mod_index.get(t).and_then(|ti| by_module.get(ti))
+                    && tn != s
+                    && seen.insert((s, tn))
+                {
                     links.push(Link {
-                        source: i,
+                        source: s,
                         target: tn,
-                        dashed: all[nodes[tn].module].disabled,
+                        also: Vec::new(),
+                        dashed: nodes[tn].disabled,
                         pts: vec![],
                     });
                 }
             }
             // A module inside a submodule instance hangs off the module whose
             // definition it is (the module system imports it into the instance).
-            if let Some(on) = all[mi]
+            let Some(&on) = all[mi]
                 .owner
                 .as_ref()
                 .and_then(|o| model.mod_index.get(o))
                 .and_then(|oi| by_module.get(oi))
-            {
-                links.push(Link {
-                    source: *on,
-                    target: i,
-                    dashed: false,
-                    pts: vec![],
-                });
+            else {
+                continue;
+            };
+            if on == s {
+                continue;
+            }
+            match nodes[s].in_box.and_then(|c| owner_link.get(&(on, c)).copied()) {
+                Some(k) => {
+                    if links[k].target != s && !links[k].also.contains(&s) {
+                        links[k].also.push(s);
+                    }
+                }
+                None => {
+                    if seen.insert((on, s)) {
+                        if let Some(c) = nodes[s].in_box {
+                            owner_link.insert((on, c), links.len());
+                        }
+                        links.push(Link {
+                            source: on,
+                            target: s,
+                            also: Vec::new(),
+                            dashed: false,
+                            pts: vec![],
+                        });
+                    }
+                }
             }
         }
-        let lay = layered_layout(
+        let specs: Vec<ClusterSpec> = clusters
+            .iter()
+            .map(|c| ClusterSpec {
+                members: c.members.clone(),
+                label_w: text_width(window, &c.label, cluster_font(), 11.).ceil() + 18.,
+            })
+            .collect();
+        let lay = clustered_layout(
             &nodes.iter().map(|n| Size { w: n.w, h: PILL_H }).collect::<Vec<_>>(),
             &links.iter().map(|l| (l.source, l.target)).collect::<Vec<_>>(),
+            &specs,
         );
         for (i, n) in nodes.iter_mut().enumerate() {
             n.x = lay.x[i] - n.w / 2.;
@@ -290,19 +541,24 @@ impl GraphState {
         for (k, l) in links.iter_mut().enumerate() {
             l.pts = lay.paths[k].clone().unwrap_or_default();
         }
+        for (c, b) in clusters.iter_mut().zip(&lay.boxes) {
+            (c.x, c.y, c.w, c.h) = (b.x, b.y, b.w, b.h);
+        }
         let mut parents = vec![Vec::new(); nodes.len()];
         for (k, l) in links.iter().enumerate() {
             parents[l.target].push(k);
+            for &t in &l.also {
+                parents[t].push(k);
+            }
         }
         self.data = Some(Rc::new(GraphData {
             nodes,
             links,
+            clusters,
             by_module,
             parents,
             banner,
         }));
-        self.clear();
-        self.goal(Goal::Fit, false);
     }
 
     fn clear(&mut self) {
@@ -313,6 +569,7 @@ impl GraphState {
         self.via = None;
         self.selected = None;
         self.hover = None;
+        self.hover_cluster = None;
     }
 
     pub fn dimming(&self) -> bool {
@@ -331,6 +588,11 @@ impl GraphState {
         self.goal(Goal::Fit, true);
     }
 
+    /// Nothing selected, with the camera left alone.
+    pub fn select_none_keep(&mut self) {
+        self.clear();
+    }
+
     /// A selected option: rings on its defining modules, their import
     /// paths lit, the camera on them.
     pub fn select_option(&mut self, defining: &[(usize, ModuleStatus)], window: &Window) {
@@ -343,15 +605,19 @@ impl GraphState {
             let Some(&n) = data.by_module.get(mi) else { continue };
             let chip: SharedString = ring_text(s).into();
             let chip_w = text_width(window, &chip, mono_font(), 11.).ceil() + 16.;
-            rings.insert(
-                n,
-                Ring {
-                    status: s.status,
-                    chip,
-                    chip_w,
-                },
-            );
-            core.push(n);
+            // In a collapsed pill several modules share a node: the strongest
+            // (they come strongest first) gives its ring.
+            if !rings.contains_key(&n) {
+                rings.insert(
+                    n,
+                    Ring {
+                        status: s.status,
+                        chip,
+                        chip_w,
+                    },
+                );
+                core.push(n);
+            }
         }
         if rings.is_empty() {
             self.goal(Goal::Fit, true);
@@ -393,9 +659,10 @@ impl GraphState {
         let mut lit = HashSet::from([n]);
         let mut path = HashSet::new();
         for (k, l) in data.links.iter().enumerate() {
-            if l.source == n || l.target == n {
+            if l.source == n || l.target == n || l.also.contains(&n) {
                 lit.insert(l.source);
                 lit.insert(l.target);
+                lit.extend(l.also.iter().copied());
                 path.insert(k);
             }
         }
@@ -417,12 +684,33 @@ impl GraphState {
     }
 
     fn goal(&mut self, g: Goal, animate: bool) {
+        if self.holding() {
+            return;
+        }
         if self.width <= 0. {
             self.pending = Some(g);
             return;
         }
         let target = self.resolve(&g);
-        self.move_to(target, animate);
+        self.move_to(target, animate && !self.quiet);
+    }
+
+    /// The camera on these instances: their clusters or pills.
+    pub fn frame_instances(&mut self, insts: &[usize]) {
+        let Some(data) = self.data.clone() else { return };
+        let nodes: Vec<usize> = data
+            .nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, n)| {
+                n.collapsed.is_some_and(|i| insts.contains(&i))
+                    || n.in_box.is_some_and(|c| insts.contains(&data.clusters[c].inst))
+            })
+            .map(|(i, _)| i)
+            .collect();
+        if !nodes.is_empty() {
+            self.goal(Goal::Nodes(nodes), true);
+        }
     }
 
     fn resolve(&self, g: &Goal) -> Cam {
@@ -430,6 +718,7 @@ impl GraphState {
         match g {
             Goal::Fit => self.view(&(0..data.nodes.len()).collect::<Vec<_>>(), 1.3, &[]),
             Goal::Frame { core, context, max_k } => self.frame(core, context, *max_k),
+            Goal::Nodes(nodes) => self.view(nodes, 1.3, &[]),
         }
     }
 
@@ -516,6 +805,7 @@ impl GraphState {
                 path: self.path.clone(),
                 via: self.via.clone(),
                 hover: self.hover,
+                hover_cluster: self.hover_cluster,
                 selected: self.selected,
             },
             moving,
@@ -535,7 +825,7 @@ impl GraphState {
     }
 
     /// World bounds of `nodes`, those in `pinned` scaled by s about their centre.
-    fn bounds(&self, nodes: &[usize], pinned: &HashSet<usize>, s: f64) -> (f64, f64, f64, f64) {
+    fn bounds(&self, nodes: &[usize], pinned: &HashSet<usize>, s: f64, with_boxes: bool) -> (f64, f64, f64, f64) {
         let data = self.data.as_ref().unwrap();
         let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
         for &i in nodes {
@@ -546,6 +836,12 @@ impl GraphState {
             y0 = y0.min(n.y - PILL_H / 2. * f);
             x1 = x1.max(cx + (n.w / 2. + self.chip_w(i)) * f);
             y1 = y1.max(n.y + PILL_H / 2. * f);
+            if with_boxes && let Some(c) = n.in_box.map(|c| &data.clusters[c]) {
+                x0 = x0.min(c.x);
+                y0 = y0.min(c.y);
+                x1 = x1.max(c.x + c.w);
+                y1 = y1.max(c.y + c.h);
+            }
         }
         (x0, y0, x1, y1)
     }
@@ -567,13 +863,14 @@ impl GraphState {
                 .max(MIN_K)
         };
         let pin_set: HashSet<usize> = pinned.iter().copied().collect();
-        let mut b = self.bounds(nodes, &HashSet::new(), 1.);
+        // Nothing pinned: the whole graph or an instance, clusters included.
+        let mut b = self.bounds(nodes, &HashSet::new(), 1., pin_set.is_empty());
         let mut k = fit_k(b);
         for _ in 0..3 {
             if pin_set.is_empty() || k >= READ_K {
                 break;
             }
-            b = self.bounds(nodes, &pin_set, READ_K / k);
+            b = self.bounds(nodes, &pin_set, READ_K / k, false);
             k = fit_k(b);
         }
         Cam {
@@ -707,6 +1004,21 @@ impl GraphState {
         (0..data.nodes.len()).rev().find(|&i| hit(i, 1.))
     }
 
+    /// The cluster whose label row is under a stage point.
+    pub fn cluster_at(&self, px_: f64, py: f64) -> Option<usize> {
+        let data = self.data.as_ref()?;
+        (0..data.clusters.len()).find(|&c| {
+            let (x, y, w, _, head) = cluster_screen(data, c, self.cam, &self.pins);
+            px_ >= x && px_ <= x + w && py >= y && py <= y + head
+        })
+    }
+
+    /// Screen rectangle (stage coordinates) of a cluster.
+    pub fn cluster_rect(&self, c: usize) -> (f64, f64, f64, f64) {
+        let (x, y, w, h, _) = cluster_screen(self.data.as_ref().unwrap(), c, self.cam, &self.pins);
+        (x, y, w, h)
+    }
+
     /// Screen rectangle (stage coordinates) of a node's pill.
     pub fn node_rect(&self, n: usize) -> (f64, f64, f64, f64) {
         let data = self.data.as_ref().unwrap();
@@ -781,8 +1093,8 @@ impl GraphState {
             };
             let ring = self.rings.get(&n);
             let text: SharedString = match ring {
-                Some(r) => format!("{arrow} {} · {}", data.nodes[n].label, r.chip),
-                None => format!("{arrow} {}", data.nodes[n].label),
+                Some(r) => format!("{arrow} {} · {}", data.nodes[n].full, r.chip),
+                None => format!("{arrow} {}", data.nodes[n].full),
             }
             .into();
             let est_w = 14. + 7. * text.chars().count() as f64;
@@ -825,6 +1137,40 @@ impl GraphState {
     }
 }
 
+/// A cluster on the screen (stage coordinates): x, y, w, h and the height of
+/// its label row. Pinned members are drawn larger than the zoom: the box grows
+/// around them and its label row stays readable, so they never poke out of it.
+fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>) -> (f64, f64, f64, f64, f64) {
+    let b = &data.clusters[c];
+    let k = cam.k;
+    let (mut x0, mut y0) = (cam.x + b.x * k, cam.y + b.y * k);
+    let (mut x1, mut y1) = (x0 + b.w * k, y0 + b.h * k);
+    let mut head = CLUSTER_HEAD * k;
+    let pinned = k < READ_K && b.members.iter().any(|m| pins.contains(m));
+    if pinned {
+        let s = READ_K / k;
+        let pad = 8.;
+        head = CLUSTER_HEAD;
+        // The label row goes above the box's own top or the highest pin.
+        let mut top = f64::INFINITY;
+        for &m in &b.members {
+            if !pins.contains(&m) {
+                continue;
+            }
+            let n = &data.nodes[m];
+            let cx = cam.x + (n.x + n.w / 2.) * k;
+            let cy = cam.y + n.y * k;
+            let (hw, hh) = (n.w / 2. * k * s, PILL_H / 2. * k * s);
+            x0 = x0.min(cx - hw - pad);
+            x1 = x1.max(cx + hw + pad);
+            top = top.min(cy - hh - pad);
+            y1 = y1.max(cy + hh + pad);
+        }
+        y0 = y0.min(top - head);
+    }
+    (x0, y0, x1 - x0, y1 - y0, head)
+}
+
 /// Paints a frame of the graph into `bounds` (the stage).
 pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
     let data = &frame.data;
@@ -859,6 +1205,28 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
             gx += 24.;
         }
         gy += 24.;
+    }
+
+    // Clusters under everything else.
+    for (c, b) in data.clusters.iter().enumerate() {
+        let lit = !dimming
+            || b.members.iter().any(|m| {
+                frame.rings.contains_key(m)
+                    || frame.via.as_ref().is_some_and(|v| v.contains(m))
+                    || frame.lit.as_ref().is_some_and(|l| l.contains(m))
+            });
+        paint_cluster(
+            frame,
+            t,
+            b,
+            c,
+            frame.hover_cluster == Some(c),
+            lit,
+            f,
+            (ox, oy, bw, bh),
+            window,
+            cx,
+        );
     }
 
     // Edges: the rest first, then the import paths to what is selected.
@@ -1037,12 +1405,34 @@ fn paint_pill(
         point(px(x as f32), px((cy - h / 2.) as f32)),
         size(px(w as f32), px(h as f32)),
     );
+    // A collapsed instance: a stack of pills.
+    if n.collapsed.is_some() {
+        let off = 3.5 * k;
+        window.paint_quad(quad(
+            Bounds::new(
+                point(px((x + off) as f32), px((cy - h / 2. - off) as f32)),
+                size(px(w as f32), px(h as f32)),
+            ),
+            px((h / 2.) as f32),
+            t.s2.opacity(alpha),
+            px(1.),
+            (if hover { t.text3 } else { t.accent.opacity(0.55) }).opacity(alpha),
+            BorderStyle::Solid,
+        ));
+    }
     window.paint_quad(quad(
         bounds,
         px((h / 2.) as f32),
         (if hover { t.s3 } else { t.s2 }).opacity(alpha),
         px(1.),
-        (if hover { t.text3 } else { t.line2 }).opacity(alpha),
+        (if hover {
+            t.text3
+        } else if n.collapsed.is_some() {
+            t.accent.opacity(0.55)
+        } else {
+            t.line2
+        })
+        .opacity(alpha),
         if n.disabled {
             BorderStyle::Dashed
         } else {
@@ -1094,6 +1484,81 @@ fn paint_pill(
             }
         }
     }
+}
+
+/// An instance's rounded box and its label row: a chevron (click to
+/// collapse) and the label.
+#[allow(clippy::too_many_arguments)]
+fn paint_cluster(
+    frame: &Frame,
+    t: &Theme,
+    b: &Cluster,
+    c: usize,
+    hover: bool,
+    lit: bool,
+    f: f64,
+    view: (f64, f64, f64, f64),
+    window: &mut Window,
+    cx: &mut App,
+) {
+    let (sx, sy, w, h, head) = cluster_screen(&frame.data, c, frame.cam, &frame.pins);
+    let (x, y) = (view.0 + sx, view.1 + sy);
+    // The label row's scale: 1 when the box grew around pinned members.
+    let k = head / CLUSTER_HEAD;
+    if x + w < view.0 - 20. || x > view.0 + view.2 + 20. || y + h < view.1 - 20. || y > view.1 + view.3 + 20. {
+        return;
+    }
+    let alpha = if lit { 1. } else { 1. - 0.6 * f } as f32;
+    window.paint_quad(quad(
+        Bounds::new(point(px(x as f32), px(y as f32)), size(px(w as f32), px(h as f32))),
+        px((12. * frame.cam.k.max(k)) as f32),
+        t.accent_soft.opacity(0.45 * alpha),
+        px(1.),
+        (if hover { t.accent } else { t.accent.opacity(0.4) }).opacity(alpha),
+        BorderStyle::Solid,
+    ));
+    if k < 0.42 {
+        return;
+    }
+    // Chevron.
+    let (cx0, cy0) = (x + 10. * k, y + CLUSTER_HEAD * k / 2. + k);
+    let d = 3. * k;
+    let mut chev = PathBuilder::stroke(px((1.5 * k).max(1.) as f32));
+    chev.move_to(point(px((cx0 - d) as f32), px((cy0 - d / 2.) as f32)));
+    chev.line_to(point(px(cx0 as f32), px((cy0 + d / 2.) as f32)));
+    chev.line_to(point(px((cx0 + d) as f32), px((cy0 - d / 2.) as f32)));
+    if let Ok(p) = chev.build() {
+        window.paint_path(p, t.text3.opacity(alpha));
+    }
+    let size_ = 11. * k;
+    let color = if hover {
+        t.text
+    } else if lit {
+        t.text2
+    } else {
+        t.dim_text
+    };
+    let run = TextRun {
+        len: b.label.len(),
+        font: cluster_font(),
+        color,
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let line = window
+        .text_system()
+        .shape_line(b.label.clone(), px(size_ as f32), &[run], None);
+    let lh = size_ * 1.3;
+    line.paint(
+        point(px((x + 18. * k) as f32), px((cy0 - lh / 2.) as f32)),
+        px(lh as f32),
+        gpui::TextAlign::Left,
+        None,
+        window,
+        cx,
+    )
+    .ok();
 }
 
 /// Origin mark at the start of a pill: user a disc, user-inline a ring,
