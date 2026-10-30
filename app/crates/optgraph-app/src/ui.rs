@@ -85,6 +85,30 @@ pub fn origin_chip(t: &Theme, origin: &Origin) -> Div {
         .child(origin.label())
 }
 
+/// The chip naming a submodule instance.
+pub fn instance_chip(t: &Theme, name: &str) -> Div {
+    div()
+        .flex_none()
+        .max_w(px(200.))
+        .h(px(18.))
+        .pl(px(5.))
+        .pr(px(7.))
+        .flex()
+        .items_center()
+        .gap(px(3.))
+        .overflow_hidden()
+        .rounded_full()
+        .border_1()
+        .border_color(t.accent.opacity(0.4))
+        .bg(t.accent_soft)
+        .text_color(t.text2)
+        .text_size(px(FS_XS))
+        .font_family(crate::theme::FONT_UI)
+        .whitespace_nowrap()
+        .child(icon("instance", 11., t.accent))
+        .child(div().truncate().child(name.to_string()))
+}
+
 /// Winner / Lost / Switched off / Unknown badge: a mark and a label.
 pub fn status_badge(t: &Theme, s: Status) -> Div {
     let (ico, label) = match s {

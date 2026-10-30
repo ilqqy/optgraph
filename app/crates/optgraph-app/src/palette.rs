@@ -9,12 +9,12 @@ use gpui::{
     StyledText, Window, div, prelude::*, px,
 };
 use optgraph_core::search::{Group, GroupResult, Item, Kind, Where, palette_search};
-use optgraph_core::text::thousands;
+use optgraph_core::text::{plural, thousands};
 use optgraph_core::{Model, module_label, module_short_label};
 
 use crate::input::TextInput;
 use crate::theme::{FONT_MONO, FS_LG, FS_MD, FS_SM, FS_XS, R_LG, R_MD, R_XL, Theme};
-use crate::ui::{icon, kbd, origin_chip, shadow_3};
+use crate::ui::{dashed_badge, icon, kbd, origin_chip, shadow_3};
 use crate::view::{OptgraphView, PalClose, PalConfirm, PalDown, PalUp, Sel};
 
 pub struct PaletteState {
@@ -52,6 +52,7 @@ fn group_icon(g: Group) -> &'static str {
         Group::Overrides => "override",
         Group::Off => "off",
         Group::Errors => "error",
+        Group::Instances => "instance",
         Group::Options => "option",
         Group::Modules => "module",
     }
@@ -138,12 +139,14 @@ impl OptgraphView {
         let Some((_, it)) = self.palette.items().nth(n) else {
             return;
         };
-        let sel = match it.kind {
-            Kind::Option => Sel::Option(it.index),
-            Kind::Module => Sel::Module(it.index),
-        };
+        let (kind, index) = (it.kind, it.index);
         self.close_palette(window, cx);
-        self.select(sel, cx);
+        match kind {
+            Kind::Option => self.select(Sel::Option(index), cx),
+            Kind::Module => self.select(Sel::Module(index), cx),
+            // Enter on an instance filters the sidebar to it.
+            Kind::Instance => self.set_instance_filter(Some(index), cx),
+        }
     }
 
     pub fn render_palette(&mut self, t: &Theme, model: &Model, cx: &mut Context<Self>) -> impl IntoElement {
@@ -332,9 +335,33 @@ impl OptgraphView {
             Group::Overrides => t.lose,
             Group::Off => t.off,
             Group::Errors => t.err,
+            Group::Instances => t.accent,
             _ => t.text3,
         };
         let (main, meta): (AnyElement, AnyElement) = match it.kind {
+            Kind::Instance => {
+                let inst = &model.instances.list[it.index];
+                (
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .truncate()
+                        .font_family(FONT_MONO)
+                        .text_size(px(FS_MD))
+                        .child(highlighted(t, &inst.path, &it.hits))
+                        .into_any_element(),
+                    div()
+                        .flex_none()
+                        .text_color(t.text3)
+                        .text_size(px(FS_XS))
+                        .child(format!(
+                            "{} · {}",
+                            plural(inst.total_options as u64, "option", None),
+                            plural(inst.total_modules as u64, "module", None)
+                        ))
+                        .into_any_element(),
+                )
+            }
             Kind::Module => {
                 let m = &model.modules()[it.index];
                 let label = module_short_label(m);
@@ -540,8 +567,20 @@ impl OptgraphView {
                     .border_color(t.line)
                     .child(
                         div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(format!("Warnings ({})", ws.len())),
+                            .flex()
+                            .items_center()
+                            .gap(px(8.))
+                            .child(
+                                div()
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .child(format!("Warnings ({})", ws.len())),
+                            )
+                            .children(
+                                model
+                                    .nested_warning_counts()
+                                    .into_iter()
+                                    .map(|(code, n)| dashed_badge(t, format!("{code} {n}"))),
+                            ),
                     )
                     .child(
                         crate::ui::icon_button(t, "x")

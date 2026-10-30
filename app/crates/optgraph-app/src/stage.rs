@@ -3,6 +3,7 @@
 //! zoom buttons, chips for off-screen ancestors). Also the pan benchmark
 //! (OPTGRAPH_BENCH_PAN=<frames>: pans by itself, prints frame times, quits).
 
+use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
 use gpui::{
@@ -76,12 +77,28 @@ impl OptgraphView {
             self.graph.set_model(model, window);
         }
         self.graph.set_size(w, h);
-        if let Some(sel) = self.graph_sel.take() {
-            match sel {
-                Sel::None => self.graph.select_none(),
+        let mut sel = self.graph_sel.take();
+        if let Some(s) = sel {
+            self.graph.set_auto_open(model, self.instances_to_open(model, s));
+        }
+        if self.graph.dirty {
+            // Node indices changed: the selection is applied again.
+            self.graph.rebuild(model, window);
+            sel = Some(self.sel);
+        }
+        if let Some(s) = sel {
+            match s {
+                Sel::None => match self.instance_filter {
+                    Some(i) => {
+                        self.graph.select_none_keep();
+                        self.graph.frame_instances(&model.instances.subtree(i));
+                    }
+                    None => self.graph.select_none(),
+                },
                 Sel::Option(oi) => self.graph.select_option(&model.defining_modules(oi), window),
                 Sel::Module(mi) => self.graph.select_module(mi),
             }
+            self.graph.settle();
         }
         if let Some(b) = &mut self.bench {
             // Pan back and forth across the graph.
@@ -121,7 +138,7 @@ impl OptgraphView {
         let dragging = self.graph.drag.as_ref().is_some_and(|d| d.moved);
         let cursor = if dragging {
             CursorStyle::ClosedHand
-        } else if self.graph.hover.is_some() {
+        } else if self.graph.hover.is_some() || self.graph.hover_cluster.is_some() {
             CursorStyle::PointingHand
         } else {
             CursorStyle::OpenHand
@@ -166,13 +183,20 @@ impl OptgraphView {
                             k: d.cam.k,
                         };
                         this.graph.hover = None;
+                        this.graph.hover_cluster = None;
                         cx.notify();
                     }
                     return;
                 }
                 let hover = this.graph.node_at(x, y);
-                if hover != this.graph.hover {
+                let on_cluster = if hover.is_none() {
+                    this.graph.cluster_at(x, y)
+                } else {
+                    None
+                };
+                if hover != this.graph.hover || on_cluster != this.graph.hover_cluster {
                     this.graph.hover = hover;
+                    this.graph.hover_cluster = on_cluster;
                     cx.notify();
                 }
             }))
@@ -182,9 +206,19 @@ impl OptgraphView {
                     let Some(d) = this.graph.drag.take() else { return };
                     if !d.moved {
                         let (x, y) = local(ev.position);
+                        let data = this.graph.data.clone().unwrap();
+                        let model = this.model.clone().unwrap();
                         if let Some(n) = this.graph.node_at(x, y) {
-                            let mi = this.graph.data.as_ref().unwrap().nodes[n].module;
-                            this.select(Sel::Module(mi), cx);
+                            if let Some(inst) = data.nodes[n].collapsed {
+                                // Expand: the cluster's corner stays where the pill's is.
+                                let (rx, ry, _, _) = this.graph.node_rect(n);
+                                this.graph.toggle_instance(&model, inst, rx, ry);
+                            } else {
+                                this.select(Sel::Module(data.nodes[n].module), cx);
+                            }
+                        } else if let Some(c) = this.graph.cluster_at(x, y) {
+                            let (rx, ry, _, _) = this.graph.cluster_rect(c);
+                            this.graph.toggle_instance(&model, data.clusters[c].inst, rx, ry);
                         }
                     }
                     cx.notify();
@@ -198,8 +232,9 @@ impl OptgraphView {
                 }),
             )
             .on_hover(cx.listener(|this, inside: &bool, _, cx| {
-                if !inside && this.graph.hover.is_some() {
+                if !inside && (this.graph.hover.is_some() || this.graph.hover_cluster.is_some()) {
                     this.graph.hover = None;
+                    this.graph.hover_cluster = None;
                     cx.notify();
                 }
             }))
@@ -208,6 +243,7 @@ impl OptgraphView {
                 let (x, y) = local(ev.position);
                 this.graph.wheel(x, y, -f64::from(f32::from(d.y)), ev.modifiers.control);
                 this.graph.hover = None;
+                this.graph.hover_cluster = None;
                 cx.notify();
             }));
 
@@ -270,10 +306,140 @@ impl OptgraphView {
             );
         }
         if let (Some(n), None) = (self.graph.hover, &self.graph.drag) {
-            stage = stage.child(self.tooltip(t, model, n));
+            stage = stage.child(match self.graph.data.as_ref().unwrap().nodes[n].collapsed {
+                Some(inst) => {
+                    let (x, y, rw, rh) = self.graph.node_rect(n);
+                    self.instance_tooltip(t, model, inst, (x, y, rw, rh), true)
+                }
+                None => self.tooltip(t, model, n),
+            });
+        } else if let (Some(c), None) = (self.graph.hover_cluster, &self.graph.drag) {
+            let inst = self.graph.data.as_ref().unwrap().clusters[c].inst;
+            let (x, y, rw, _) = self.graph.cluster_rect(c);
+            stage = stage.child(self.instance_tooltip(t, model, inst, (x, y, rw, 24. * self.graph.cam.k), false));
         }
         stage = stage.child(self.legend(t)).child(self.zoom_buttons(t, cx));
         stage.into_any_element()
+    }
+
+    /// The instances that must be open for a selection and the filter: those
+    /// of the selected option or module, of the option's defining modules,
+    /// and what encloses them.
+    fn instances_to_open(&self, model: &Model, sel: Sel) -> HashSet<usize> {
+        let is = &model.instances;
+        let mut seeds: Vec<usize> = Vec::new();
+        match sel {
+            Sel::Option(oi) => {
+                seeds.extend(is.of_option[oi]);
+                seeds.extend(
+                    model
+                        .defining_modules(oi)
+                        .iter()
+                        .filter_map(|(mi, _)| is.of_module[*mi]),
+                );
+            }
+            Sel::Module(mi) => seeds.extend(is.of_module[mi]),
+            Sel::None => {}
+        }
+        seeds.extend(self.instance_filter);
+        seeds.into_iter().flat_map(|i| is.chain(i)).collect()
+    }
+
+    /// Hover on a collapsed pill or a cluster's label row.
+    fn instance_tooltip(
+        &self,
+        t: &Theme,
+        model: &Model,
+        inst: usize,
+        rect: (f64, f64, f64, f64),
+        collapsed: bool,
+    ) -> AnyElement {
+        let is = &model.instances;
+        let i = &is.list[inst];
+        let tip_h = 116.;
+        let tip_w = 420f64.min(self.graph.width - 16.);
+        let mut ty = rect.1 - tip_h - 10.;
+        if ty < 8. {
+            ty = rect.1 + rect.3 + 10.;
+        }
+        let tx = rect.0.min(self.graph.width - tip_w - 8.).max(8.);
+        let fact = |n: usize, one: &str, many: &str, color: gpui::Hsla| {
+            div()
+                .flex()
+                .gap(px(4.))
+                .child(
+                    div()
+                        .text_color(color)
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .child(n.to_string()),
+                )
+                .child(if n == 1 { one.to_string() } else { many.to_string() })
+        };
+        let owners: Vec<String> = i
+            .owners
+            .iter()
+            .take(3)
+            .map(|&o| optgraph_core::module_short_label(&model.modules()[o]))
+            .collect();
+        let more = i.owners.len().saturating_sub(owners.len());
+        div()
+            .absolute()
+            .left(px(tx as f32))
+            .top(px(ty as f32))
+            .max_w(px(tip_w as f32))
+            .px(px(12.))
+            .py(px(9.))
+            .border_1()
+            .border_color(t.line2)
+            .rounded(px(R_MD))
+            .bg(t.s1)
+            .shadow(shadow_3(t))
+            .text_size(px(FS_SM))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(7.))
+                    .text_size(px(13.))
+                    .child(icon("instance", 14., t.accent))
+                    .child(div().font_weight(FontWeight::BOLD).child(i.name.clone())),
+            )
+            .child(
+                div()
+                    .mt(px(4.))
+                    .mb(px(6.))
+                    .text_color(t.text2)
+                    .font_family(FONT_MONO)
+                    .text_size(px(FS_XS))
+                    .child(i.path.clone()),
+            )
+            .child(
+                div()
+                    .flex()
+                    .gap(px(12.))
+                    .text_color(t.text3)
+                    .child(fact(i.total_modules, "module", "modules", t.text))
+                    .child(fact(i.total_options, "option", "options", t.text))
+                    .when(i.overrides > 0, |d| {
+                        d.child(fact(i.overrides, "override", "overrides", t.lose))
+                    })
+                    .when(i.errors > 0, |d| d.child(fact(i.errors, "error", "errors", t.err))),
+            )
+            .when(!owners.is_empty(), |d| {
+                let tail = if more > 0 { format!(" +{more}") } else { String::new() };
+                d.child(
+                    div()
+                        .mt(px(4.))
+                        .text_color(t.text3)
+                        .child(format!("defined in {}{tail}", owners.join(", "))),
+                )
+            })
+            .child(div().mt(px(4.)).text_color(t.text3).italic().child(if collapsed {
+                "Click to expand"
+            } else {
+                "Click to collapse"
+            }))
+            .into_any_element()
     }
 
     fn tooltip(&self, t: &Theme, model: &Model, n: usize) -> AnyElement {
@@ -322,7 +488,7 @@ impl OptgraphView {
                     .gap(px(7.))
                     .text_size(px(13.))
                     .child(origin_dot(t, &m.origin))
-                    .child(div().font_weight(FontWeight::BOLD).child(data.nodes[n].label.clone()))
+                    .child(div().font_weight(FontWeight::BOLD).child(data.nodes[n].full.clone()))
                     .child(div().ml_auto().pl(px(12.)).child(origin_chip(t, &m.origin))),
             )
             .child(

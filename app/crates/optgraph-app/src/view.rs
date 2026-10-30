@@ -1,7 +1,7 @@
 //! The window's root view: state, keyboard, and the shell (sidebar | centre
 //! | inspector, top bar over the last two), as the web viewer's #shell.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -66,6 +66,10 @@ pub enum ListKind {
     Overrides,
     Off,
     Errors,
+    /// Options outside any instance.
+    Options,
+    /// Options directly in this instance (`Model::instances.list`).
+    Instance(usize),
 }
 
 /// A row of the sidebar's lists.
@@ -76,6 +80,28 @@ pub struct SideItem {
     /// Why it is listed: "mkForce in hardening.nix beats mkDefault in ..."
     pub note: String,
 }
+
+/// A child of the sidebar's scroll list, in order.
+#[derive(Clone, Debug)]
+pub enum SideRow {
+    /// A list's header, with its count.
+    Head(ListKind, usize),
+    /// An empty list's note.
+    Empty(ListKind),
+    /// `side_items[i]`.
+    Item(usize),
+    /// N more than the list shows.
+    More(usize),
+    /// An instance group's header; the depth indents it.
+    Group(usize, usize),
+    /// The header of the instance groups, with how many there are.
+    GroupsHead(usize),
+}
+
+/// A group with at most this many options starts open, as does the list of
+/// top-level options with at most OPTIONS_OPEN_MAX.
+pub const GROUP_OPEN_MAX: usize = 12;
+pub const OPTIONS_OPEN_MAX: usize = 30;
 
 /// At most this many rows per sidebar list (as the web viewer).
 pub const SIDE_LIST_LIMIT: usize = 200;
@@ -96,7 +122,14 @@ pub struct OptgraphView {
     /// The ladder row whose focus handle has the focus (keyboard ring).
     pub focused_row: Option<usize>,
     pub side_items: Vec<SideItem>,
+    pub side_rows: Vec<SideRow>,
     pub side_cursor: Option<usize>,
+    /// The sidebar shows only this instance and those inside it.
+    pub instance_filter: Option<usize>,
+    /// Instance groups the user opened or closed.
+    pub group_open: HashMap<usize, bool>,
+    /// The list of top-level options, when the user opened or closed it.
+    pub options_open: Option<bool>,
     pub warnings_open: bool,
     pub palette: PaletteState,
     pub inspector_scroll: ScrollHandle,
@@ -110,8 +143,8 @@ pub struct OptgraphView {
     pub system_light: bool,
     /// A running (or failed) `optgraph` evaluation of a flake reference.
     pub evaluation: Option<crate::evaluate::Evaluation>,
-    /// --opt / --module to apply once an evaluation has loaded.
-    pub after_load: (Option<String>, Option<usize>),
+    /// --opt / --module / --instance to apply once an evaluation has loaded.
+    pub after_load: (Option<String>, Option<usize>, Option<String>),
     _appearance: Option<gpui::Subscription>,
 }
 
@@ -140,7 +173,11 @@ impl OptgraphView {
             row_focus: Vec::new(),
             focused_row: None,
             side_items: Vec::new(),
+            side_rows: Vec::new(),
             side_cursor: None,
+            instance_filter: None,
+            group_open: HashMap::new(),
+            options_open: None,
             warnings_open: false,
             palette: PaletteState::new(input),
             inspector_scroll: ScrollHandle::new(),
@@ -151,7 +188,7 @@ impl OptgraphView {
             scheme: crate::loading::Scheme::System,
             system_light: false,
             evaluation: None,
-            after_load: (None, None),
+            after_load: (None, None, None),
             _appearance: None,
         };
         if let Some(m) = model {
@@ -169,9 +206,11 @@ impl OptgraphView {
     }
 
     pub fn set_model(&mut self, model: Model, cx: &mut Context<Self>) {
-        let model = Rc::new(model);
-        self.side_items = side_items(&model);
-        self.model = Some(model);
+        self.model = Some(Rc::new(model));
+        self.instance_filter = None;
+        self.group_open.clear();
+        self.options_open = None;
+        self.rebuild_side();
         self.graph = GraphState::default();
         self.graph_sel = None;
         self.load_error = None;
@@ -196,6 +235,9 @@ impl OptgraphView {
         };
         self.row_focus = (0..n).map(|_| cx.focus_handle().tab_stop(true)).collect();
         self.inspector_scroll.set_offset(gpui::point(px(0.), px(0.)));
+        if let Sel::Option(oi) = sel {
+            self.reveal_option(oi);
+        }
         if let Sel::Option(oi) = sel
             && let Some(i) = self.side_items.iter().position(|s| s.option == oi)
             && self.side_cursor.is_none_or(|c| self.side_items[c].option != oi)
@@ -211,6 +253,207 @@ impl OptgraphView {
         };
         self.select(Sel::Option(oi), cx);
         true
+    }
+
+    /// Filter the sidebar to an instance (and those inside it), or clear it.
+    pub fn set_instance_filter(&mut self, inst: Option<usize>, cx: &mut Context<Self>) {
+        self.instance_filter = inst;
+        if let (Some(i), Some(m)) = (inst, self.model.clone()) {
+            for a in m.instances.chain(i) {
+                self.group_open.insert(a, true);
+            }
+        }
+        self.rebuild_side();
+        self.sidebar_scroll.set_offset(gpui::point(px(0.), px(0.)));
+        // The graph opens the instance's cluster and looks at it.
+        self.graph_sel = Some(self.sel);
+        cx.notify();
+    }
+
+    /// `--instance` after an evaluation has loaded.
+    pub fn apply_instance_arg(&mut self, arg: Option<String>, cx: &mut Context<Self>) {
+        let Some(q) = arg else { return };
+        let found = self.model.as_ref().map(|m| m.instances.find(&q));
+        match found {
+            Some(Ok(i)) => self.set_instance_filter(Some(i), cx),
+            Some(Err(paths)) if !paths.is_empty() => {
+                self.load_error = Some(format!("--instance {q} is ambiguous: {}", paths.join(", ")));
+            }
+            _ => self.load_error = Some(format!("no instance {q} in this graph")),
+        }
+    }
+
+    /// Is an instance's group open: the user's choice, else open when small.
+    pub fn group_is_open(&self, model: &Model, inst: usize) -> bool {
+        self.group_open
+            .get(&inst)
+            .copied()
+            .unwrap_or(model.instances.list[inst].total_options <= GROUP_OPEN_MAX)
+    }
+
+    pub fn toggle_group(&mut self, inst: usize, cx: &mut Context<Self>) {
+        let Some(m) = self.model.clone() else { return };
+        let open = self.group_is_open(&m, inst);
+        self.group_open.insert(inst, !open);
+        self.rebuild_side();
+        cx.notify();
+    }
+
+    pub fn toggle_options_list(&mut self, cx: &mut Context<Self>) {
+        let Some(m) = self.model.clone() else { return };
+        let open = self
+            .options_open
+            .unwrap_or(m.instances.top_level.len() <= OPTIONS_OPEN_MAX);
+        self.options_open = Some(!open);
+        self.rebuild_side();
+        cx.notify();
+    }
+
+    /// The groups around a selected nested option open, so it can be seen.
+    fn reveal_option(&mut self, oi: usize) {
+        let Some(m) = self.model.clone() else { return };
+        let Some(i) = m.instances.of_option[oi] else { return };
+        let mut changed = false;
+        for a in m.instances.chain(i) {
+            if !self.group_is_open(&m, a) {
+                self.group_open.insert(a, true);
+                changed = true;
+            }
+        }
+        if changed {
+            self.rebuild_side();
+        }
+    }
+
+    /// Recomputes the sidebar's rows: for the filter, the open groups and the
+    /// model. The cursor stays on its row if that is still there.
+    pub fn rebuild_side(&mut self) {
+        let keep = self
+            .side_cursor
+            .and_then(|c| self.side_items.get(c))
+            .map(|s| (s.list, s.option));
+        let (items, rows) = match self.model.clone() {
+            Some(m) => self.side_lists(&m),
+            None => (Vec::new(), Vec::new()),
+        };
+        self.side_items = items;
+        self.side_rows = rows;
+        self.side_cursor = keep.and_then(|k| self.side_items.iter().position(|s| (s.list, s.option) == k));
+    }
+
+    fn side_lists(&self, model: &Model) -> (Vec<SideItem>, Vec<SideRow>) {
+        let a = &model.analysis;
+        let is = &model.instances;
+        // With a filter: only options in the instance or those inside it.
+        let wanted: Option<HashSet<usize>> = self.instance_filter.map(|i| {
+            is.subtree(i)
+                .into_iter()
+                .flat_map(|k| is.list[k].options.clone())
+                .collect()
+        });
+        let keeps = |oi: usize| wanted.as_ref().is_none_or(|w| w.contains(&oi));
+        let mut items: Vec<SideItem> = Vec::new();
+        let mut rows: Vec<SideRow> = Vec::new();
+        let mut list =
+            |kind: ListKind, count: usize, entries: Vec<(usize, String)>, items: &mut Vec<SideItem>, show: bool| {
+                let total = entries.len();
+                rows.push(SideRow::Head(kind, count));
+                if !show {
+                    return;
+                }
+                if total == 0 {
+                    rows.push(SideRow::Empty(kind));
+                }
+                for (option, note) in entries.into_iter().take(SIDE_LIST_LIMIT) {
+                    rows.push(SideRow::Item(items.len()));
+                    items.push(SideItem {
+                        list: kind,
+                        option,
+                        note,
+                    });
+                }
+                if total > SIDE_LIST_LIMIT {
+                    rows.push(SideRow::More(total - SIDE_LIST_LIMIT));
+                }
+            };
+        let overrides: Vec<(usize, String)> = a
+            .overrides
+            .iter()
+            .filter(|&&oi| keeps(oi))
+            .map(|&oi| (oi, a.info[oi].beats.as_ref().map(|b| b.by_module()).unwrap_or_default()))
+            .collect();
+        list(ListKind::Overrides, overrides.len(), overrides, &mut items, true);
+        // One row per option; the count stays that of definitions (the summary's).
+        let off_defs: Vec<_> = a.switched_off.iter().filter(|r| keeps(r.option)).collect();
+        let mut off: Vec<(usize, Vec<String>)> = Vec::new();
+        for r in &off_defs {
+            let who = model.def_who(&model.options()[r.option].definitions[r.definition]);
+            match off.iter_mut().find(|(oi, _)| *oi == r.option) {
+                Some((_, whos)) => {
+                    if !whos.contains(&who) {
+                        whos.push(who);
+                    }
+                }
+                None => off.push((r.option, vec![who])),
+            }
+        }
+        let off: Vec<(usize, String)> = off
+            .into_iter()
+            .map(|(oi, whos)| (oi, format!("mkIf false in {}", whos.join(", "))))
+            .collect();
+        list(ListKind::Off, off_defs.len(), off, &mut items, true);
+        let errors: Vec<(usize, String)> = a
+            .errors
+            .iter()
+            .filter(|&&oi| keeps(oi))
+            .map(|&oi| (oi, model.options()[oi].error.clone().unwrap_or_default()))
+            .collect();
+        list(ListKind::Errors, errors.len(), errors, &mut items, true);
+        if self.instance_filter.is_none() {
+            let open = self.options_open.unwrap_or(is.top_level.len() <= OPTIONS_OPEN_MAX);
+            list(
+                ListKind::Options,
+                is.top_level.len(),
+                is.top_level
+                    .iter()
+                    .map(|&oi| (oi, model.options()[oi].path.clone()))
+                    .collect(),
+                &mut items,
+                open,
+            );
+        }
+        if !is.is_empty() {
+            let starts: Vec<usize> = match self.instance_filter {
+                Some(i) => vec![i],
+                None => is.roots.clone(),
+            };
+            rows.push(SideRow::GroupsHead(match self.instance_filter {
+                Some(i) => is.subtree(i).len(),
+                None => is.list.len(),
+            }));
+            let mut stack: Vec<(usize, usize)> = starts.into_iter().rev().map(|i| (i, 0)).collect();
+            while let Some((i, depth)) = stack.pop() {
+                rows.push(SideRow::Group(i, depth));
+                if self.group_is_open(model, i) {
+                    let inst = &is.list[i];
+                    for &oi in inst.options.iter().take(SIDE_LIST_LIMIT) {
+                        rows.push(SideRow::Item(items.len()));
+                        items.push(SideItem {
+                            list: ListKind::Instance(i),
+                            option: oi,
+                            note: model.options()[oi].path.clone(),
+                        });
+                    }
+                    if inst.options.len() > SIDE_LIST_LIMIT {
+                        rows.push(SideRow::More(inst.options.len() - SIDE_LIST_LIMIT));
+                    }
+                    for &c in inst.children.iter().rev() {
+                        stack.push((c, depth + 1));
+                    }
+                }
+            }
+        }
+        (items, rows)
     }
 
     pub fn copy_value(&mut self, def: usize, text: String, cx: &mut Context<Self>) {
@@ -312,37 +555,6 @@ impl OptgraphView {
         let w = f32::from(window.viewport_size().width);
         px((w * 0.34).clamp(420., 540.))
     }
-}
-
-fn side_items(model: &Model) -> Vec<SideItem> {
-    let a = &model.analysis;
-    let mut out = Vec::new();
-    for &oi in a.overrides.iter().take(SIDE_LIST_LIMIT) {
-        let note = a.info[oi].beats.as_ref().map(|b| b.by_module()).unwrap_or_default();
-        out.push(SideItem {
-            list: ListKind::Overrides,
-            option: oi,
-            note,
-        });
-    }
-    for r in a.switched_off.iter().take(SIDE_LIST_LIMIT) {
-        let o = &model.options()[r.option];
-        let who = model.def_who(&o.definitions[r.definition]);
-        out.push(SideItem {
-            list: ListKind::Off,
-            option: r.option,
-            note: format!("mkIf false in {who}"),
-        });
-    }
-    for &oi in a.errors.iter().take(SIDE_LIST_LIMIT) {
-        let note = model.options()[oi].error.clone().unwrap_or_default();
-        out.push(SideItem {
-            list: ListKind::Errors,
-            option: oi,
-            note,
-        });
-    }
-    out
 }
 
 impl Render for OptgraphView {
