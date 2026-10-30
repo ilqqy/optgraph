@@ -200,10 +200,10 @@ impl Instances {
             per
         };
         let (ov, of, er) = (count(overrides), count(off), count(errors));
-        for i in 0..list.len() {
-            list[i].overrides = ov[i];
-            list[i].switched_off = of[i];
-            list[i].errors = er[i];
+        for (i, inst) in list.iter_mut().enumerate() {
+            inst.overrides = ov[i];
+            inst.switched_off = of[i];
+            inst.errors = er[i];
         }
         // Children are added up into their enclosing instances, deepest first.
         fn depth_of(list: &[Instance], i: usize) -> usize {
@@ -218,8 +218,9 @@ impl Instances {
             }
             d
         }
-        for i in 0..list.len() {
-            list[i].depth = depth_of(&list, i);
+        let depths: Vec<usize> = (0..list.len()).map(|i| depth_of(&list, i)).collect();
+        for (inst, depth) in list.iter_mut().zip(depths) {
+            inst.depth = depth;
         }
         let mut order: Vec<usize> = (0..list.len()).collect();
         order.sort_by_key(|&i| std::cmp::Reverse(list[i].depth));
