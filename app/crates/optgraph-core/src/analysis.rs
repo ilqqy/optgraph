@@ -4,6 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::instances::Instances;
 use crate::model::{Condition, Definition, Graph, Module, OptionEntry, Origin};
 use crate::text::{base_name, plural, prio_name};
 
@@ -141,6 +142,8 @@ pub struct Model {
     /// Lower-cased option paths, for search.
     pub lower_paths: Vec<String>,
     pub analysis: Analysis,
+    /// Submodule instances: nested options and modules grouped.
+    pub instances: Instances,
 }
 
 impl Model {
@@ -180,8 +183,12 @@ impl Model {
             importers,
             lower_paths,
             analysis: Analysis::default(),
+            instances: Instances::default(),
         };
         model.analysis = model.analyse();
+        let a = &model.analysis;
+        let off: Vec<usize> = a.switched_off.iter().map(|r| r.option).collect();
+        model.instances = Instances::new(&model.graph, &a.overrides, &off, &a.errors);
         model
     }
 
@@ -397,11 +404,7 @@ impl Model {
                     };
                     (Status::Win, reason)
                 } else if let Some(at) = &d.shadowed_at {
-                    // Nested options: the instance never saw it.
-                    (
-                        Status::Lose,
-                        format!("never reached the instance: the definition it is part of lost at {at}"),
-                    )
+                    (Status::Lose, self.dropped_at(at))
                 } else if !d.active {
                     let reason = if d.condition == Some(Condition::MkIfError) {
                         "its mkIf condition threw or is not a bool"
@@ -433,6 +436,27 @@ impl Model {
             .collect();
         rows.sort_by_key(|r| (o.definitions[r.def].priority.unwrap_or(i64::MAX), r.def));
         rows
+    }
+
+    /// How many warnings of each `nested-*` code, by code.
+    pub fn nested_warning_counts(&self) -> Vec<(String, usize)> {
+        let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+        for w in &self.graph.meta.warnings {
+            if w.code.starts_with("nested-") {
+                *counts.entry(&w.code).or_default() += 1;
+            }
+        }
+        counts.into_iter().map(|(c, n)| (c.to_string(), n)).collect()
+    }
+
+    /// Why a `shadowedAt` definition never reached its instance: "dropped at
+    /// users.users (mkForce)". The priority that beat it is known only when
+    /// it lost at a listed option; an instance's own definitions have none.
+    fn dropped_at(&self, at: &str) -> String {
+        match self.option_index(at).and_then(|p| self.graph.options[p].highest_prio) {
+            Some(p) => format!("dropped at {at} ({})", prio_name(Some(p))),
+            None => format!("dropped at {at}"),
+        }
     }
 
     /// How many modules the winners come from (the option default counts as one).
@@ -580,6 +604,34 @@ pub fn instance_name(scope: &str) -> String {
         Some(i) => scope[i + 1..].to_string(),
         None => scope.to_string(),
     }
+}
+
+/// The path above the last component: `users.users.alice` -> `users.users`,
+/// `fileSystems."/boot"` -> `fileSystems`, `a` -> "".
+pub fn parent_path(path: &str) -> &str {
+    let end = match path.strip_suffix('"') {
+        Some(body) => {
+            let b = body.as_bytes();
+            let mut i = b.len();
+            loop {
+                if i == 0 {
+                    break 0;
+                }
+                i -= 1;
+                if b[i] == b'"' && (i == 0 || b[i - 1] != b'\\') {
+                    break i;
+                }
+            }
+        }
+        None => path.rfind('.').map_or(0, |i| i + 1),
+    };
+    path[..end].strip_suffix('.').unwrap_or("")
+}
+
+/// A nested module's own file name, without the instance: for labels inside a
+/// cluster that already names the instance.
+pub fn nested_file_label(m: &Module) -> String {
+    base_name(&nested_where(m))
 }
 
 /// Where a module inside an instance lives: its file, or for inline user code

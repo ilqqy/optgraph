@@ -1,22 +1,23 @@
 {
  "stats": {
-  "modules": 56,
-  "options": 64,
-  "definitions": 86,
-  "overrides": 9,
+  "modules": 67,
+  "options": 71,
+  "definitions": 98,
+  "overrides": 10,
   "switchedOff": 7,
   "errors": 4
  },
  "overrides": [
   10,
-  26,
-  33,
-  39,
-  44,
-  52,
-  60,
+  13,
+  28,
+  40,
+  46,
+  51,
+  59,
+  67,
   3,
-  28
+  30
  ],
  "withUser": [
   0,
@@ -29,7 +30,6 @@
   9,
   11,
   12,
-  13,
   14,
   15,
   16,
@@ -42,37 +42,44 @@
   23,
   24,
   25,
+  26,
   27,
   29,
-  30,
   31,
   32,
+  33,
   34,
   35,
   36,
   37,
   38,
-  40,
+  39,
   41,
   42,
   43,
+  44,
   45,
-  46,
   47,
   48,
   49,
   50,
-  51,
+  52,
   53,
   54,
   55,
   56,
   57,
   58,
-  59,
+  60,
   61,
   62,
-  63
+  63,
+  64,
+  65,
+  66,
+  68,
+  69,
+  70
  ],
  "nixpkgsOnly": [
   7
@@ -87,31 +94,31 @@
    0
   ],
   [
-   14,
+   16,
    0
   ],
   [
-   39,
+   46,
    2
   ],
   [
-   44,
+   51,
    3
   ],
   [
-   61,
+   68,
    0
   ],
   [
-   62,
+   69,
    0
   ]
  ],
  "errors": [
   7,
-  15,
-  35,
-  49
+  17,
+  42,
+  56
  ],
  "options": [
   {
@@ -132,7 +139,8 @@
      "lose",
      "beaten by 907 definitions at 100 (906 nixpkgs, not listed): 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "boot.loader.grub.enable",
@@ -152,7 +160,8 @@
      "lose",
      "beaten by configuration.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "environment.pathsToLink",
@@ -172,7 +181,8 @@
      "lose",
      "beaten by 16 definitions at 100 (15 nixpkgs, not listed): 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "environment.systemPackages",
@@ -192,7 +202,8 @@
      "lose",
      "beaten by 39 nixpkgs definitions at 100 (not listed): 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fileSystems",
@@ -212,7 +223,8 @@
      "lose",
      "beaten by configuration.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fileSystems.\"/\".device",
@@ -232,6 +244,11 @@
      "lose",
      "beaten by / › configuration.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fileSystems",
+    "/",
+    "device"
    ]
   },
   {
@@ -247,6 +264,11 @@
      "win",
      "the only active definition"
     ]
+   ],
+   "crumbs": [
+    "fileSystems",
+    "/",
+    "fsType"
    ]
   },
   {
@@ -256,7 +278,8 @@
    "beats": null,
    "beatsModules": null,
    "off": [],
-   "ladder": []
+   "ladder": [],
+   "crumbs": []
   },
   {
    "path": "fixture.accounts",
@@ -286,7 +309,8 @@
      "lose",
      "beaten by 3 definitions at 100: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.accounts.dave.greeting",
@@ -308,6 +332,11 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
+   ],
+   "crumbs": [
+    "fixture.accounts",
+    "dave",
+    "greeting"
    ]
   },
   {
@@ -338,6 +367,11 @@
      "lose",
      "beaten by dave › nested-force.nix: 50 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.accounts",
+    "dave",
+    "shell"
    ]
   },
   {
@@ -358,6 +392,11 @@
      "lose",
      "beaten by erin › nested-plain.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.accounts",
+    "erin",
+    "greeting"
    ]
   },
   {
@@ -380,6 +419,67 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
+   ],
+   "crumbs": [
+    "fixture.accounts",
+    "erin",
+    "shell"
+   ]
+  },
+  {
+   "path": "fixture.allForced",
+   "override": true,
+   "userVsUser": true,
+   "beats": "mkForce (user) beats normal (user)",
+   "beatsModules": "mkForce in nested.nix beats normal in nested-plain.nix",
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats nested-plain.nix: 50 < 100"
+    ],
+    [
+     1,
+     "lose",
+     "beaten by nested.nix: 50 < 100"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by nested.nix: 50 < 1500"
+    ]
+   ],
+   "crumbs": []
+  },
+  {
+   "path": "fixture.allForced.gina.shell",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "beats the default: 100 < 1500"
+    ],
+    [
+     1,
+     "lose",
+     "dropped at fixture.allForced (mkForce)"
+    ],
+    [
+     2,
+     "lose",
+     "beaten by gina › nested.nix: 100 < 1500"
+    ]
+   ],
+   "crumbs": [
+    "fixture.allForced",
+    "gina",
+    "shell"
    ]
   },
   {
@@ -395,7 +495,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.conditional",
@@ -417,7 +518,8 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.conditionalError",
@@ -432,7 +534,8 @@
      "off",
      "its mkIf condition threw or is not a bool"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.conditionalTrue",
@@ -447,7 +550,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.forced",
@@ -467,7 +571,8 @@
      "lose",
      "beaten by nested.nix: 50 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.fromExtra",
@@ -482,7 +587,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.fromExtraInline",
@@ -497,7 +603,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.fromInterpolated",
@@ -512,7 +619,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.home",
@@ -542,7 +650,8 @@
      "lose",
      "beaten by 3 definitions at 100: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.home.alice.editor",
@@ -562,6 +671,11 @@
      "lose",
      "beaten by alice › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "alice",
+    "editor"
    ]
   },
   {
@@ -587,6 +701,11 @@
      "lose",
      "beaten by 2 definitions at 100: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "alice",
+    "files"
    ]
   },
   {
@@ -602,6 +721,13 @@
      "win",
      "the only active definition"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "alice",
+    "files",
+    "notes",
+    "text"
    ]
   },
   {
@@ -617,6 +743,13 @@
      "win",
      "the only active definition"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "alice",
+    "files",
+    "todo",
+    "text"
    ]
   },
   {
@@ -647,6 +780,11 @@
      "lose",
      "beaten by alice › nested-force.nix: 50 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "alice",
+    "theme"
    ]
   },
   {
@@ -667,6 +805,11 @@
      "lose",
      "beaten by bob › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "bob",
+    "editor"
    ]
   },
   {
@@ -687,6 +830,11 @@
      "lose",
      "beaten by 2 extra definitions at 100 (not listed): 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "bob",
+    "packages"
    ]
   },
   {
@@ -700,13 +848,18 @@
     [
      0,
      "lose",
-     "never reached the instance: the definition it is part of lost at fixture.home.carol"
+     "dropped at fixture.home.carol"
     ],
     [
      1,
      "win",
      "nothing stronger is set: the default applies"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "carol",
+    "editor"
    ]
   },
   {
@@ -725,13 +878,146 @@
     [
      1,
      "lose",
-     "never reached the instance: the definition it is part of lost at fixture.home.carol"
+     "dropped at fixture.home.carol"
     ],
     [
      2,
      "lose",
      "beaten by carol › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "carol",
+    "theme"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "merged with 3 others at priority 100"
+    ],
+    [
+     1,
+     "win",
+     "merged with 3 others at priority 100"
+    ],
+    [
+     2,
+     "win",
+     "merged with 3 others at priority 100"
+    ],
+    [
+     3,
+     "win",
+     "merged with 3 others at priority 100"
+    ],
+    [
+     4,
+     "lose",
+     "beaten by 4 definitions at 100: 100 < 1500"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files.a.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files",
+    "a",
+    "text"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files.b.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files",
+    "b",
+    "text"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files.c.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files",
+    "c",
+    "text"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files.d.text",
+   "override": false,
+   "userVsUser": false,
+   "beats": null,
+   "beatsModules": null,
+   "off": [],
+   "ladder": [
+    [
+     0,
+     "win",
+     "the only active definition"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files",
+    "d",
+    "text"
    ]
   },
   {
@@ -747,7 +1033,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.inlineFunction",
@@ -762,7 +1049,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.layered",
@@ -782,7 +1070,8 @@
      "lose",
      "beaten by layers.nix: 50 < 100"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.lazy",
@@ -797,7 +1086,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.lazyAccounts",
@@ -817,7 +1107,8 @@
      "lose",
      "beaten by nested.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.lazyAccounts.fine.shell",
@@ -837,6 +1128,11 @@
      "lose",
      "beaten by fine › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.lazyAccounts",
+    "fine",
+    "shell"
    ]
   },
   {
@@ -857,7 +1153,8 @@
      "lose",
      "beaten by nested.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.maybe.shell",
@@ -877,6 +1174,10 @@
      "lose",
      "beaten by maybe › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.maybe",
+    "shell"
    ]
   },
   {
@@ -904,7 +1205,8 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.nestedInline",
@@ -919,7 +1221,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.ordered",
@@ -944,7 +1247,8 @@
      "lose",
      "beaten by 2 definitions at 100: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.packageSet",
@@ -959,7 +1263,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.previews",
@@ -974,7 +1279,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.prio",
@@ -1011,7 +1317,8 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.secretEnabled",
@@ -1026,7 +1333,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.single",
@@ -1051,7 +1359,8 @@
      "lose",
      "beaten by 2 definitions at 100: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.single.greeting",
@@ -1071,6 +1380,10 @@
      "lose",
      "beaten by single › nested-plain.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.single",
+    "greeting"
    ]
   },
   {
@@ -1091,6 +1404,10 @@
      "lose",
      "beaten by single › nested.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "fixture.single",
+    "shell"
    ]
   },
   {
@@ -1106,7 +1423,8 @@
      "unknown",
      "reading its value threw: priority unknown"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.viaDefinition",
@@ -1121,7 +1439,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "fixture.whnfAbort",
@@ -1136,7 +1455,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "networking.hostName",
@@ -1161,7 +1481,8 @@
      "lose",
      "beaten by configuration.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "nixpkgs.hostPlatform",
@@ -1176,7 +1497,8 @@
      "win",
      "the only active definition"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "services.openssh.settings",
@@ -1196,7 +1518,8 @@
      "lose",
      "beaten by services.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "system.stateVersion",
@@ -1216,7 +1539,8 @@
      "lose",
      "beaten by configuration.nix: 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "systemd.services",
@@ -1236,7 +1560,8 @@
      "lose",
      "beaten by 47 definitions at 100 (46 nixpkgs, not listed): 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "systemd.services.fixture-hello.description",
@@ -1256,6 +1581,11 @@
      "lose",
      "beaten by fixture-hello › services.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "systemd.services",
+    "fixture-hello",
+    "description"
    ]
   },
   {
@@ -1276,6 +1606,11 @@
      "lose",
      "beaten by fixture-hello › services.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "systemd.services",
+    "fixture-hello",
+    "script"
    ]
   },
   {
@@ -1306,7 +1641,8 @@
      "lose",
      "beaten by 14 definitions at 100 (11 nixpkgs, not listed): 100 < 1500"
     ]
-   ]
+   ],
+   "crumbs": []
   },
   {
    "path": "users.users.alice.description",
@@ -1331,6 +1667,11 @@
      "lose",
      "beaten by alice › users-force.nix: 50 < 1500"
     ]
+   ],
+   "crumbs": [
+    "users.users",
+    "alice",
+    "description"
    ]
   },
   {
@@ -1353,6 +1694,11 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
+   ],
+   "crumbs": [
+    "users.users",
+    "alice",
+    "extraGroups"
    ]
   },
   {
@@ -1380,6 +1726,11 @@
      "off",
      "switched off: its mkIf condition is false"
     ]
+   ],
+   "crumbs": [
+    "users.users",
+    "alice",
+    "home"
    ]
   },
   {
@@ -1400,6 +1751,11 @@
      "lose",
      "beaten by alice › users.nix: 100 < 1500"
     ]
+   ],
+   "crumbs": [
+    "users.users",
+    "alice",
+    "isNormalUser"
    ]
   }
  ],
@@ -1549,6 +1905,14 @@
    "fixture.accounts.erin › …/tests/fixture/modules/nested-options.nix"
   ],
   [
+   "gina › nested.nix",
+   "fixture.allForced.gina › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "gina › nested-options.nix",
+   "fixture.allForced.gina › …/tests/fixture/modules/nested-options.nix"
+  ],
+  [
    "alice › nested-force.nix",
    "fixture.home.alice › …/tests/fixture/modules/nested-force.nix"
   ],
@@ -1579,6 +1943,42 @@
   [
    "carol › nested.nix",
    "fixture.home.carol › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "a › nested.nix",
+   "fixture.home.zoe.files.a › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "b › nested.nix",
+   "fixture.home.zoe.files.b › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "c › nested.nix",
+   "fixture.home.zoe.files.c › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "d › nested.nix",
+   "fixture.home.zoe.files.d › …/tests/fixture/modules/nested.nix"
   ],
   [
    "fine › nested.nix",
@@ -1635,7 +2035,7 @@
    [
     [
      "overrides",
-     9,
+     10,
      [
       [
        "option",
@@ -1646,35 +2046,35 @@
       ],
       [
        "option",
-       26,
+       13,
        [],
        null,
        0
       ],
       [
        "option",
-       33,
+       28,
        [],
        null,
        0
       ],
       [
        "option",
-       39,
+       40,
        [],
        null,
        0
       ],
       [
        "option",
-       44,
+       46,
        [],
        null,
        0
       ],
       [
        "option",
-       52,
+       51,
        [],
        null,
        0
@@ -1701,21 +2101,21 @@
       ],
       [
        "option",
-       14,
+       16,
        [],
        null,
        0
       ],
       [
        "option",
-       61,
+       68,
        [],
        null,
        0
       ],
       [
        "option",
-       62,
+       69,
        [],
        null,
        0
@@ -1735,21 +2135,21 @@
       ],
       [
        "option",
-       15,
+       17,
        [],
        null,
        0
       ],
       [
        "option",
-       35,
+       42,
        [],
        null,
        0
       ],
       [
        "option",
-       49,
+       56,
        [],
        null,
        0
@@ -1758,7 +2158,7 @@
     ],
     [
      "options",
-     46,
+     52,
      [
       [
        "option",
@@ -1818,21 +2218,14 @@
       ],
       [
        "option",
-       13,
+       14,
        [],
        null,
        0
       ],
       [
        "option",
-       16,
-       [],
-       null,
-       0
-      ],
-      [
-       "option",
-       17,
+       15,
        [],
        null,
        0
@@ -1895,6 +2288,13 @@
       ],
       [
        "option",
+       26,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
        27,
        [],
        null,
@@ -1903,13 +2303,6 @@
       [
        "option",
        29,
-       [],
-       null,
-       0
-      ],
-      [
-       "option",
-       30,
        [],
        null,
        0
@@ -1930,7 +2323,21 @@
       ],
       [
        "option",
+       33,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
        34,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
+       35,
        [],
        null,
        0
@@ -1958,7 +2365,7 @@
       ],
       [
        "option",
-       40,
+       39,
        [],
        null,
        0
@@ -1972,13 +2379,6 @@
       ],
       [
        "option",
-       42,
-       [],
-       null,
-       0
-      ],
-      [
-       "option",
        43,
        [],
        null,
@@ -1986,14 +2386,14 @@
       ],
       [
        "option",
-       45,
+       44,
        [],
        null,
        0
       ],
       [
        "option",
-       46,
+       45,
        [],
        null,
        0
@@ -2014,6 +2414,13 @@
       ],
       [
        "option",
+       49,
+       [],
+       null,
+       0
+      ],
+      [
+       "option",
        50,
        [],
        null,
@@ -2021,7 +2428,7 @@
       ],
       [
        "option",
-       51,
+       52,
        [],
        null,
        0
@@ -2032,19 +2439,12 @@
        [],
        null,
        0
-      ],
-      [
-       "option",
-       54,
-       [],
-       null,
-       0
       ]
      ]
     ],
     [
      "modules",
-     55,
+     66,
      [
       [
        "module",
@@ -2111,11 +2511,11 @@
    [
     [
      "overrides",
-     6,
+     7,
      [
       [
        "option",
-       44,
+       51,
        [
         0,
         1,
@@ -2127,7 +2527,7 @@
       ],
       [
        "option",
-       39,
+       46,
        [
         0,
         1,
@@ -2139,7 +2539,7 @@
       ],
       [
        "option",
-       33,
+       40,
        [
         0,
         1,
@@ -2151,7 +2551,7 @@
       ],
       [
        "option",
-       26,
+       13,
        [
         0,
         1,
@@ -2159,7 +2559,7 @@
         6
        ],
        null,
-       -0.40000000000000036
+       0.2999999999999998
       ],
       [
        "option",
@@ -2171,11 +2571,11 @@
         6
        ],
        null,
-       -0.5
+       -0.40000000000000036
       ],
       [
        "option",
-       10,
+       30,
        [
         0,
         1,
@@ -2183,7 +2583,7 @@
         6
        ],
        null,
-       -0.7000000000000002
+       -0.5
       ]
      ]
     ],
@@ -2193,7 +2593,7 @@
      [
       [
        "option",
-       14,
+       16,
        [
         0,
         1,
@@ -2235,7 +2635,7 @@
      [
       [
        "option",
-       49,
+       56,
        [
         0,
         1,
@@ -2259,7 +2659,7 @@
       ],
       [
        "option",
-       35,
+       42,
        [
         0,
         1,
@@ -2271,7 +2671,7 @@
       ],
       [
        "option",
-       15,
+       17,
        [
         0,
         1,
@@ -2285,11 +2685,11 @@
     ],
     [
      "options",
-     34,
+     40,
      [
       [
        "option",
-       21,
+       23,
        [
         0,
         1,
@@ -2301,7 +2701,7 @@
       ],
       [
        "option",
-       34,
+       41,
        [
         0,
         1,
@@ -2313,7 +2713,7 @@
       ],
       [
        "option",
-       37,
+       44,
        [
         0,
         1,
@@ -2325,7 +2725,7 @@
       ],
       [
        "option",
-       17,
+       19,
        [
         0,
         1,
@@ -2337,7 +2737,7 @@
       ],
       [
        "option",
-       46,
+       53,
        [
         0,
         1,
@@ -2349,7 +2749,7 @@
       ],
       [
        "option",
-       41,
+       48,
        [
         0,
         1,
@@ -2373,7 +2773,7 @@
       ],
       [
        "option",
-       13,
+       15,
        [
         0,
         1,
@@ -2385,7 +2785,7 @@
       ],
       [
        "option",
-       43,
+       50,
        [
         0,
         1,
@@ -2397,7 +2797,7 @@
       ],
       [
        "option",
-       18,
+       20,
        [
         0,
         1,
@@ -2409,7 +2809,7 @@
       ],
       [
        "option",
-       51,
+       58,
        [
         0,
         1,
@@ -2421,7 +2821,7 @@
       ],
       [
        "option",
-       42,
+       49,
        [
         0,
         1,
@@ -2430,18 +2830,6 @@
        ],
        null,
        0.19999999999999996
-      ],
-      [
-       "option",
-       31,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       0.09999999999999987
       ],
       [
        "option",
@@ -2457,30 +2845,6 @@
       ],
       [
        "option",
-       40,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       0
-      ],
-      [
-       "option",
-       48,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       0
-      ],
-      [
-       "option",
        45,
        [
         0,
@@ -2489,67 +2853,7 @@
         6
        ],
        null,
-       -0.10000000000000009
-      ],
-      [
-       "option",
-       50,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.10000000000000009
-      ],
-      [
-       "option",
-       32,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.20000000000000018
-      ],
-      [
-       "option",
-       16,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.30000000000000027
-      ],
-      [
-       "option",
-       19,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.30000000000000027
-      ],
-      [
-       "option",
-       27,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.30000000000000027
+       0.09999999999999987
       ],
       [
        "option",
@@ -2561,11 +2865,83 @@
         6
        ],
        null,
+       0
+      ],
+      [
+       "option",
+       55,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       0
+      ],
+      [
+       "option",
+       52,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.10000000000000009
+      ],
+      [
+       "option",
+       57,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.10000000000000009
+      ],
+      [
+       "option",
+       33,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.20000000000000018
+      ],
+      [
+       "option",
+       39,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.20000000000000018
+      ],
+      [
+       "option",
+       18,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
        -0.30000000000000027
       ],
       [
        "option",
-       20,
+       21,
        [
         0,
         1,
@@ -2573,43 +2949,7 @@
         6
        ],
        null,
-       -0.40000000000000036
-      ],
-      [
-       "option",
-       23,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.40000000000000036
-      ],
-      [
-       "option",
-       30,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.40000000000000036
-      ],
-      [
-       "option",
-       22,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.5
+       -0.30000000000000027
       ],
       [
        "option",
@@ -2621,7 +2961,139 @@
         6
        ],
        null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       54,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.30000000000000027
+      ],
+      [
+       "option",
+       22,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       25,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       32,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.40000000000000036
+      ],
+      [
+       "option",
+       24,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
        -0.5
+      ],
+      [
+       "option",
+       31,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.5
+      ],
+      [
+       "option",
+       14,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.8000000000000003
+      ],
+      [
+       "option",
+       34,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.9000000000000004
+      ],
+      [
+       "option",
+       35,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.9000000000000004
+      ],
+      [
+       "option",
+       36,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.9000000000000004
+      ],
+      [
+       "option",
+       37,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.9000000000000004
       ],
       [
        "option",
@@ -2637,7 +3109,7 @@
       ],
       [
        "option",
-       36,
+       43,
        [
         0,
         1,
@@ -2649,7 +3121,7 @@
       ],
       [
        "option",
-       25,
+       27,
        [
         0,
         1,
@@ -2661,7 +3133,7 @@
       ],
       [
        "option",
-       24,
+       26,
        [
         0,
         1,
@@ -2673,7 +3145,7 @@
       ],
       [
        "option",
-       58,
+       65,
        [
         17,
         18,
@@ -2685,7 +3157,7 @@
       ],
       [
        "option",
-       57,
+       64,
        [
         17,
         18,
@@ -2699,11 +3171,11 @@
     ],
     [
      "modules",
-     52,
+     63,
      [
       [
        "module",
-       52,
+       63,
        [
         0,
         1,
@@ -2810,7 +3282,7 @@
      [
       [
        "option",
-       36,
+       43,
        [
         17,
         21,
@@ -2823,7 +3295,7 @@
     ],
     [
      "modules",
-     19,
+     21,
      [
       [
        "module",
@@ -2849,7 +3321,7 @@
       ],
       [
        "module",
-       36,
+       38,
        [
         8,
         15,
@@ -2860,7 +3332,7 @@
       ],
       [
        "module",
-       44,
+       55,
        [
         17,
         21,
@@ -2871,7 +3343,7 @@
       ],
       [
        "module",
-       45,
+       56,
        [
         17,
         21,
@@ -2893,7 +3365,7 @@
       ],
       [
        "module",
-       41,
+       43,
        [
         25,
         41,
@@ -2904,7 +3376,7 @@
       ],
       [
        "module",
-       49,
+       60,
        [
         10,
         25,
@@ -2956,7 +3428,7 @@
      [
       [
        "option",
-       16,
+       18,
        [
         8,
         9,
@@ -2968,7 +3440,7 @@
       ],
       [
        "option",
-       63,
+       70,
        [
         15,
         21,
@@ -2998,7 +3470,7 @@
      [
       [
        "module",
-       53,
+       64,
        [
         3,
         15,
@@ -3010,7 +3482,7 @@
       ],
       [
        "module",
-       36,
+       38,
        [
         3,
         16,
@@ -3022,7 +3494,7 @@
       ],
       [
        "module",
-       43,
+       45,
        [
         13,
         16,
@@ -3034,7 +3506,7 @@
       ],
       [
        "module",
-       51,
+       62,
        [
         5,
         9,
@@ -3058,7 +3530,7 @@
       ],
       [
        "module",
-       44,
+       55,
        [
         13,
         15,
@@ -3148,7 +3620,7 @@
       ],
       [
        "option",
-       45,
+       52,
        [
         14,
         15,

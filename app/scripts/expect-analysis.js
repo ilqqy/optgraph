@@ -16,6 +16,7 @@ return {
     beatsModules: a.info[i].beatsParts ? \`\${a.info[i].beatsParts.win} in \${a.info[i].beatsParts.winWho} beats \${a.info[i].beatsParts.lose} in \${a.info[i].beatsParts.loseWho}\` : null,
     off: a.info[i].off,
     ladder: ladder(model, o).map((r) => [r.i, r.status, r.reason]),
+    crumbs: breadcrumb(model, o),
   })),
   modules: model.modules.map((m) => [moduleShortLabel(m), moduleLabel(m)]),
   palette: ["", "fire", "nfe", "core", "boot.l", "hardening", "enable", "zz"].map((q) => [q, paletteSearch(model, q).map((g) => [g.key, g.total, g.items.map((it) => [it.kind, it.index, it.hits, it.where ?? null, it.score])])]),

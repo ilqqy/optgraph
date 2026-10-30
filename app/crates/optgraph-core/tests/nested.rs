@@ -86,10 +86,7 @@ fn shadowed_definitions_never_reached_the_instance() {
         .find(|r| r.def == shadowed)
         .expect("its ladder row");
     assert_eq!(row.status, Status::Lose);
-    assert_eq!(
-        row.reason,
-        "never reached the instance: the definition it is part of lost at fixture.home.carol"
-    );
+    assert_eq!(row.reason, "dropped at fixture.home.carol");
     // The winner's reason is about a real loser, not the shadowed one.
     let win = m
         .ladder(oi)
@@ -173,6 +170,19 @@ fn nested_graph_matches_the_viewer() {
             })
             .collect();
         assert_eq!(rows, rows_js, "{}", o.path);
+        let crumbs: Vec<String> = m
+            .instances
+            .breadcrumb(oi, &o.path)
+            .into_iter()
+            .map(|c| c.text)
+            .collect();
+        let crumbs_js: Vec<String> = eo["crumbs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c.as_str().unwrap().to_string())
+            .collect();
+        assert_eq!(crumbs, crumbs_js, "{}", o.path);
     }
     for (mo, em) in m.modules().iter().zip(e["modules"].as_array().unwrap()) {
         assert_eq!(module_short_label(mo), em[0].as_str().unwrap());

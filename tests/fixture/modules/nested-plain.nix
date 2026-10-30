@@ -14,4 +14,5 @@
     greeting = "from nested-plain.nix";
   };
   fixture.ordered.frank.greeting = "first";
+  fixture.allForced.gina.shell = "plain";
 }

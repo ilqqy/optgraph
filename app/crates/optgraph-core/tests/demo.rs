@@ -207,6 +207,7 @@ fn palette_search_matches_the_viewer() {
         Group::Overrides => "overrides",
         Group::Off => "off",
         Group::Errors => "errors",
+        Group::Instances => "instances",
         Group::Options => "options",
         Group::Modules => "modules",
     };
