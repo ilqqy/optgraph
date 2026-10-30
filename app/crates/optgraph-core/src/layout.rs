@@ -427,3 +427,206 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
         crossings: best_x,
     }
 }
+
+/// Space around a cluster's members.
+pub const CLUSTER_PAD: f64 = 12.;
+/// Height of a cluster's label row.
+pub const CLUSTER_HEAD: f64 = 24.;
+
+/// Nodes drawn inside one rounded box.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClusterSpec {
+    pub members: Vec<usize>,
+    /// The label's width: the box is at least this wide.
+    pub label_w: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClusterBox {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ClusteredLayout {
+    /// Node centres.
+    pub x: Vec<f64>,
+    pub y: Vec<f64>,
+    pub boxes: Vec<ClusterBox>,
+    /// Per edge, as `Layout::paths`. An edge into a cluster ends on the box's
+    /// left side; an edge out of one leaves from the member's right side.
+    pub paths: Vec<Option<Vec<Point>>>,
+}
+
+/// `layered_layout` with compound nodes: each cluster's members are laid out
+/// on their own (its internal edges only), and the cluster is one node of the
+/// outer layout, as large as its box. Without clusters this is exactly
+/// `layered_layout`.
+pub fn clustered_layout(sizes: &[Size], edges: &[(usize, usize)], clusters: &[ClusterSpec]) -> ClusteredLayout {
+    if clusters.is_empty() {
+        let l = layered_layout(sizes, edges);
+        return ClusteredLayout {
+            x: l.x,
+            y: l.y,
+            boxes: Vec::new(),
+            paths: l.paths,
+        };
+    }
+    let n = sizes.len();
+    let mut cluster_of: Vec<Option<usize>> = vec![None; n];
+    for (c, spec) in clusters.iter().enumerate() {
+        for &m in &spec.members {
+            cluster_of[m] = Some(c);
+        }
+    }
+
+    // Each cluster on its own: positions relative to its box.
+    struct Inner {
+        rel: Vec<(f64, f64)>,
+        paths: Vec<(usize, Option<Vec<Point>>)>,
+        w: f64,
+        h: f64,
+        dx: f64,
+        dy: f64,
+    }
+    let inners: Vec<Inner> = clusters
+        .iter()
+        .map(|spec| {
+            let local: std::collections::HashMap<usize, usize> =
+                spec.members.iter().enumerate().map(|(i, &m)| (m, i)).collect();
+            let inner_sizes: Vec<Size> = spec.members.iter().map(|&m| sizes[m]).collect();
+            let inner_edges: Vec<(usize, (usize, usize))> = edges
+                .iter()
+                .enumerate()
+                .filter_map(|(k, (a, b))| Some((k, (*local.get(a)?, *local.get(b)?))))
+                .collect();
+            let l = layered_layout(&inner_sizes, &inner_edges.iter().map(|&(_, e)| e).collect::<Vec<_>>());
+            let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+            for (i, s) in inner_sizes.iter().enumerate() {
+                x0 = x0.min(l.x[i] - s.w / 2.);
+                x1 = x1.max(l.x[i] + s.w / 2.);
+                y0 = y0.min(l.y[i] - s.h / 2.);
+                y1 = y1.max(l.y[i] + s.h / 2.);
+            }
+            if inner_sizes.is_empty() {
+                (x0, y0, x1, y1) = (0., 0., 0., 0.);
+            }
+            let (dx, dy) = (CLUSTER_PAD - x0, CLUSTER_HEAD + CLUSTER_PAD - y0);
+            Inner {
+                rel: l.x.iter().zip(&l.y).map(|(x, y)| (x + dx, y + dy)).collect(),
+                paths: inner_edges.iter().zip(l.paths).map(|(&(k, _), p)| (k, p)).collect(),
+                w: (x1 - x0).max(spec.label_w) + 2. * CLUSTER_PAD,
+                h: y1 - y0 + CLUSTER_HEAD + 2. * CLUSTER_PAD,
+                dx,
+                dy,
+            }
+        })
+        .collect();
+
+    // The outer graph: a node for each free node and each cluster, in input
+    // order (a cluster where its first member is), edges without duplicates.
+    let mut outer_sizes: Vec<Size> = Vec::new();
+    let mut outer_of_node = vec![0usize; n];
+    let mut outer_of_cluster: Vec<Option<usize>> = vec![None; clusters.len()];
+    for v in 0..n {
+        outer_of_node[v] = match cluster_of[v] {
+            None => {
+                outer_sizes.push(sizes[v]);
+                outer_sizes.len() - 1
+            }
+            Some(c) => *outer_of_cluster[c].get_or_insert_with(|| {
+                outer_sizes.push(Size {
+                    w: inners[c].w,
+                    h: inners[c].h,
+                });
+                outer_sizes.len() - 1
+            }),
+        };
+    }
+    let mut outer_edges: Vec<(usize, usize)> = Vec::new();
+    let mut outer_edge_at: std::collections::HashMap<(usize, usize), usize> = std::collections::HashMap::new();
+    for &(a, b) in edges {
+        let e = (outer_of_node[a], outer_of_node[b]);
+        if e.0 != e.1 {
+            outer_edge_at.entry(e).or_insert_with(|| {
+                outer_edges.push(e);
+                outer_edges.len() - 1
+            });
+        }
+    }
+    let outer = layered_layout(&outer_sizes, &outer_edges);
+
+    let boxes: Vec<ClusterBox> = clusters
+        .iter()
+        .enumerate()
+        .map(|(c, _)| {
+            let (w, h) = (inners[c].w, inners[c].h);
+            match outer_of_cluster[c] {
+                Some(o) => ClusterBox {
+                    x: outer.x[o] - w / 2.,
+                    y: outer.y[o] - h / 2.,
+                    w,
+                    h,
+                },
+                None => ClusterBox { x: 0., y: 0., w, h },
+            }
+        })
+        .collect();
+    let mut x = vec![0f64; n];
+    let mut y = vec![0f64; n];
+    for v in 0..n {
+        let o = outer_of_node[v];
+        if cluster_of[v].is_none() {
+            x[v] = outer.x[o];
+            y[v] = outer.y[o];
+        }
+    }
+    for (c, spec) in clusters.iter().enumerate() {
+        for (i, &m) in spec.members.iter().enumerate() {
+            x[m] = boxes[c].x + inners[c].rel[i].0;
+            y[m] = boxes[c].y + inners[c].rel[i].1;
+        }
+    }
+
+    let mut paths: Vec<Option<Vec<Point>>> = vec![None; edges.len()];
+    for (c, inner) in inners.iter().enumerate() {
+        let (ox, oy) = (boxes[c].x + inner.dx, boxes[c].y + inner.dy);
+        for (k, p) in &inner.paths {
+            paths[*k] = p.as_ref().map(|pts| {
+                pts.iter()
+                    .map(|q| Point {
+                        x: q.x + ox,
+                        y: q.y + oy,
+                    })
+                    .collect()
+            });
+        }
+    }
+    for (k, &(a, b)) in edges.iter().enumerate() {
+        let e = (outer_of_node[a], outer_of_node[b]);
+        if e.0 == e.1 {
+            continue;
+        }
+        let Some(mut pts) = outer.paths[outer_edge_at[&e]].clone() else {
+            continue;
+        };
+        // Leave from the member, not from the side of its box.
+        if cluster_of[a].is_some() && !pts.is_empty() {
+            let from = Point {
+                x: x[a] + sizes[a].w / 2.,
+                y: y[a],
+            };
+            // A back edge's route runs from its target (left to right).
+            let side = outer.x[e.0] + outer_sizes[e.0].w / 2.;
+            if (pts[0].x - side).abs() < 1. {
+                pts[0] = from;
+            } else if let Some(last) = pts.last_mut() {
+                *last = from;
+            }
+        }
+        paths[k] = Some(pts);
+    }
+    ClusteredLayout { x, y, boxes, paths }
+}

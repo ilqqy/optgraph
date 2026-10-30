@@ -10,6 +10,18 @@
       editor = "vim for ${name} on ${osConfig.networking.hostName}";
       files.todo.text = "nested submodule";
     };
+  # A large instance (more than six modules, each file a submodule of its own):
+  # the graph starts with it collapsed into one pill.
+  fixture.home.zoe =
+    { ... }:
+    {
+      imports = map (n: { files.${n}.text = "file ${n}"; }) [
+        "a"
+        "b"
+        "c"
+        "d"
+      ];
+    };
   # A second instance name. Its mkDefault packages lose to the declaration
   # module's two (listed: none of the winners).
   fixture.home.bob.editor = "emacs";
@@ -33,6 +45,10 @@
   # lazyAttrsOf: an instance whose value throws breaks only itself.
   fixture.lazyAccounts.fine.shell = "zsh";
   fixture.lazyAccounts.bad = throw "fixture: this lazy instance throws";
+
+  # mkForce on the whole option: nested-plain.nix's definition never reaches
+  # the instance.
+  fixture.allForced = lib.mkForce { gina.shell = "forced"; };
 
   # A single submodule and a nullOr submodule.
   fixture.single.shell = "dash";

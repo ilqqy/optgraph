@@ -42,6 +42,11 @@ in
       type = types.attrsOf account;
       default = { };
     };
+    # A whole-option mkForce drops every other definition (shadowedAt).
+    allForced = mkOption {
+      type = types.attrsOf account;
+      default = { };
+    };
     single = mkOption {
       type = account;
       default = { };

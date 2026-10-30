@@ -82,15 +82,17 @@ pub enum Group {
     Overrides,
     Off,
     Errors,
+    Instances,
     Options,
     Modules,
 }
 
 impl Group {
-    pub const ALL: [Group; 5] = [
+    pub const ALL: [Group; 6] = [
         Group::Overrides,
         Group::Off,
         Group::Errors,
+        Group::Instances,
         Group::Options,
         Group::Modules,
     ];
@@ -100,6 +102,7 @@ impl Group {
             Group::Overrides => "Overrides",
             Group::Off => "Switched off",
             Group::Errors => "Errors",
+            Group::Instances => "Instances",
             Group::Options => "Options",
             Group::Modules => "Modules",
         }
@@ -118,6 +121,8 @@ impl Group {
 pub enum Kind {
     Option,
     Module,
+    /// `index` is into `Model::instances.list`.
+    Instance,
 }
 
 /// Which text of a module matched.
@@ -144,8 +149,8 @@ pub struct GroupResult {
 }
 
 /// Palette groups for a query: options go to the first group they belong to
-/// (Overrides, Switched off, Errors, else Options), modules match their short
-/// label or their path. If some path or label contains the query, only those
+/// (Overrides, Switched off, Errors, else Options), instances match their path,
+/// modules match their short label or their path. If some path or label contains the query, only those
 /// are listed. Each group sorted by score, cut to its limit; an empty query
 /// lists the start of each group.
 pub fn palette_search(model: &Model, raw_query: &str) -> Vec<GroupResult> {
@@ -199,6 +204,16 @@ pub fn palette_search(model: &Model, raw_query: &str) -> Vec<GroupResult> {
         for &oi in &a.with_user {
             add(&mut buckets, Group::Options, oi);
         }
+        let k = bucket(&mut buckets, Group::Instances);
+        for i in 0..model.instances.list.len() {
+            buckets[k].1.push(Item {
+                kind: Kind::Instance,
+                index: i,
+                hits: vec![],
+                place: Where::Label,
+                score: 0.,
+            });
+        }
         let k = bucket(&mut buckets, Group::Modules);
         for (i, m) in model.modules().iter().enumerate() {
             if m.origin.is_userish() {
@@ -216,6 +231,18 @@ pub fn palette_search(model: &Model, raw_query: &str) -> Vec<GroupResult> {
             if let Some(m) = fuzzy_match(&q, lower, &model.options()[i].path) {
                 let k = bucket(&mut buckets, group_of(i));
                 buckets[k].1.push(opt(i, m.hits, m.score));
+            }
+        }
+        let k = bucket(&mut buckets, Group::Instances);
+        for (i, inst) in model.instances.list.iter().enumerate() {
+            if let Some(m) = fuzzy_match(&q, &inst.path.to_lowercase(), &inst.path) {
+                buckets[k].1.push(Item {
+                    kind: Kind::Instance,
+                    index: i,
+                    hits: m.hits,
+                    place: Where::Label,
+                    score: m.score,
+                });
             }
         }
         let k = bucket(&mut buckets, Group::Modules);

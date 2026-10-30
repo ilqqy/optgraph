@@ -97,3 +97,98 @@ fn empty_and_single() {
     assert_eq!(l.paths, vec![None]);
     assert_eq!((l.x[0], l.y[0]), (5., 14.));
 }
+
+mod clusters {
+    use optgraph_core::layout::{CLUSTER_HEAD, CLUSTER_PAD, ClusterSpec, Size, clustered_layout, layered_layout};
+
+    const S: Size = Size { w: 100., h: 28. };
+
+    #[test]
+    fn without_clusters_it_is_the_layered_layout() {
+        let sizes = [S; 4];
+        let edges = [(0, 1), (1, 2), (0, 3)];
+        let plain = layered_layout(&sizes, &edges);
+        let c = clustered_layout(&sizes, &edges, &[]);
+        assert_eq!((c.x, c.y, c.paths), (plain.x, plain.y, plain.paths));
+        assert!(c.boxes.is_empty());
+    }
+
+    #[test]
+    fn members_sit_inside_their_box_and_boxes_do_not_overlap() {
+        // 0 owns cluster {1, 2} (1 imports 2); 3 owns cluster {4}; 2 owns {5, 6}.
+        let sizes = [S; 7];
+        let edges = [(0, 1), (0, 2), (1, 2), (3, 4), (2, 5), (2, 6)];
+        let spec = |members: &[usize]| ClusterSpec {
+            members: members.to_vec(),
+            label_w: 60.,
+        };
+        let c = clustered_layout(&sizes, &edges, &[spec(&[1, 2]), spec(&[4]), spec(&[5, 6])]);
+        assert_eq!(c.boxes.len(), 3);
+        for (b, members) in c.boxes.iter().zip([vec![1, 2], vec![4], vec![5, 6]]) {
+            for m in members {
+                assert!(
+                    c.x[m] - S.w / 2. >= b.x + CLUSTER_PAD - 1e-6,
+                    "member {m} left of its box"
+                );
+                assert!(c.x[m] + S.w / 2. <= b.x + b.w - CLUSTER_PAD + 1e-6);
+                assert!(
+                    c.y[m] - S.h / 2. >= b.y + CLUSTER_HEAD + CLUSTER_PAD - 1e-6,
+                    "member {m} in the label row"
+                );
+                assert!(c.y[m] + S.h / 2. <= b.y + b.h - CLUSTER_PAD + 1e-6);
+            }
+        }
+        for i in 0..3 {
+            for j in i + 1..3 {
+                let (p, q) = (c.boxes[i], c.boxes[j]);
+                let apart = p.x + p.w <= q.x || q.x + q.w <= p.x || p.y + p.h <= q.y || q.y + q.h <= p.y;
+                assert!(apart, "boxes {i} and {j} overlap");
+            }
+        }
+        // Free nodes stay outside every box.
+        for v in [0, 3] {
+            for b in &c.boxes {
+                let inside = c.x[v] > b.x && c.x[v] < b.x + b.w && c.y[v] > b.y && c.y[v] < b.y + b.h;
+                assert!(!inside, "node {v} is inside a box");
+            }
+        }
+    }
+
+    #[test]
+    fn edges_attach_to_the_box_and_leave_from_the_member() {
+        let sizes = [S; 5];
+        let edges = [(0, 1), (0, 2), (1, 2), (2, 3), (2, 4)];
+        let spec = |members: &[usize]| ClusterSpec {
+            members: members.to_vec(),
+            label_w: 0.,
+        };
+        let c = clustered_layout(&sizes, &edges, &[spec(&[1, 2]), spec(&[3, 4])]);
+        let into = c.paths[0].as_ref().unwrap();
+        let b0 = c.boxes[0];
+        let end = into.last().unwrap();
+        assert!((end.x - b0.x).abs() < 1e-6, "ends on the box's left side");
+        assert!((end.y - (b0.y + b0.h / 2.)).abs() < 1e-6);
+        // The internal edge runs between the members.
+        let inner = c.paths[2].as_ref().unwrap();
+        assert!((inner[0].x - (c.x[1] + S.w / 2.)).abs() < 1e-6);
+        assert!((inner.last().unwrap().x - (c.x[2] - S.w / 2.)).abs() < 1e-6);
+        // Out of a cluster: from the member's right side to the other box.
+        let out = c.paths[3].as_ref().unwrap();
+        assert!((out[0].x - (c.x[2] + S.w / 2.)).abs() < 1e-6);
+        assert!((out[0].y - c.y[2]).abs() < 1e-6);
+        assert!((out.last().unwrap().x - c.boxes[1].x).abs() < 1e-6);
+    }
+
+    #[test]
+    fn the_box_is_as_wide_as_its_label() {
+        let c = clustered_layout(
+            &[S],
+            &[],
+            &[ClusterSpec {
+                members: vec![0],
+                label_w: 400.,
+            }],
+        );
+        assert_eq!(c.boxes[0].w, 400. + 2. * CLUSTER_PAD);
+    }
+}
