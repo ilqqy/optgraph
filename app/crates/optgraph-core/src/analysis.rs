@@ -302,7 +302,7 @@ impl Model {
             }
             let user = !self.def_is_nixpkgs(d);
             has_user |= user;
-            if o.is_winner(i) {
+            if o.is_winner(i) || d.shadowed_at.is_some() {
                 continue;
             }
             if !d.active {
@@ -333,7 +333,10 @@ impl Model {
             user_vs_user: wo != "nixpkgs" && lo != "nixpkgs",
             beats: Some(Beats {
                 win: prio_name(o.highest_prio),
-                win_who: winner.map_or_else(|| format!("nixpkgs ({hidden} not listed)"), |w| self.def_who(w)),
+                win_who: winner.map_or_else(
+                    || format!("{} ({hidden} not listed)", o.hidden_kind()),
+                    |w| self.def_who(w),
+                ),
                 win_origin: wo,
                 lose: prio_name(loser.priority),
                 lose_who: self.def_who(loser),
@@ -360,7 +363,7 @@ impl Model {
             .definitions
             .iter()
             .enumerate()
-            .filter(|(i, d)| d.active && d.priority.is_some() && !o.is_winner(*i))
+            .filter(|(i, d)| d.active && d.priority.is_some() && !o.is_winner(*i) && d.shadowed_at.is_none())
             .fold(None::<&Definition>, |best, (_, d)| match best {
                 Some(b) if b.priority <= d.priority => Some(b),
                 _ => Some(d),
@@ -368,8 +371,9 @@ impl Model {
         let first_winner = o.winners.first().map(|&w| &o.definitions[w]);
         let hidden = o.hidden_winners();
         let win_count = o.winner_count();
+        let omitted_kind = o.hidden_kind();
         let not_listed = if hidden > 0 {
-            format!(" ({hidden} nixpkgs, not listed)")
+            format!(" ({hidden} {omitted_kind}, not listed)")
         } else {
             String::new()
         };
@@ -392,6 +396,12 @@ impl Model {
                         "the only active definition".into()
                     };
                     (Status::Win, reason)
+                } else if let Some(at) = &d.shadowed_at {
+                    // Nested options: the instance never saw it.
+                    (
+                        Status::Lose,
+                        format!("never reached the instance: the definition it is part of lost at {at}"),
+                    )
                 } else if !d.active {
                     let reason = if d.condition == Some(Condition::MkIfError) {
                         "its mkIf condition threw or is not a bool"
@@ -411,7 +421,7 @@ impl Model {
                     let reason = match first_winner {
                         None => format!(
                             "beaten by {} at {hp_s} (not listed): {hp_s} < {p}",
-                            plural(hidden, "nixpkgs definition", None)
+                            plural(hidden, &format!("{omitted_kind} definition"), None)
                         ),
                         Some(w) if win_count == 1 => format!("beaten by {}: {hp_s} < {p}", self.def_who(w)),
                         Some(_) => format!("beaten by {win_count} definitions at {hp_s}{not_listed}: {hp_s} < {p}"),
@@ -511,6 +521,9 @@ impl Model {
 /// their place in nixosSystem's `modules` list (and position) instead.
 pub fn module_label(m: &Module) -> String {
     use crate::text::short_path;
+    if let Some(scope) = &m.scope {
+        return format!("{scope} › {}", short_path(&nested_where(m)));
+    }
     if m.origin == Origin::UserInline {
         let place = m
             .position
@@ -533,6 +546,9 @@ pub fn module_label(m: &Module) -> String {
 
 /// Short label for graph nodes: the file name, or the inline index.
 pub fn module_short_label(m: &Module) -> String {
+    if let Some(scope) = &m.scope {
+        return format!("{} › {}", instance_name(scope), base_name(&nested_where(m)));
+    }
     if m.origin == Origin::UserInline {
         return match m.modules_index {
             Some(i) => format!("inline #{i}"),
@@ -543,6 +559,38 @@ pub fn module_short_label(m: &Module) -> String {
         format!("{} (anon)", base_name(m.position.as_deref().unwrap_or(&m.file)))
     } else {
         base_name(&m.file)
+    }
+}
+
+/// The last component of a submodule instance path: `users.users.alice` ->
+/// `alice`, `fileSystems."/boot"` -> `/boot`.
+pub fn instance_name(scope: &str) -> String {
+    if let Some(body) = scope.strip_suffix('"') {
+        // The opening quote of the last component (skipping escaped quotes).
+        let b = body.as_bytes();
+        let mut i = b.len();
+        while i > 0 {
+            i -= 1;
+            if b[i] == b'"' && (i == 0 || b[i - 1] != b'\\') {
+                return body[i + 1..].to_string();
+            }
+        }
+    }
+    match scope.rfind('.') {
+        Some(i) => scope[i + 1..].to_string(),
+        None => scope.to_string(),
+    }
+}
+
+/// Where a module inside an instance lives: its file, or for inline user code
+/// (whose file is nixpkgs' flake.nix) the file of its position.
+fn nested_where(m: &Module) -> String {
+    match (&m.origin, &m.position) {
+        (Origin::UserInline, Some(p)) => match p.rsplit_once(':') {
+            Some((f, line)) if line.bytes().all(|c| c.is_ascii_digit()) => f.to_string(),
+            _ => p.clone(),
+        },
+        _ => m.file.clone(),
     }
 }
 

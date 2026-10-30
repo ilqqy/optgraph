@@ -42,6 +42,11 @@
         "scope": { "enum": ["user", "all"] },
         "attribution": { "enum": ["aligned", "file-based"] },
         "complete": { "type": "boolean" },
+        "submoduleDepth": {
+          "description": "--submodule-depth: definitions inside submodule instances are attributed down to this many instance levels. Absent when nesting is disabled (depth 0) or the producer predates it.",
+          "type": "integer",
+          "minimum": 1
+        },
         "warnings": {
           "type": "array",
           "items": { "$ref": "#/$defs/warning" }
@@ -65,7 +70,10 @@
             "selfcheck-crash",
             "selfcheck-skipped",
             "reconstruction-mismatch",
-            "budget-exhausted"
+            "budget-exhausted",
+            "nested-degraded",
+            "nested-crash",
+            "nested-unchecked"
           ]
         },
         "message": { "type": "string" },
@@ -91,7 +99,15 @@
         "origin": { "$ref": "#/$defs/origin" },
         "disabled": { "type": "boolean" },
         "modulesIndex": { "type": ["integer", "null"], "minimum": 0 },
-        "position": { "$ref": "#/$defs/nullableString" }
+        "position": { "$ref": "#/$defs/nullableString" },
+        "scope": {
+          "description": "Path of the submodule instance this module belongs to (e.g. users.users.alice); absent for top-level modules. Nested module ids are «<scope>»<key>.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "Only on an instance's definition modules: id of the module whose definition became this module (top-level or nested).",
+          "type": "string"
+        }
       }
     },
     "option": {
@@ -110,6 +126,14 @@
       ],
       "properties": {
         "path": { "type": "string" },
+        "instance": {
+          "description": "Nested options only: path of the submodule instance the option belongs to.",
+          "type": "string"
+        },
+        "parent": {
+          "description": "Nested options only: path of the option whose value holds the instance (equals instance for a single submodule).",
+          "type": "string"
+        },
         "loc": {
           "type": "array",
           "items": { "type": "string" },
@@ -142,6 +166,25 @@
               "description": "How many of the nixpkgsActive ones win (active at highestPrio); <= nixpkgsActive, not counted a second time. Always 0 when the option has a single winner (it is listed). When winners is empty and this is > 0, every winner is an omitted nixpkgs definition.",
               "type": "integer",
               "minimum": 0
+            },
+            "declarationActive": {
+              "description": "Nested options only, absent when 0: active definitions of the submodule's own non-nixpkgs declaration modules (e.g. home-manager's), counted instead of listed.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "declarationInactive": {
+              "description": "Nested options only, absent when 0: inactive definitions of the submodule's own non-nixpkgs declaration modules, counted instead of listed.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "declarationWinners": {
+              "description": "Nested options only, absent when 0: how many of declarationActive win (active at highestPrio); <= declarationActive, not counted a second time. When winners is empty and this is > 0, the winners are omitted declaration definitions (with nixpkgsWinners, if any).",
+              "type": "integer",
+              "minimum": 0
+            },
+            "declarationOrigin": {
+              "description": "Nested options only: the origin shared by every counted declaration definition (e.g. input:home-manager); absent when none are counted or their origins differ.",
+              "$ref": "#/$defs/origin"
             }
           }
         },
@@ -162,7 +205,11 @@
         "priority": { "type": ["integer", "null"] },
         "active": { "type": "boolean" },
         "condition": { "enum": ["mkIf-false", "mkIf-error", null] },
-        "valuePreview": { "$ref": "#/$defs/nullableString" }
+        "valuePreview": { "$ref": "#/$defs/nullableString" },
+        "shadowedAt": {
+          "description": "Nested options only: the definition never reached the instance because its enclosing definition lost on priority at this option or instance path. Never a winner.",
+          "type": "string"
+        }
       }
     }
   }

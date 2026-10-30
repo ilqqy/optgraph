@@ -115,6 +115,9 @@ class ModuleGraph {
       for (const t of m.imports) {
         if (byId.has(t)) this.links.push({ source: byId.get(m.id), target: byId.get(t), dashed: byId.get(t).m.disabled });
       }
+      // A module inside a submodule instance hangs off the module whose
+      // definition it is (the module system imports it into the instance).
+      if (m.owner && byId.has(m.owner)) this.links.push({ source: byId.get(m.owner), target: byId.get(m.id), dashed: false });
     }
     const lay = layeredLayout(
       this.nodes.map((n) => ({ w: n.w, h: n.h })),

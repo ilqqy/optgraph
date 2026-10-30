@@ -12,6 +12,9 @@
 {
   sys,
   excludeModules ? [ ],
+  # Loc of the evaluation: [ ] at top level, the instance loc for a submodule
+  # instance (its modules get it as `_prefix`).
+  prefix ? [ ],
 }:
 let
   inherit (builtins)
@@ -50,7 +53,7 @@ let
       inherit (sys) _module;
     };
     _class = sys.class or null;
-    _prefix = [ ];
+    _prefix = prefix;
   }
   // specialArgs;
 

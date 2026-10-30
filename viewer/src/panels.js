@@ -173,6 +173,8 @@ function renderOption(model, oi, onModule, onCopyLink) {
   const o = model.options[oi];
   const rows = ladder(model, o);
   const omittedN = o.omitted.nixpkgsActive + o.omitted.nixpkgsInactive;
+  // Inside submodule instances: the submodule's own (non-nixpkgs) declaration modules.
+  const declN = (o.omitted.declarationActive ?? 0) + (o.omitted.declarationInactive ?? 0);
   // Omitted nixpkgs winners count as winners; when every winner is one of
   // them, `winners` is empty.
   const hidden = hiddenWinners(o);
@@ -195,7 +197,7 @@ function renderOption(model, oi, onModule, onCopyLink) {
     verdict = h(
       "p",
       { class: "verdict" },
-      h("b", {}, plural(hidden, "nixpkgs definition")),
+      h("b", {}, plural(hidden, `${hiddenKind(o)} definition`)),
       " win at priority ",
       h("code", { class: "t-win" }, String(o.highestPrio)),
       " (not listed)",
@@ -235,13 +237,13 @@ function renderOption(model, oi, onModule, onCopyLink) {
             "div",
             { class: "merged-title" },
             `Merged from ${plural(new Set(o.winners.map((i) => o.definitions[i].module ?? "default")).size, "module")}`,
-            hidden ? ` and ${plural(hidden, "nixpkgs definition")}` : "",
+            hidden ? ` and ${plural(hidden, `${hiddenKind(o)} definition`)}` : "",
           ),
           h(
             "div",
             { class: "merged-sub" },
             `Every active definition at priority ${o.highestPrio} (${prioName(o.highestPrio)}) is a winner; the values are merged.`,
-            hidden ? " The nixpkgs ones are not listed." : "",
+            hidden ? ` The ${hiddenKind(o)} ones are not listed.` : "",
           ),
         ),
         h("div", { class: "merged-dots", "aria-hidden": "true" }, ...o.winners.slice(0, 8).map((i) => originDot(defOrigin(model, o.definitions[i])))),
@@ -343,6 +345,13 @@ function renderOption(model, oi, onModule, onCopyLink) {
           h("span", {}, `${plural(omittedN, "nixpkgs definition")} (${o.omitted.nixpkgsActive} active, ${o.omitted.nixpkgsInactive} inactive); optgraph --include-all-definitions lists them`),
         ]
       : null,
+    declN
+      ? [
+          "not listed",
+          h("span", {}, `${plural(declN, "definition")} of the submodule's own modules${o.omitted.declarationOrigin ? ` (${o.omitted.declarationOrigin})` : ""}: ${o.omitted.declarationActive ?? 0} active, ${o.omitted.declarationInactive ?? 0} inactive; optgraph --include-all-definitions lists them`),
+        ]
+      : null,
+    o.instance ? ["instance", h("code", { title: `in ${o.parent}` }, o.instance)] : null,
   ].filter(Boolean);
 
   return [

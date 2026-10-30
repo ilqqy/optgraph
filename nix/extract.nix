@@ -5,6 +5,10 @@
 #   reconstruct -> selfcheck -> preview
 # Callers degrade an option by listing it in `noPreview` / `noSelfcheck`, or drop
 # it with `exclude`; modules are dropped by tree slot with `excludeModules`.
+# Options inside submodule instances (nix/nested.nix) use the same stages and
+# lists with their full loc; an instance that crashes while being expanded is
+# kept as part of its option with `excludeInstances` (marker "instance"), an
+# option whose instances cannot be listed with `excludeNesting` ("instances").
 { toolVersion }:
 {
   # A nixosSystem / evalModules result (`nixosConfigurations.<host>`).
@@ -23,6 +27,12 @@
   noPreview ? [ ],
   noSelfcheck ? [ ],
   excludeModules ? [ ],
+  # Options whose instances are not expanded, and single instances that stay
+  # part of their option, after uncatchable crashes (locs).
+  excludeNesting ? [ ],
+  excludeInstances ? [ ],
+  # Nesting depth of submodule instances attributed like options; 0 = none.
+  submoduleDepth ? 3,
   preview ? true,
   selfcheck ? true,
   # List every definition; by default nixpkgs definitions that neither win
@@ -302,6 +312,29 @@ let
   byLoc = groupBy (d: toJSON d.loc) passB.defs;
 
   # ------------------------------------------------------------ per option
+  # A scope is the top level or one submodule instance (nix/nested.nix). An
+  # option's `rel` loc is relative to its scope's options tree; exclusion lists
+  # and warnings use the full loc.
+  originOfDefTop =
+    d:
+    if d.module != null then
+      originByKey.${noCtx d.module} or (originOfFile d.file)
+    else
+      originOfFile d.file;
+
+  topCtx = {
+    inherit (config) options;
+    prefix = [ ];
+    instance = null;
+    parent = null;
+    depth = 0;
+    inherit byLoc;
+    extra = { };
+    originOfDef = originOfDefTop;
+    userSideDef = d: originOfDefTop d != "nixpkgs";
+    fileOf = id: fileByKey.${noCtx id} or null;
+  };
+
   excludeSet = setOf exclude;
   noPreviewSet = setOf noPreview;
   noSelfcheckSet = setOf noSelfcheck;
@@ -326,15 +359,30 @@ let
     );
 
   optionOf =
-    loc:
+    ctx: rel:
     let
+      loc = ctx.prefix ++ rel;
+      relKey = toJSON rel;
       key = toJSON loc;
       path = lib.showOption loc;
       subject = { inherit loc path; };
-      opt = lib.getAttrFromPath loc config.options;
-      raws = byLoc.${key} or [ ];
+      opt = lib.getAttrFromPath rel ctx.options;
+      nested = ctx.instance != null;
+      # Definitions that lost at an enclosing level (nested scopes only) come
+      # last; they carry `shadowedAt` and never win.
+      raws = ctx.byLoc.${relKey} or [ ] ++ ctx.extra.${relKey} or [ ];
 
-      classified = concatMap (r: map (c: c // { inherit (r) module; }) (R.classify r.file r.raw)) raws;
+      classified = concatMap (
+        r:
+        map (
+          c:
+          c
+          // {
+            inherit (r) module;
+            shadowedAt = r.shadowedAt or null;
+          }
+        ) (R.classify r.file r.raw)
+      ) raws;
 
       recon = mark "reconstruct" subject (
         strict (
@@ -342,7 +390,7 @@ let
             entries = map (d: {
               kind = "definition";
               file = toString d.file;
-              inherit (d) module priority;
+              inherit (d) module priority shadowedAt;
               active = builtins.all (c: c == true) d.conditions;
               condition =
                 if any (c: c == false) d.conditions then
@@ -364,12 +412,17 @@ let
               priority = optionDefaultPriority;
               active = true;
               condition = null;
+              shadowedAt = null;
             };
             definitions = entries ++ lib.optional (opt ? default) defaultEntry;
             # A definition whose value or condition could not be read makes the
             # winner unknown (the module system itself would throw here).
-            uncertain = any (d: (d.active && d.priority == null) || d.condition == "mkIf-error") definitions;
-            prios = map (d: d.priority) (filter (d: d.active && d.priority != null) definitions);
+            uncertain = any (
+              d: d.shadowedAt == null && ((d.active && d.priority == null) || d.condition == "mkIf-error")
+            ) definitions;
+            prios = map (d: d.priority) (
+              filter (d: d.shadowedAt == null && d.active && d.priority != null) definitions
+            );
             highestPrio = if uncertain || prios == [ ] then null else foldl' lib.min (head prios) prios;
             type =
               let
@@ -390,7 +443,7 @@ let
               let
                 d = elemAt definitions i;
               in
-              d.active && d.priority != null && d.priority == highestPrio
+              d.shadowedAt == null && d.active && d.priority != null && d.priority == highestPrio
             ) (lib.range 0 (length definitions - 1));
             errors =
               concatMap (x: x) (
@@ -451,12 +504,6 @@ let
           value = true;
         }) recon.winners
       );
-      originOfDef =
-        d:
-        if d.module != null then
-          originByKey.${noCtx d.module} or (originOfFile d.file)
-        else
-          originOfFile d.file;
       indices = lib.range 0 (length recon.definitions - 1);
       keep =
         if includeAllDefinitions then
@@ -470,7 +517,7 @@ let
             let
               d = elemAt recon.definitions i;
             in
-            d.kind == "default" || (singleWinner && winnerSet ? ${toString i}) || originOfDef d != "nixpkgs"
+            d.kind == "default" || (singleWinner && winnerSet ? ${toString i}) || ctx.userSideDef d
           ) indices;
       singleWinner = length recon.winners == 1;
       keepSet = listToAttrs (
@@ -483,11 +530,23 @@ let
       # Winners are active, so nixpkgsWinners <= nixpkgsActive; it is a subset
       # of nixpkgsActive, not an extra count. Always 0 with a single winner,
       # which is kept.
-      omitted = {
-        nixpkgsActive = length (filter (i: (elemAt recon.definitions i).active) dropped);
-        nixpkgsInactive = length (filter (i: !(elemAt recon.definitions i).active) dropped);
-        nixpkgsWinners = length (filter (i: winnerSet ? ${toString i}) dropped);
+      # Inside an instance, dropped definitions of the submodule's own (non-
+      # nixpkgs) declaration modules, e.g. home-manager's, are counted apart.
+      droppedNixpkgs = filter (i: ctx.originOfDef (elemAt recon.definitions i) == "nixpkgs") dropped;
+      droppedDecl = filter (i: ctx.originOfDef (elemAt recon.definitions i) != "nixpkgs") dropped;
+      count = prefix: is: {
+        "${prefix}Active" = length (filter (i: (elemAt recon.definitions i).active) is);
+        "${prefix}Inactive" = length (filter (i: !(elemAt recon.definitions i).active) is);
+        "${prefix}Winners" = length (filter (i: winnerSet ? ${toString i}) is);
       };
+      # The declaration counters (nested options only) are written only when
+      # not zero, and declarationOrigin only when every counted declaration
+      # definition shares one origin (e.g. "input:home-manager").
+      declOrigins = sortUnique (map (i: ctx.originOfDef (elemAt recon.definitions i)) droppedDecl);
+      omitted =
+        count "nixpkgs" droppedNixpkgs
+        // lib.filterAttrs (_: n: n != 0) (count "declaration" droppedDecl)
+        // lib.optionalAttrs (length declOrigins == 1) { declarationOrigin = head declOrigins; };
 
       # Option paths that look like secrets: non-scalar values are redacted.
       sensitive =
@@ -547,9 +606,9 @@ let
         i: p:
         let
           d = elemAt recon.definitions i;
-          sameFile = d.module != null && (fileByKey.${noCtx d.module} or null) == d.file;
+          sameFile = d.module != null && ctx.fileOf d.module == d.file;
         in
-        (if sameFile then removeAttrs d [ "file" ] else d)
+        removeAttrs d (lib.optional sameFile "file" ++ lib.optional (d.shadowedAt == null) "shadowedAt")
         // {
           valuePreview = if p == null then null else p.text;
         };
@@ -570,10 +629,13 @@ let
         ++ lib.optional (selfcheckResult != null && selfcheckResult.status == "skipped") (
           warn "selfcheck-skipped" path selfcheckResult.message
         );
+
+      scopeFields = lib.optionalAttrs nested { inherit (ctx) instance parent; };
     in
     if excludeSet ? ${key} then
       {
-        record = {
+        nest = null;
+        record = scopeFields // {
           inherit path loc;
           declaredIn = [ ];
           type = null;
@@ -597,7 +659,25 @@ let
       seq recon (
         seq selfcheckResult (
           seq previews {
-            record = {
+            # What nix/nested.nix needs to expand the option's instances.
+            nest = {
+              inherit opt loc path;
+              classified = map (c: {
+                inherit (c)
+                  file
+                  module
+                  conditions
+                  priority
+                  probeFailed
+                  content
+                  shadowedAt
+                  ;
+              }) classified;
+              inherit (recon) highestPrio uncertain;
+              hasDefault = opt ? default;
+              declFile = if recon.declaredIn == [ ] then null else head recon.declaredIn;
+            };
+            record = scopeFields // {
               inherit path loc omitted;
               inherit (recon) declaredIn type highestPrio;
               # winners re-indexed into the listed definitions
@@ -614,8 +694,8 @@ let
 
   # passB is forced first, inside its "walk" markers, so a crash in a module
   # walk is never blamed on the first option.
-  optionResults = seq (length passB.defs) (
-    map (x: optionOf x.loc) (
+  topResults = seq (length passB.defs) (
+    map (x: optionOf topCtx x.loc) (
       sort (a: b: a.path < b.path) (
         map (l: {
           loc = l;
@@ -624,6 +704,63 @@ let
       )
     )
   );
+
+  # ------------------------------------------------------- submodule instances
+  N = import ./nested.nix {
+    inherit
+      lib
+      R
+      optionOf
+      originOfFile
+      isPathModule
+      warn
+      mark
+      strict
+      optionDefaultPriority
+      ;
+    collect = import ./collect.nix {
+      inherit lib;
+      # Crashes inside an instance are localized by its "instance" marker.
+      mark =
+        _: _: x:
+        x;
+    };
+    maxDepth = submoduleDepth;
+    excludeNestingSet = setOf excludeNesting;
+    excludeInstancesSet = setOf excludeInstances;
+  };
+
+  # Per top-level option (in path order): its instances, recursively.
+  expansions = map (N.expandOption topCtx) topResults;
+  scopes = concatMap (e: e.scopes) expansions;
+  nestedResults = concatMap (sc: sc.results) scopes;
+  nestedModules = concatMap (sc: sc.modules) scopes;
+
+  # Every option, top-level and nested, by path (nested paths extend their
+  # instance's path, so they never collide with a top-level one).
+  optionResults = map (x: x.res) (
+    sort (a: b: a.path < b.path) (
+      map (res: {
+        inherit res;
+        inherit (res.record) path;
+      }) (topResults ++ nestedResults)
+    )
+  );
+
+  # Modules referenced by listed definitions, plus every nested module's
+  # owner chain, so every `module` and `owner` resolves.
+  ownerOf = listToAttrs (
+    map (m: {
+      name = noCtx m.id;
+      value = m.owner;
+    }) (filter (m: m.owner != null) nestedModules)
+  );
+  referenced = map (x: x.key) (genericClosure {
+    startSet = map (k: { key = noCtx k; }) (
+      concatMap (o: o.moduleIds) optionResults ++ map (m: m.id) (filter (m: m.base) nestedModules)
+    );
+    operator = x: if ownerOf ? ${x.key} then [ { key = noCtx ownerOf.${x.key}; } ] else [ ];
+  });
 
   # ---------------------------------------------------------------- modules
   childKeys = n: map (c: c.key) n.children;
@@ -654,11 +791,11 @@ let
       in
       ancestors ++ imported ++ definers;
 
-  # Modules of the listed definitions, so every definition's `module` resolves.
-  definers = concatMap (o: o.moduleIds) optionResults;
+  # Modules of the listed definitions (and owners), so every reference resolves.
+  definers = referenced;
 
   disabledKeys = map (n: n.key) col.disabledNodes;
-  included = setOf (includedKeys ++ disabledKeys);
+  included = setOf (includedKeys ++ disabledKeys ++ referenced);
 
   moduleRecord =
     disabled: n:
@@ -685,7 +822,14 @@ let
 
   modules =
     map (moduleRecord false) (filter (n: included ? ${noCtx (toJSON n.key)}) liveNodes)
-    ++ map (moduleRecord true) col.disabledNodes;
+    ++ map (moduleRecord true) col.disabledNodes
+    ++ map (
+      m:
+      m.record
+      // {
+        imports = sortUnique (filter (k: included ? ${noCtx (toJSON k)}) m.childIds);
+      }
+    ) (filter (m: included ? ${noCtx (toJSON m.id)}) nestedModules);
 
   # --------------------------------------------------------------- warnings
   graphCheck =
@@ -755,8 +899,19 @@ let
       scope = if all then "all" else "user";
       attribution = if col.aligned then "aligned" else "file-based";
       complete = true;
-      warnings = globalWarnings ++ concatMap (o: o.warnings) optionResults;
-    };
+      # Per-option and per-instance warnings in subject (path) order; the sort is stable.
+      warnings =
+        globalWarnings
+        ++ map (x: x.w) (
+          sort (a: b: a.k < b.k) (
+            map (w: {
+              k = w.subject;
+              inherit w;
+            }) (concatMap (o: o.warnings) optionResults ++ concatMap (e: e.warnings) expansions)
+          )
+        );
+    }
+    // lib.optionalAttrs (submoduleDepth > 0) { inherit submoduleDepth; };
     inherit modules;
     options = map (o: o.record) optionResults;
   };

@@ -1,6 +1,6 @@
 # Defaults every machine starts from. Mostly mkDefault, so hosts can override
 # them without mkForce; the demo host still forces two of them.
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   # Demonstrates mkForce beating mkDefault: modules/core/hardening.nix turns
   # sshd off with mkForce.
@@ -19,4 +19,8 @@
     "nix-command"
     "flakes"
   ];
+
+  # Inside a submodule instance: modules/core/users.nix sets the demo user's
+  # shell with a plain definition, which beats this mkDefault.
+  users.users.demo.shell = lib.mkDefault pkgs.bash;
 }

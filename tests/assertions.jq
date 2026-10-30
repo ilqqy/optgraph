@@ -20,6 +20,15 @@ def modOfDef($p; $i): opt($p).definitions[$i].module as $m | mod($m);
 def warning($code; $subject): any(.meta.warnings[]; .code == $code and .subject == $subject);
 def codes: [.meta.warnings[].code];
 def defaultIdx($p): opt($p).definitions | map(.kind == "default") | index(true);
+# Nested (submodule instance) helpers.
+def under($p): .options[] | select(.path | startswith($p + "."));
+def noNested($p): ([under($p)] | length == 0) and ([.modules[] | select((.scope // "") | startswith($p))] | length == 0);
+def ownerFile($g): .owner as $o | first($g.modules[] | select(.id == $o)) | .file;
+def defOwnerFile($g): .module as $m | first($g.modules[] | select(.id == $m)) | (ownerFile($g) // .file);
+def nestedDefFrom($p; $suffix): . as $g | [opt($p).definitions[] | select(.kind == "definition" and ((defOwnerFile($g) // "") | endswith($suffix)))];
+def nestedIdx($p; $suffix): . as $g | opt($p).definitions | map(.kind == "definition" and ((defOwnerFile($g) // "") | endswith($suffix))) | index(true);
+def warningLike($code; $subject; $text): any(.meta.warnings[]; .code == $code and .subject == $subject and (.message | contains($text)));
+def unstable: (.meta.nixpkgsVersion | startswith("25.11")) | not;
 
 [
   # --- meta
@@ -87,7 +96,7 @@ def defaultIdx($p): opt($p).definitions | map(.kind == "default") | index(true);
   check("users.users: def from users.nix"; defsFrom("users.users"; "/modules/users.nix") | length == 1),
   check("users.users: def from users-force.nix (inner mkForce not visible)"; defIn("users.users"; "/modules/users-force.nix").priority == 100),
   check("users.users: both fixture defs win"; opt("users.users") as $o | [idx("users.users"; "/modules/users.nix"), idx("users.users"; "/modules/users-force.nix")] | all(. as $i | $o.winners | index($i) != null)),
-  check("no users.users.alice.* option paths"; [.options[].path | select(startswith("users.users."))] | length == 0),
+  check("users.users stays listed as a leaf next to its instances"; opt("users.users") | .definitions | length >= 2),
   check("systemd.services: def from services.nix"; defsFrom("systemd.services"; "/modules/services.nix") | length == 1),
   check("freeform: services.openssh.settings def from services.nix"; defsFrom("services.openssh.settings"; "/modules/services.nix") | length == 1),
   check("no services.openssh.settings.* option paths"; [.options[].path | select(startswith("services.openssh.settings."))] | length == 0),
@@ -116,7 +125,7 @@ def defaultIdx($p): opt($p).definitions | map(.kind == "default") | index(true);
   check("omitted counts on every option"; all(.options[]; .omitted.nixpkgsActive >= 0 and .omitted.nixpkgsInactive >= 0 and .omitted.nixpkgsWinners >= 0)),
   check("omitted winners are among the omitted active ones"; all(.options[]; .omitted.nixpkgsWinners <= .omitted.nixpkgsActive)),
   check("omitted winners only with several winners"; all(.options[]; .omitted.nixpkgsWinners == 0 or (.winners | length) + .omitted.nixpkgsWinners >= 2)),
-  check("highestPrio set: a winner is listed or omitted"; all(.options[]; .highestPrio == null or (.winners | length) + .omitted.nixpkgsWinners > 0)),
+  check("highestPrio set: a winner is listed or omitted"; all(.options[]; .highestPrio == null or (.winners | length) + .omitted.nixpkgsWinners + (.omitted.declarationWinners // 0) > 0)),
   check("systemd.services: inactive nixpkgs definitions counted, not listed"; opt("systemd.services") | .omitted.nixpkgsInactive > 1000 and (.definitions | length) < 100),
   check("user definitions are never omitted"; defsFrom("fixture.prio"; "/modules/conditional.nix") | length == 1),
 
@@ -129,7 +138,55 @@ def defaultIdx($p): opt($p).definitions | map(.kind == "default") | index(true);
   check("lazy field: no crash, no recovery"; [.meta.warnings[] | select(.subject == "fixture.lazy" or .subject == "assertions")] | length == 0),
   check("assertions option: never previewed"; opt("assertions") | all(.definitions[]; .valuePreview == null)),
   check("assertions option: the fixture's entry is listed"; defsFrom("assertions"; "/modules/lazy.nix") | length == 1),
-  check("only the three deliberate crash warnings"; [.meta.warnings[] | select(.code | endswith("crash"))] | length == 3),
+  check("only the four deliberate crash warnings"; [.meta.warnings[] | select(.code | endswith("crash"))] | length == 4),
+
+  # --- submodule instances (nested attribution)
+  check("meta.submoduleDepth 3"; .meta.submoduleDepth == 3),
+  check("users.users.alice: the mkForce definition from users-force.nix wins"; nestedIdx("users.users.alice.description"; "/modules/users-force.nix") as $i | opt("users.users.alice.description") | .highestPrio == 50 and .winners == [$i] and .instance == "users.users.alice" and .parent == "users.users"),
+  check("users.users.alice: users.nix's plain definition loses"; nestedDefFrom("users.users.alice.description"; "/modules/users.nix") | length == 1 and .[0].priority == 100 and .[0].active),
+  check("users.users.alice: mkIf false inside the instance"; nestedDefFrom("users.users.alice.home"; "/modules/users-force.nix") | length == 1 and .[0].condition == "mkIf-false" and .[0].priority == null),
+  check("users.users.alice: mkIf false around the instance definition, attributed to its module"; defsFrom("users.users.alice.extraGroups"; "/modules/nested-plain.nix") | length == 1 and .[0].condition == "mkIf-false" and (.[0].module | startswith("/"))),
+  check("users.users.alice: the sub-option default is listed last"; opt("users.users.alice.isNormalUser").definitions[-1] | .kind == "default" and .priority == 1500),
+  check("mkDefault vs plain vs mkForce inside an instance"; nestedDefFrom("fixture.accounts.dave.shell"; "/modules/nested-force.nix")[0].priority == 50 and nestedDefFrom("fixture.accounts.dave.shell"; "/modules/nested-plain.nix")[0].priority == 100 and nestedDefFrom("fixture.accounts.dave.shell"; "/modules/nested.nix")[0].priority == 1000),
+  check("mkForce wins inside an instance"; nestedIdx("fixture.accounts.dave.shell"; "/modules/nested-force.nix") as $i | opt("fixture.accounts.dave.shell") | .highestPrio == 50 and .winners == [$i]),
+  check("sub-option mkIf false inside an instance"; nestedDefFrom("fixture.accounts.dave.greeting"; "/modules/nested.nix") | length == 1 and .[0].condition == "mkIf-false"),
+  check("instance-level mkIf false: listed inactive on the sub-option"; defsFrom("fixture.accounts.erin.shell"; "/modules/nested.nix") | length == 1 and .[0].active == false and .[0].condition == "mkIf-false" and .[0].priority == null),
+  check("function-style instance: name and osConfig from the instance"; nestedDefFrom("fixture.home.alice.editor"; "/modules/nested.nix")[0].valuePreview == "\"vim for alice on fixture\""),
+  check("function-style instance: a definition module owned by nested.nix"; . as $g | nestedDefFrom("fixture.home.alice.editor"; "/modules/nested.nix")[0].module as $m | mod($m) | .scope == "fixture.home.alice" and (ownerFile($g) | endswith("/modules/nested.nix")) and (.id | startswith("«fixture.home.alice»"))),
+  check("import inside an instance: attributed to the imported file"; defIn("fixture.home.alice.theme"; "/modules/nested/alice-extra.nix") | .priority == 1000 and (.module | startswith("«fixture.home.alice»/"))),
+  check("import inside an instance: an import edge from the definition module"; . as $g | nestedDefFrom("fixture.home.alice.editor"; "/modules/nested.nix")[0].module as $m | mod($m).imports | any(endswith("/modules/nested/alice-extra.nix"))),
+  check("instance theme: mkForce wins over plain and mkDefault"; nestedIdx("fixture.home.alice.theme"; "/modules/nested-force.nix") as $i | opt("fixture.home.alice.theme") | .highestPrio == 50 and .winners == [$i]),
+  check("declaration-side definitions counted, not listed"; opt("fixture.home.alice.theme") | .omitted.declarationActive == 1 and ([.definitions[] | select(.kind == "definition")] | length) == 3),
+  check("options touched only by declaration modules are out of scope"; hasOpt("fixture.home.bob.theme") | not),
+  check("two instance names"; hasOpt("fixture.home.alice.editor") and hasOpt("fixture.home.bob.editor")),
+  check("submodule inside a submodule"; opt("fixture.home.alice.files.todo.text") | .instance == "fixture.home.alice.files.todo" and .parent == "fixture.home.alice.files" and .winners == [0]),
+  check("submodule inside a submodule: owner is the enclosing instance's module"; . as $g | modOfDef("fixture.home.alice.files.todo.text"; 0) | .scope == "fixture.home.alice.files.todo" and (.owner | startswith("«fixture.home.alice»"))),
+  check("submodule inside a submodule: from the imported file"; . as $g | modOfDef("fixture.home.alice.files.notes.text"; 0) | (.owner | endswith("/modules/nested/alice-extra.nix"))),
+  check("instance-level mkForce: the other definition is shadowed"; nestedDefFrom("fixture.home.carol.theme"; "/modules/nested-plain.nix") | length == 1 and .[0].shadowedAt == "fixture.home.carol"),
+  check("shadowed definitions never win"; opt("fixture.home.carol.theme") as $o | ($o.definitions | to_entries | map(select(.value.shadowedAt != null) | .key)) as $s | all($s[]; . as $i | $o.winners | index($i) | not) and ($s | length) == 1),
+  check("shadowed definition on an option no winner defines"; opt("fixture.home.carol.editor") | (.definitions[0].shadowedAt == "fixture.home.carol") and .winners == [1] and .highestPrio == 1500),
+  check("single submodule: instance is the option"; opt("fixture.single.shell") | .instance == "fixture.single" and .parent == "fixture.single" and .winners == [0]),
+  check("single submodule: definitions from two modules"; hasOpt("fixture.single.greeting") and (nestedDefFrom("fixture.single.greeting"; "/modules/nested-plain.nix") | length == 1)),
+  check("nullOr submodule: expanded on unstable, a leaf on 25.11"; if unstable then opt("fixture.maybe.shell").winners == [0] else noNested("fixture.maybe") end),
+  check("lazyAttrsOf: the good instance is expanded"; opt("fixture.lazyAccounts.fine.shell").winners == [0]),
+  check("lazyAttrsOf: the throwing instance degrades alone"; warningLike("nested-degraded"; "fixture.lazyAccounts.bad"; "could not be classified") and noNested("fixture.lazyAccounts.bad")),
+  check("throwing instance: degraded to a leaf"; warningLike("nested-degraded"; "fixture.home.broken"; "does not evaluate") and noNested("fixture.home.broken")),
+  check("aborting instance: excluded alone, siblings expanded"; warning("nested-crash"; "fixture.home.aborts") and noNested("fixture.home.aborts") and hasOpt("fixture.home.alice.editor")),
+  check("instance-level mkBefore: degraded to a leaf"; warningLike("nested-degraded"; "fixture.ordered.frank"; "mkBefore/mkAfter/mkOrder") and noNested("fixture.ordered") and (opt("fixture.ordered").definitions | length >= 2)),
+  check("winning non-attrset definition: degraded to a leaf"; warningLike("nested-degraded"; "fixture.forced"; "not a plain attribute set") and noNested("fixture.forced") and (opt("fixture.forced").definitions | length >= 1)),
+  check("degraded instances: nothing attributed inside"; [.meta.warnings[] | select(.code == "nested-degraded" or .code == "nested-crash") | .subject] as $d | all(.options[]; (.instance // "") as $i | all($d[]; . as $s | ($i == $s or ($i | startswith($s + "."))) | not))),
+  check("no nested-unchecked"; codes | index("nested-unchecked") | not),
+  check("nested options carry instance and parent"; all(under("fixture.home.alice"); .instance != null and .parent != null)),
+  check("declaration counters only when not zero"; all(.options[]; .omitted | [.declarationActive, .declarationInactive, .declarationWinners] | all(. == null or . > 0))),
+  check("all winners omitted declaration definitions: winners empty, highestPrio set, counted"; opt("fixture.home.bob.packages") | .winners == [] and .highestPrio == 100 and .omitted.declarationWinners == 2 and .omitted.declarationActive == 2 and .omitted.nixpkgsWinners == 0 and .omitted.declarationOrigin == "input:extra"),
+  check("all winners omitted: the user's mkDefault is listed, losing"; nestedDefFrom("fixture.home.bob.packages"; "/modules/nested.nix") | length == 1 and .[0].priority == 1000 and .[0].active),
+  check("declarationOrigin names the declaration input"; opt("fixture.home.alice.theme").omitted.declarationOrigin == "input:extra"),
+  check("top-level options carry no nested fields"; all(.options[] | select(.instance == null); (has("parent") | not) and (.omitted | has("declarationActive") or has("declarationOrigin") | not))),
+  check("nested paths extend their instance, instances extend their parent"; all(.options[] | select(.instance != null); . as $o | ($o.path | startswith($o.instance + ".")) and ($o.instance | startswith($o.parent)))),
+  check("declaration winners among declaration active"; all(.options[] | select(.instance != null); (.omitted.declarationWinners // 0) <= (.omitted.declarationActive // 0))),
+  check("every owner is a listed module"; [.modules[].id] as $ids | all(.modules[] | select(.owner != null); .owner as $o | $ids | index($o) != null)),
+  check("nested modules carry their scope in the id"; all(.modules[] | select(.scope != null); . as $m | $m.id | startswith("«" + $m.scope + "»"))),
+  check("option paths unique"; [.options[].path] | length == (unique | length)),
 
   # --- referential integrity
   check("every definition's module is listed"; [.modules[].id] as $ids | all(.options[].definitions[]; .module == null or (.module as $m | $ids | index($m) != null))),

@@ -20,6 +20,10 @@ usage: optgraph <flakeref>#nixosConfigurations.<host> [options]
       --include-all-definitions
                           list every definition; by default nixpkgs definitions
                           that don't win are only counted (option.omitted)
+      --pretty            indent the JSON (default: compact, one line)
+      --submodule-depth N attribute definitions inside submodule instances
+                          (users.users.<name>, ...) down to N levels (default 3;
+                          0: submodule-typed options stay leaves)
       --max-retries N     uncatchable crashes to recover from by re-running
                           (default 10; --all: 100)
       --time-budget SECS  wall-clock budget for all evaluations (default 600;
@@ -43,7 +47,7 @@ usage_error() {
   die 1 "$*"
 }
 
-installable="" output="" html="" all=false include_all_defs=false max_retries="" time_budget=""
+installable="" output="" html="" all=false include_all_defs=false max_retries="" time_budget="" submodule_depth=3 pretty=false
 while [ $# -gt 0 ]; do
   case $1 in
   --html)
@@ -63,6 +67,15 @@ while [ $# -gt 0 ]; do
   --include-all-definitions)
     include_all_defs=true
     shift
+    ;;
+  --pretty)
+    pretty=true
+    shift
+    ;;
+  --submodule-depth)
+    [ $# -ge 2 ] || usage_error "$1 needs a number"
+    submodule_depth=$2
+    shift 2
     ;;
   --max-retries)
     [ $# -ge 2 ] || usage_error "$1 needs a number"
@@ -105,6 +118,7 @@ else
 fi
 case $max_retries in '' | *[!0-9]*) usage_error "--max-retries needs a non-negative integer" ;; esac
 case $time_budget in '' | *[!0-9]* | 0) usage_error "--time-budget needs a positive integer" ;; esac
+case $submodule_depth in '' | *[!0-9]*) usage_error "--submodule-depth needs a non-negative integer" ;; esac
 
 command -v nix >/dev/null || die 2 "nix not found in PATH"
 
@@ -147,6 +161,7 @@ base_args=$(jq -c -n \
   --arg generatedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --argjson all "$all" \
   --argjson includeAllDefinitions "$include_all_defs" \
+  --argjson submoduleDepth "$submodule_depth" \
   '
   $archive[0] as $a | $metadata[0] as $m
   | ($a.path + (if ($m.original.dir // "") != "" then "/" + $m.original.dir else "" end)) as $flakeDir
@@ -165,6 +180,7 @@ base_args=$(jq -c -n \
       generatedAt: $generatedAt,
       all: $all,
       includeAllDefinitions: $includeAllDefinitions,
+      submoduleDepth: $submoduleDepth,
       selfRoot: $a.path,
       inputs: ([($a.inputs // {}) | flat("")] + $relative | from_entries)
     }')
@@ -178,7 +194,10 @@ fi
   die 2 "$installable is not a NixOS configuration (_type: $(cat "$work/type"))"
 
 # ------------------------------------------------------------- extraction
-# Crash records: [{stage, subject: {loc, path} | {slot}, message}]
+# Crash records: [{stage, subject: {loc, path} | {slot}, message}]. Stages:
+# reconstruct/selfcheck/preview (an option, top-level or nested), module/walk
+# (a top-level module slot), instance (one submodule instance), instances
+# (listing an option's instances).
 crashes='[]'
 
 # run_extract EXTRA_JSON [TIMEOUT]: one evaluation; output in $work/out.json,
@@ -193,6 +212,8 @@ run_extract() {
       exclude: locs("reconstruct"),
       noPreview: locs("preview"),
       noSelfcheck: locs("selfcheck"),
+      excludeInstances: locs("instance"),
+      excludeNesting: locs("instances"),
       excludeModules: [$crashes[] | select(.stage == "module" or .stage == "walk") | .subject.slot]
     } + $extra')
   expr="cfg: (import ((builtins.fetchTree { type = \"path\"; path = \"$OPTGRAPH_SRC\"; narHash = \"$OPTGRAPH_NARHASH\"; }).outPath + \"/nix\") { toolVersion = \"$OPTGRAPH_VERSION\"; }).extract (builtins.fromJSON $(nix_string "$args") // { config = cfg; })"
@@ -313,8 +334,10 @@ fi
 
 # Attach the trimmed crash messages to the lib's warnings; mark partial output.
 enrich() {
-  jq --argjson crashes "$crashes" --arg exhausted "$exhausted" '
-    def code: {reconstruct: "eval-crash", module: "eval-crash", walk: "eval-crash", preview: "preview-crash", selfcheck: "selfcheck-crash"}[.stage];
+  local fmt=(-c)
+  ! $pretty || fmt=()
+  jq "${fmt[@]}" --argjson crashes "$crashes" --arg exhausted "$exhausted" '
+    def code: {reconstruct: "eval-crash", module: "eval-crash", walk: "eval-crash", preview: "preview-crash", selfcheck: "selfcheck-crash", instance: "nested-crash", instances: "nested-crash"}[.stage];
     def subj: .subject.path // .subject.slot;
     ($crashes | map({key: (code + " " + subj), value: .message}) | from_entries) as $msg
     | .meta.warnings |= map(
