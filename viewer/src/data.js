@@ -126,7 +126,8 @@ function ladder(model, o) {
     } else if (d.shadowedAt) {
       // Nested options: the instance never saw it (docs/schema.md).
       status = "lose";
-      reason = `never reached the instance: the definition it is part of lost at ${d.shadowedAt}`;
+      const at = model.options.find((x) => x.path === d.shadowedAt);
+      reason = `dropped at ${d.shadowedAt}${at && at.highestPrio != null ? ` (${prioName(at.highestPrio)})` : ""}`;
     } else if (!d.active) {
       status = "off";
       reason = d.condition === "mkIf-error" ? "its mkIf condition threw or is not a bool" : "switched off: its mkIf condition is false";
@@ -195,6 +196,25 @@ function instanceName(scope) {
   if (q) return q[1];
   const i = scope.lastIndexOf(".");
   return i >= 0 ? scope.slice(i + 1) : scope;
+}
+
+// A nested option's breadcrumb, outermost first: the option holding each
+// instance (below the enclosing instance), the instance's name, the option's
+// own path below its instance. Empty at the top level.
+function breadcrumb(model, o) {
+  if (!o.instance) return [];
+  const below = (p, base) => (base && p.startsWith(base + ".") ? p.slice(base.length + 1) : p);
+  const holder = (x) => model.options.find((y) => y.path === x.parent);
+  const chain = [];
+  for (let x = o; x && x.instance; x = holder(x)) chain.unshift(x);
+  const segs = [];
+  for (const x of chain) {
+    const h = holder(x);
+    segs.push(below(x.parent, h && h.instance));
+    if (x.parent !== x.instance) segs.push(instanceName(x.instance));
+  }
+  segs.push(below(o.path, o.instance));
+  return segs;
 }
 
 // Where a module inside an instance lives: its file, or for inline user code

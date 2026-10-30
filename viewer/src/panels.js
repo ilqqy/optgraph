@@ -179,7 +179,8 @@ function renderOption(model, oi, onModule, onCopyLink) {
   // them, `winners` is empty.
   const hidden = hiddenWinners(o);
   const multi = o.winners.length + hidden > 1;
-  const losers = rows.filter((r) => r.status === "lose").length;
+  // A dropped definition (shadowedAt) never competed: it is not "weaker".
+  const losers = rows.filter((r) => r.status === "lose" && !r.d.shadowedAt).length;
   const offs = rows.filter((r) => r.status === "off").length;
   const winner = o.winners.length === 1 ? o.definitions[o.winners[0]] : null;
 
@@ -351,11 +352,18 @@ function renderOption(model, oi, onModule, onCopyLink) {
           h("span", {}, `${plural(declN, "definition")} of the submodule's own modules${o.omitted.declarationOrigin ? ` (${o.omitted.declarationOrigin})` : ""}: ${o.omitted.declarationActive ?? 0} active, ${o.omitted.declarationInactive ?? 0} inactive; optgraph --include-all-definitions lists them`),
         ]
       : null,
-    o.instance ? ["instance", h("code", { title: `in ${o.parent}` }, o.instance)] : null,
   ].filter(Boolean);
 
   return [
     h("div", { class: "opt-head" }, h("div", { class: "overline" }, "Option ", h("span", { class: "type-chip" }, o.type ?? "?")), linkBtn),
+    o.instance
+      ? h(
+          "div",
+          { class: "crumbs" },
+          h("span", {}, breadcrumb(model, o).join(" › ")),
+          h("span", { class: "inst-chip", title: `in ${o.parent}` }, o.instance),
+        )
+      : null,
     h("h1", { class: "opt-path" }, ...pathTitle(o.path)),
     verdict,
     o.error ? h("div", { class: "opt-error" }, icon("error"), h("span", {}, o.error)) : null,

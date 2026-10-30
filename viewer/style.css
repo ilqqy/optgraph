@@ -691,3 +691,7 @@ button.mpill.tour-hover { border-color: var(--accent); background: var(--accent-
 .tour-card p.muted b { color: var(--accent); }
 .tour-controls { pointer-events: auto; display: flex; gap: 6px; }
 .tour-controls button { box-shadow: var(--shadow-2); }
+
+/* A nested option's breadcrumb and instance chip. */
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; font: var(--fs-sm) var(--font-mono); color: var(--text-2); }
+.inst-chip { padding: 0 8px; border: 1px solid var(--line-2); border-radius: 999px; font-size: var(--fs-xs); line-height: 18px; color: var(--text-2); }
