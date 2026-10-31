@@ -99,7 +99,10 @@ fn empty_and_single() {
 }
 
 mod clusters {
-    use optgraph_core::layout::{CLUSTER_HEAD, CLUSTER_PAD, ClusterSpec, Size, clustered_layout, layered_layout};
+    use optgraph_core::layout::{
+        CLUSTER_HEAD, CLUSTER_PAD, ClusterBox, ClusterSpec, Size, bundled_links, cluster_on_screen, clustered_layout,
+        layered_layout,
+    };
 
     const S: Size = Size { w: 100., h: 28. };
 
@@ -177,6 +180,55 @@ mod clusters {
         assert!((out[0].x - (c.x[2] + S.w / 2.)).abs() < 1e-6);
         assert!((out[0].y - c.y[2]).abs() < 1e-6);
         assert!((out.last().unwrap().x - c.boxes[1].x).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_pinned_cluster_grows_to_its_label() {
+        let b = ClusterBox {
+            x: 100.,
+            y: 100.,
+            w: 120.,
+            h: 80.,
+        };
+        // At full zoom, or without pins, the box is the box.
+        let plain = cluster_on_screen(b, (0., 0., 0.5), 200., &[], 1.);
+        assert_eq!((plain.x, plain.y, plain.w, plain.h), (50., 50., 60., 40.));
+        assert_eq!(plain.head, CLUSTER_HEAD * 0.5);
+        let full = cluster_on_screen(b, (0., 0., 1.), 200., &[(160., 150., 100., 28.)], 1.);
+        assert_eq!((full.w, full.h), (120., 80.));
+        // Zoomed out with a pin: wide enough for the full-size label, and
+        // around the pin, whose label row sits above it.
+        let pin = (160., 150., 100., 28.);
+        let s = cluster_on_screen(b, (0., 0., 0.5), 200., &[pin], 1.);
+        assert_eq!(s.head, CLUSTER_HEAD);
+        assert!(s.w >= 200., "the label overruns: {}", s.w);
+        let (cx, cy) = (160. * 0.5, 150. * 0.5);
+        assert!(s.x <= cx - 50. && s.x + s.w >= cx + 50.);
+        assert!(s.y + s.head <= cy - 14., "the label row covers the pin");
+        assert!(s.y + s.h >= cy + 14.);
+        // A short label does not widen it beyond the pin.
+        let short = cluster_on_screen(b, (0., 0., 0.5), 10., &[pin], 1.);
+        assert!(short.w < s.w);
+    }
+
+    #[test]
+    fn large_owner_fans_are_bundled() {
+        // Owner 0 has four links (one kept), owner 1 has two; a link that is
+        // no owner link is never bundled.
+        let links = [
+            Some((0, false)),
+            Some((0, true)),
+            Some((1, false)),
+            Some((0, false)),
+            None,
+            Some((0, false)),
+            Some((1, false)),
+        ];
+        assert_eq!(
+            bundled_links(&links, 3),
+            vec![true, false, false, true, false, true, false]
+        );
+        assert_eq!(bundled_links(&links, 4), vec![false; 7]);
     }
 
     #[test]

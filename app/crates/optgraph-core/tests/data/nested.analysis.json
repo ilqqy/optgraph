@@ -1,9 +1,9 @@
 {
  "stats": {
-  "modules": 67,
-  "options": 71,
-  "definitions": 98,
-  "overrides": 10,
+  "modules": 70,
+  "options": 72,
+  "definitions": 102,
+  "overrides": 11,
   "switchedOff": 7,
   "errors": 4
  },
@@ -11,11 +11,12 @@
   10,
   13,
   28,
-  40,
-  46,
-  51,
-  59,
-  67,
+  34,
+  41,
+  47,
+  52,
+  60,
+  68,
   3,
   30
  ],
@@ -48,38 +49,38 @@
   31,
   32,
   33,
-  34,
   35,
   36,
   37,
   38,
   39,
-  41,
+  40,
   42,
   43,
   44,
   45,
-  47,
+  46,
   48,
   49,
   50,
-  52,
+  51,
   53,
   54,
   55,
   56,
   57,
   58,
-  60,
+  59,
   61,
   62,
   63,
   64,
   65,
   66,
-  68,
+  67,
   69,
-  70
+  70,
+  71
  ],
  "nixpkgsOnly": [
   7
@@ -98,27 +99,27 @@
    0
   ],
   [
-   46,
+   47,
    2
   ],
   [
-   51,
+   52,
    3
   ],
   [
-   68,
+   69,
    0
   ],
   [
-   69,
+   70,
    0
   ]
  ],
  "errors": [
   7,
   17,
-  42,
-  56
+  43,
+  57
  ],
  "options": [
   {
@@ -903,33 +904,70 @@
     [
      0,
      "win",
-     "merged with 3 others at priority 100"
+     "merged with 5 others at priority 100"
     ],
     [
      1,
      "win",
-     "merged with 3 others at priority 100"
+     "merged with 5 others at priority 100"
     ],
     [
      2,
      "win",
-     "merged with 3 others at priority 100"
+     "merged with 5 others at priority 100"
     ],
     [
      3,
      "win",
-     "merged with 3 others at priority 100"
+     "merged with 5 others at priority 100"
     ],
     [
      4,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     5,
+     "win",
+     "merged with 5 others at priority 100"
+    ],
+    [
+     6,
      "lose",
-     "beaten by 4 definitions at 100: 100 < 1500"
+     "beaten by 6 definitions at 100: 100 < 1500"
     ]
    ],
    "crumbs": [
     "fixture.home",
     "zoe",
     "files"
+   ]
+  },
+  {
+   "path": "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\".text",
+   "override": true,
+   "userVsUser": true,
+   "beats": "normal (user) beats mkDefault (user)",
+   "beatsModules": "normal in config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix beats mkDefault in config/some-application/with/a/rather/long/path/settings.conf › nested.nix",
+   "off": [],
+   "ladder": [
+    [
+     1,
+     "win",
+     "beats config/some-application/with/a/rather/long/path/settings.conf › nested.nix: 100 < 1000"
+    ],
+    [
+     0,
+     "lose",
+     "beaten by config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix: 100 < 1000"
+    ]
+   ],
+   "crumbs": [
+    "fixture.home",
+    "zoe",
+    "files",
+    "config/some-application/with/a/rather/long/path/settings.conf",
+    "text"
    ]
   },
   {
@@ -1945,8 +1983,8 @@
    "fixture.home.carol › …/tests/fixture/modules/nested.nix"
   ],
   [
-   "zoe › nested.nix",
-   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+   "zoe › nested-plain.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested-plain.nix"
   ],
   [
    "zoe › nested.nix",
@@ -1963,6 +2001,18 @@
   [
    "zoe › nested.nix",
    "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "zoe › nested.nix",
+   "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "config/some-application/with/a/rather/long/path/settings.conf › nested.nix",
+   "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\" › …/tests/fixture/modules/nested.nix"
+  ],
+  [
+   "config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix",
+   "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\" › …/tests/fixture/modules/nested-plain.nix"
   ],
   [
    "a › nested.nix",
@@ -2035,7 +2085,7 @@
    [
     [
      "overrides",
-     10,
+     11,
      [
       [
        "option",
@@ -2060,21 +2110,21 @@
       ],
       [
        "option",
-       40,
+       34,
        [],
        null,
        0
       ],
       [
        "option",
-       46,
+       41,
        [],
        null,
        0
       ],
       [
        "option",
-       51,
+       47,
        [],
        null,
        0
@@ -2108,14 +2158,14 @@
       ],
       [
        "option",
-       68,
+       69,
        [],
        null,
        0
       ],
       [
        "option",
-       69,
+       70,
        [],
        null,
        0
@@ -2142,14 +2192,14 @@
       ],
       [
        "option",
-       42,
+       43,
        [],
        null,
        0
       ],
       [
        "option",
-       56,
+       57,
        [],
        null,
        0
@@ -2330,13 +2380,6 @@
       ],
       [
        "option",
-       34,
-       [],
-       null,
-       0
-      ],
-      [
-       "option",
        35,
        [],
        null,
@@ -2372,14 +2415,14 @@
       ],
       [
        "option",
-       41,
+       40,
        [],
        null,
        0
       ],
       [
        "option",
-       43,
+       42,
        [],
        null,
        0
@@ -2400,7 +2443,7 @@
       ],
       [
        "option",
-       47,
+       46,
        [],
        null,
        0
@@ -2428,7 +2471,7 @@
       ],
       [
        "option",
-       52,
+       51,
        [],
        null,
        0
@@ -2439,12 +2482,19 @@
        [],
        null,
        0
+      ],
+      [
+       "option",
+       54,
+       [],
+       null,
+       0
       ]
      ]
     ],
     [
      "modules",
-     66,
+     69,
      [
       [
        "module",
@@ -2511,11 +2561,11 @@
    [
     [
      "overrides",
-     7,
+     8,
      [
       [
        "option",
-       51,
+       52,
        [
         0,
         1,
@@ -2527,7 +2577,7 @@
       ],
       [
        "option",
-       46,
+       47,
        [
         0,
         1,
@@ -2539,7 +2589,7 @@
       ],
       [
        "option",
-       40,
+       41,
        [
         0,
         1,
@@ -2635,7 +2685,7 @@
      [
       [
        "option",
-       56,
+       57,
        [
         0,
         1,
@@ -2659,7 +2709,7 @@
       ],
       [
        "option",
-       42,
+       43,
        [
         0,
         1,
@@ -2701,7 +2751,7 @@
       ],
       [
        "option",
-       41,
+       42,
        [
         0,
         1,
@@ -2713,7 +2763,7 @@
       ],
       [
        "option",
-       44,
+       45,
        [
         0,
         1,
@@ -2737,7 +2787,7 @@
       ],
       [
        "option",
-       53,
+       54,
        [
         0,
         1,
@@ -2749,7 +2799,7 @@
       ],
       [
        "option",
-       48,
+       49,
        [
         0,
         1,
@@ -2785,7 +2835,7 @@
       ],
       [
        "option",
-       50,
+       51,
        [
         0,
         1,
@@ -2809,7 +2859,7 @@
       ],
       [
        "option",
-       58,
+       59,
        [
         0,
         1,
@@ -2821,7 +2871,7 @@
       ],
       [
        "option",
-       49,
+       50,
        [
         0,
         1,
@@ -2833,7 +2883,7 @@
       ],
       [
        "option",
-       38,
+       39,
        [
         0,
         1,
@@ -2845,7 +2895,7 @@
       ],
       [
        "option",
-       45,
+       46,
        [
         0,
         1,
@@ -2857,7 +2907,7 @@
       ],
       [
        "option",
-       47,
+       48,
        [
         0,
         1,
@@ -2869,7 +2919,7 @@
       ],
       [
        "option",
-       55,
+       56,
        [
         0,
         1,
@@ -2881,7 +2931,7 @@
       ],
       [
        "option",
-       52,
+       53,
        [
         0,
         1,
@@ -2893,7 +2943,7 @@
       ],
       [
        "option",
-       57,
+       58,
        [
         0,
         1,
@@ -2917,7 +2967,7 @@
       ],
       [
        "option",
-       39,
+       40,
        [
         0,
         1,
@@ -2965,7 +3015,7 @@
       ],
       [
        "option",
-       54,
+       55,
        [
         0,
         1,
@@ -3049,18 +3099,6 @@
       ],
       [
        "option",
-       34,
-       [
-        0,
-        1,
-        5,
-        6
-       ],
-       null,
-       -0.9000000000000004
-      ],
-      [
-       "option",
        35,
        [
         0,
@@ -3097,6 +3135,18 @@
       ],
       [
        "option",
+       38,
+       [
+        0,
+        1,
+        5,
+        6
+       ],
+       null,
+       -0.9000000000000004
+      ],
+      [
+       "option",
        11,
        [
         0,
@@ -3109,7 +3159,7 @@
       ],
       [
        "option",
-       43,
+       44,
        [
         0,
         1,
@@ -3145,7 +3195,7 @@
       ],
       [
        "option",
-       65,
+       66,
        [
         17,
         18,
@@ -3157,7 +3207,7 @@
       ],
       [
        "option",
-       64,
+       65,
        [
         17,
         18,
@@ -3171,11 +3221,11 @@
     ],
     [
      "modules",
-     63,
+     66,
      [
       [
        "module",
-       63,
+       66,
        [
         0,
         1,
@@ -3184,6 +3234,30 @@
        ],
        "label",
        -0.8000000000000003
+      ],
+      [
+       "module",
+       52,
+       [
+        3,
+        4,
+        31,
+        35
+       ],
+       "label",
+       -15.4
+      ],
+      [
+       "module",
+       53,
+       [
+        3,
+        4,
+        31,
+        35
+       ],
+       "label",
+       -16
       ],
       [
        "module",
@@ -3244,30 +3318,6 @@
        ],
        "path",
        -21.3
-      ],
-      [
-       "module",
-       12,
-       [
-        8,
-        9,
-        13,
-        14
-       ],
-       "path",
-       -21.3
-      ],
-      [
-       "module",
-       21,
-       [
-        8,
-        9,
-        13,
-        14
-       ],
-       "path",
-       -21.3
       ]
      ]
     ]
@@ -3277,12 +3327,29 @@
    "nfe",
    [
     [
+     "overrides",
+     1,
+     [
+      [
+       "option",
+       34,
+       [
+        26,
+        27,
+        34
+       ],
+       null,
+       -15.1
+      ]
+     ]
+    ],
+    [
      "options",
      1,
      [
       [
        "option",
-       43,
+       44,
        [
         17,
         21,
@@ -3295,7 +3362,7 @@
     ],
     [
      "modules",
-     21,
+     23,
      [
       [
        "module",
@@ -3332,7 +3399,29 @@
       ],
       [
        "module",
-       55,
+       52,
+       [
+        2,
+        3,
+        10
+       ],
+       "label",
+       -13.4
+      ],
+      [
+       "module",
+       53,
+       [
+        2,
+        3,
+        10
+       ],
+       "label",
+       -14
+      ],
+      [
+       "module",
+       58,
        [
         17,
         21,
@@ -3343,7 +3432,7 @@
       ],
       [
        "module",
-       56,
+       59,
        [
         17,
         21,
@@ -3362,28 +3451,6 @@
        ],
        "path",
        -31.5
-      ],
-      [
-       "module",
-       43,
-       [
-        25,
-        41,
-        47
-       ],
-       "path",
-       -32.9
-      ],
-      [
-       "module",
-       60,
-       [
-        10,
-        25,
-        31
-       ],
-       "path",
-       -35.1
       ]
      ]
     ]
@@ -3392,6 +3459,24 @@
   [
    "core",
    [
+    [
+     "overrides",
+     1,
+     [
+      [
+       "option",
+       34,
+       [
+        24,
+        25,
+        55,
+        59
+       ],
+       null,
+       -17.1
+      ]
+     ]
+    ],
     [
      "off",
      2,
@@ -3440,7 +3525,7 @@
       ],
       [
        "option",
-       70,
+       71,
        [
         15,
         21,
@@ -3466,11 +3551,35 @@
     ],
     [
      "modules",
-     15,
+     17,
      [
       [
        "module",
-       64,
+       52,
+       [
+        0,
+        1,
+        31,
+        35
+       ],
+       "label",
+       -10.4
+      ],
+      [
+       "module",
+       53,
+       [
+        0,
+        1,
+        31,
+        35
+       ],
+       "label",
+       -11
+      ],
+      [
+       "module",
+       67,
        [
         3,
         15,
@@ -3506,7 +3615,7 @@
       ],
       [
        "module",
-       62,
+       65,
        [
         5,
         9,
@@ -3530,7 +3639,7 @@
       ],
       [
        "module",
-       55,
+       58,
        [
         13,
         15,
@@ -3539,30 +3648,6 @@
        ],
        "path",
        -37.2
-      ],
-      [
-       "module",
-       30,
-       [
-        9,
-        11,
-        37,
-        38
-       ],
-       "path",
-       -37.4
-      ],
-      [
-       "module",
-       31,
-       [
-        9,
-        11,
-        37,
-        38
-       ],
-       "path",
-       -37.4
       ]
      ]
     ]
@@ -3620,7 +3705,7 @@
       ],
       [
        "option",
-       52,
+       53,
        [
         14,
         15,

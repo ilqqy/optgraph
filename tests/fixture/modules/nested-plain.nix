@@ -15,4 +15,6 @@
   };
   fixture.ordered.frank.greeting = "first";
   fixture.allForced.gina.shell = "plain";
+  fixture.home.zoe.files."config/some-application/with/a/rather/long/path/settings.conf".text =
+    "plain";
 }

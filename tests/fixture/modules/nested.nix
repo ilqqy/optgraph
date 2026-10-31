@@ -21,6 +21,9 @@
         "c"
         "d"
       ];
+      # A long, deep path: truncated in the viewers' lists.
+      files."config/some-application/with/a/rather/long/path/settings.conf".text =
+        lib.mkDefault "from the default";
     };
   # A second instance name. Its mkDefault packages lose to the declaration
   # module's two (listed: none of the winners).

@@ -166,6 +166,7 @@ def unstable: (.meta.nixpkgsVersion | startswith("25.11")) | not;
   check("shadowed definitions never win"; opt("fixture.home.carol.theme") as $o | ($o.definitions | to_entries | map(select(.value.shadowedAt != null) | .key)) as $s | all($s[]; . as $i | $o.winners | index($i) | not) and ($s | length) == 1),
   check("shadowed definition on an option no winner defines"; opt("fixture.home.carol.editor") | (.definitions[0].shadowedAt == "fixture.home.carol") and .winners == [1] and .highestPrio == 1500),
   check("whole-option mkForce: the other definition is shadowed at the option"; nestedDefFrom("fixture.allForced.gina.shell"; "/modules/nested-plain.nix") | length == 1 and .[0].shadowedAt == "fixture.allForced"),
+  check("a long quoted path: full in the option, mkDefault loses"; opt("fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\".text") | .highestPrio == 100 and .instance == "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\""),
   check("single submodule: instance is the option"; opt("fixture.single.shell") | .instance == "fixture.single" and .parent == "fixture.single" and .winners == [0]),
   check("single submodule: definitions from two modules"; hasOpt("fixture.single.greeting") and (nestedDefFrom("fixture.single.greeting"; "/modules/nested-plain.nix") | length == 1)),
   check("nullOr submodule: expanded on unstable, a leaf on 25.11"; if unstable then opt("fixture.maybe.shell").winners == [0] else noNested("fixture.maybe") end),
