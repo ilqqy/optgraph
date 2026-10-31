@@ -91,7 +91,7 @@ impl OptgraphView {
                 Sel::None => match self.instance_filter {
                     Some(i) => {
                         self.graph.select_none_keep();
-                        self.graph.frame_instances(&model.instances.subtree(i));
+                        self.graph.frame_instances(i, &model.instances.subtree(i));
                     }
                     None => self.graph.select_none(),
                 },

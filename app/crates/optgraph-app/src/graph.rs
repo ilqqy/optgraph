@@ -39,6 +39,8 @@ const MAX_K: f64 = 4.;
 const RESERVE_BOTTOM: f64 = 44.;
 /// An instance with more modules than this starts collapsed into one pill.
 pub const COLLAPSE_OVER: usize = 6;
+/// Below this zoom labels are not drawn.
+const LABEL_MIN_K: f64 = 0.42;
 /// Cluster labels longer than this keep their end.
 const LABEL_MAX: usize = 40;
 
@@ -607,15 +609,12 @@ impl GraphState {
             let chip_w = text_width(window, &chip, mono_font(), 11.).ceil() + 16.;
             // In a collapsed pill several modules share a node: the strongest
             // (they come strongest first) gives its ring.
-            if !rings.contains_key(&n) {
-                rings.insert(
-                    n,
-                    Ring {
-                        status: s.status,
-                        chip,
-                        chip_w,
-                    },
-                );
+            if let std::collections::hash_map::Entry::Vacant(e) = rings.entry(n) {
+                e.insert(Ring {
+                    status: s.status,
+                    chip,
+                    chip_w,
+                });
                 core.push(n);
             }
         }
@@ -695,19 +694,25 @@ impl GraphState {
         self.move_to(target, animate && !self.quiet);
     }
 
-    /// The camera on these instances: their clusters or pills.
-    pub fn frame_instances(&mut self, insts: &[usize]) {
+    /// The camera on an instance and those inside it; on the instance alone
+    /// if that whole set would make the labels too small to read.
+    pub fn frame_instances(&mut self, inst: usize, inside: &[usize]) {
         let Some(data) = self.data.clone() else { return };
-        let nodes: Vec<usize> = data
-            .nodes
-            .iter()
-            .enumerate()
-            .filter(|(_, n)| {
-                n.collapsed.is_some_and(|i| insts.contains(&i))
-                    || n.in_box.is_some_and(|c| insts.contains(&data.clusters[c].inst))
-            })
-            .map(|(i, _)| i)
-            .collect();
+        let nodes_of = |insts: &[usize]| -> Vec<usize> {
+            data.nodes
+                .iter()
+                .enumerate()
+                .filter(|(_, n)| {
+                    n.collapsed.is_some_and(|i| insts.contains(&i))
+                        || n.in_box.is_some_and(|c| insts.contains(&data.clusters[c].inst))
+                })
+                .map(|(i, _)| i)
+                .collect()
+        };
+        let mut nodes = nodes_of(inside);
+        if self.width > 0. && !nodes.is_empty() && self.view(&nodes, 1.3, &[]).k < LABEL_MIN_K {
+            nodes = nodes_of(&[inst]);
+        }
         if !nodes.is_empty() {
             self.goal(Goal::Nodes(nodes), true);
         }
@@ -1301,7 +1306,7 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
             true
         }
     };
-    let show_text = cam.k >= 0.42;
+    let show_text = cam.k >= LABEL_MIN_K;
     let pin_scale = |i: usize| {
         if frame.pins.contains(&i) {
             (READ_K / cam.k).max(1.)
@@ -1517,7 +1522,7 @@ fn paint_cluster(
         (if hover { t.accent } else { t.accent.opacity(0.4) }).opacity(alpha),
         BorderStyle::Solid,
     ));
-    if k < 0.42 {
+    if k < LABEL_MIN_K {
         return;
     }
     // Chevron.
