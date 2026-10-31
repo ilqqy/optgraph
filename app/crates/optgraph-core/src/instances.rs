@@ -160,25 +160,29 @@ impl Instances {
 
         // The enclosing instance: the one its parent option lives in, else the
         // longest instance path above it.
-        for i in 0..list.len() {
-            let via_option = list[i].parent_option.and_then(|p| of_option[p]);
-            let above = || {
-                let mut p = parent_path(&list[i].path);
-                while !p.is_empty() {
-                    if let Some(&e) = by_path.get(p) {
-                        return Some(e);
+        let enclosing: Vec<Option<usize>> = list
+            .iter()
+            .enumerate()
+            .map(|(i, inst)| {
+                let via_option = inst.parent_option.and_then(|p| of_option[p]);
+                let above = || {
+                    let mut p = parent_path(&inst.path);
+                    while !p.is_empty() {
+                        if let Some(&e) = by_path.get(p) {
+                            return Some(e);
+                        }
+                        p = parent_path(p);
                     }
-                    p = parent_path(p);
-                }
-                None
-            };
-            let e = via_option.or_else(above).filter(|&e| e != i);
-            list[i].enclosing = e;
-        }
+                    None
+                };
+                via_option.or_else(above).filter(|&e| e != i)
+            })
+            .collect();
         let mut roots = Vec::new();
-        for i in 0..list.len() {
-            match list[i].enclosing {
-                Some(e) => list[e].children.push(i),
+        for (i, e) in enclosing.iter().enumerate() {
+            list[i].enclosing = *e;
+            match e {
+                Some(e) => list[*e].children.push(i),
                 None => roots.push(i),
             }
         }
