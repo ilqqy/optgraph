@@ -7,7 +7,9 @@ use gpui::{
 };
 use optgraph_core::instances::CrumbTarget;
 use optgraph_core::text::{plural, prio_name, priority_name, short_path, tail_path, thousands};
-use optgraph_core::{Model, Status, ValueView, module_label, module_short_label, omitted_badge, value_view};
+use optgraph_core::{
+    Model, Status, ValueView, module_detail_label, module_label, module_short_label, omitted_badge, value_view,
+};
 
 use crate::theme::{FONT_MONO, FS_2XL, FS_LG, FS_MD, FS_SM, FS_XL, FS_XS, R_LG, R_MD, R_SM, Theme};
 use crate::ui::{
@@ -656,6 +658,7 @@ impl OptgraphView {
             });
         }
         let path = is.list[inst].path.clone();
+        let name = is.chip_name(inst).to_string();
         Some(
             div()
                 .flex()
@@ -667,9 +670,9 @@ impl OptgraphView {
                         .mt(px(5.))
                         .flex()
                         .cursor_pointer()
-                        .tooltip(crate::ui::tip("Show only this instance in the sidebar"))
+                        .tooltip(crate::ui::tip(format!("{path}: show only this instance")))
                         .on_click(cx.listener(move |this, _, _, cx| this.set_instance_filter(Some(inst), cx)))
-                        .child(instance_chip(t, &path).max_w(px(420.))),
+                        .child(instance_chip(t, &name)),
                 )
                 .into_any_element(),
         )
@@ -765,32 +768,34 @@ impl OptgraphView {
                     .into_any_element()
             } else if let Some(m) = module {
                 let mi = model.mod_index[&m.id];
+                // Long names wrap: the pill keeps its height for one line.
                 div()
                     .id((id, def))
                     .flex()
                     .items_center()
                     .gap(px(7.))
-                    .h(px(26.))
+                    .min_h(px(26.))
                     .min_w_0()
                     .pl(px(9.))
                     .pr(px(11.))
-                    .rounded_full()
+                    .py(px(3.))
+                    .rounded(px(13.))
                     .border_1()
                     .border_color(t.line2)
                     .bg(t.s3)
                     .text_color(t.text)
                     .font_weight(FontWeight::MEDIUM)
-                    .whitespace_nowrap()
-                    .overflow_hidden()
+                    .line_height(px(17.))
                     .cursor_pointer()
                     .hover(|s| s.border_color(t.accent).bg(t.accent_soft))
+                    .tooltip(crate::ui::tip(module_label(m)))
                     .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                     .on_click(cx.listener(move |this, _, _, cx| {
                         cx.stop_propagation();
                         this.select(Sel::Module(mi), cx);
                     }))
                     .child(origin_dot(t, &m.origin))
-                    .child(div().truncate().child(module_short_label(m)))
+                    .child(div().min_w_0().child(module_detail_label(m)))
                     .into_any_element()
             } else {
                 div()
@@ -878,7 +883,7 @@ impl OptgraphView {
                 .cursor_pointer()
                 .on_click(cx.listener(move |this, _, window, cx| this.toggle_row(def, k, window, cx)))
                 .on_action(cx.listener(move |this, _: &Confirm, window, cx| this.toggle_row(def, k, window, cx)))
-                .child(div().flex_none().max_w(px(170.)).child(who("pill-row")))
+                .child(div().flex_none().max_w(px(190.)).child(who("pill-row")))
                 .child(origin_chip(t, &origin))
                 .child(mini_status(t, Status::Win))
                 .child(
@@ -1089,15 +1094,16 @@ impl OptgraphView {
         }
         if let Some(i) = model.instances.of_module[mi] {
             let path = model.instances.list[i].path.clone();
+            let name = model.instances.chip_name(i).to_string();
             facts.push((
                 "instance",
                 div()
                     .id("module-instance")
                     .flex()
                     .cursor_pointer()
-                    .tooltip(crate::ui::tip("Show only this instance in the sidebar"))
+                    .tooltip(crate::ui::tip(format!("{path}: show only this instance")))
                     .on_click(cx.listener(move |this, _, _, cx| this.set_instance_filter(Some(i), cx)))
-                    .child(instance_chip(t, &path).max_w(px(320.)))
+                    .child(instance_chip(t, &name))
                     .into_any_element(),
             ));
         }
