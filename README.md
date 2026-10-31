@@ -154,6 +154,7 @@ A desktop app with the viewer's function: who set an option, at what priority, a
 nix run .#app -- graph.json                                   # a graph.json made by optgraph
 nix run .#app -- /etc/nixos#nixosConfigurations.myhost        # runs optgraph first, shows its progress
 nix run .#app -- graph.json --opt networking.firewall.enable  # open an option (or --module <index>)
+nix run .#app -- graph.json --instance home-manager.users.me  # show one submodule instance (its path, or its name if unique)
 ```
 
 With a flake reference the app runs the optgraph CLI on a background thread (the package sets `OPTGRAPH_CLI`; outside the package it uses `optgraph` on `PATH`), shows the CLI's progress lines while it evaluates, then the graph; if the evaluation fails, the CLI's error. A partial graph (exit 3) loads with its warnings. `-` reads `graph.json` from stdin. Ctrl+O, the top bar's *Open graph.json* or dropping a file on the window opens another graph (the file dialog is xdg-desktop-portal's; without a portal the app says so).
@@ -161,6 +162,15 @@ With a flake reference the app runs the optgraph CLI on a background thread (the
 What it shows is the web viewer's: the sidebar lists (*Overrides*, *Switched off*, *Errors*), the top bar's status chips and warnings panel, the priority ladder with its statuses and reasons (merged options as compact rows that open on click, Enter or Space), the module detail, the graph with rings, priority chips, dimming and the camera that keeps defining modules at 12 px labels, and the command palette (`/` or Ctrl+K). The derived data comes from `app/crates/optgraph-core`, a library without GUI dependencies whose tests compare its results with the web viewer's own code on the demo's graph (`viewer/src/data.js`, `search.js` and `layout.js` run under node by `app/scripts/`). Keys: `/` and Ctrl+K search, arrows walk the sidebar lists, Enter opens, Tab moves between compact rows, Esc clears; Ctrl+O opens a file. The colour scheme is dark unless the system explicitly prefers light (the desktop portal's `color-scheme` setting, read with `busctl` or `gdbus`; no portal or no preference: dark), and it follows changes; the top bar's toggle or `--dark`/`--light` pin it. The web viewer follows `prefers-color-scheme`.
 
 ![A merged list option: one compact row per winner](docs/native-merged.png)
+
+Submodule instances (`users.users.<name>`, `home-manager.users.<name>`, ...) are shown as such:
+
+- The sidebar lists the top-level options (collapsed above 30), then a collapsible group per instance with its counts (collapsed above 12 options), instances inside it indented. *Overrides*, *Switched off* and *Errors* keep full paths with a chip naming the instance. The funnel of a group, Enter on an instance in the palette, or `--instance` filter the sidebar to it; the `instance: X` chip clears that.
+- The inspector shows a breadcrumb above the title, `home-manager.users › me › programs.git.enable`: the first segment opens that option's ladder, the name filters to the instance. A definition that never reached its instance is a lost card with the reason `dropped at users.users (mkForce)`; the priority is named only when it lost at a listed option, not at the instance itself.
+- In the graph the modules of an instance sit in a rounded cluster labelled with the instance and attached to the modules that wrote its definitions. An instance with more than 6 modules (those of the instances inside it included) starts as one stacked pill with a count; a click expands it, a click on a cluster's label row collapses it, and selecting an option or module inside opens it. Several anonymous modules of one file in a cluster are told apart by line (`home.nix:12`).
+- The palette has an *Instances* group; the top bar shows `N instances · M nested options`, and the warnings panel counts the `nested-*` codes.
+
+The web viewer has no clusters or groups: it shows the same breadcrumb text and instance chip in an option's detail, and the module edges without boxes.
 
 Differences from the web viewer:
 
@@ -236,7 +246,7 @@ nix build .#viewer     # viewer/build.sh: one result/index.html
 nix run . -- ./demo#nixosConfigurations.demo -o demo.json   # the live demo's graph, as pages.yml builds it
 ```
 
-`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-27). `tests/assertions.jq` has 139 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
+`nix flake check -L`, `nix fmt -- --check .` and `tests/e2e.sh` pass on this checkout (2026-10-31). `tests/assertions.jq` has 140 checks on the fixture's output. `nix flake check` skips aarch64-linux unless `--all-systems` is given. The e2e test needs network access for the fixture's nixpkgs.
 
 Layout: `nix/` extraction library, `cli/` the `nix eval` wrapper, `viewer/` the viewer sources (`template.html`, `style.css`, `src/*.js`, `vendor/fonts/`), `app/` the native app (Cargo workspace: `optgraph-core`, `optgraph-app`), `tools/` the tour renderer, the font subsetter and the native app's screenshot tools, `demo/` the demo flake (a synthetic desktop configuration; `pages.yml` extracts its graph at deploy time as the live demo's `demo.json`, and `checks.demo` keeps it free of warnings and option errors), `schema/graph.schema.json` output schema, `tests/fixture/` test flake, `docs/schema.md` field reference, `docs/module-system-notes.md` verified findings about `lib/modules.nix` with source references.
 
