@@ -1,19 +1,27 @@
 name: native
 # The native app (app/, GPUI). Kept out of ci.yml: building GPUI takes
 # minutes, and `nix flake check` only runs optgraph-core's tests.
+# The paths are the inputs of .#optgraph-app: the cargo build reads app/ and
+# viewer/vendor/fonts/Geist*.woff2, the wrapper adds the CLI (cli/, nix/,
+# and the viewer it embeds). Keep them in sync with app/package.nix and the
+# filesets in flake.nix.
 on:
   push:
     branches: [main]
     paths:
       - "app/**"
       - "flake.*"
-      - "viewer/vendor/fonts/**"
+      - "cli/**"
+      - "nix/**"
+      - "viewer/**"
       - ".github/workflows/native.yml"
   pull_request:
     paths:
       - "app/**"
       - "flake.*"
-      - "viewer/vendor/fonts/**"
+      - "cli/**"
+      - "nix/**"
+      - "viewer/**"
       - ".github/workflows/native.yml"
 
 jobs:
