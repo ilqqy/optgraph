@@ -25,6 +25,17 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+      # Binary cache for the app (GPUI takes minutes to build). Does nothing
+      # until the repository variable CACHIX_CACHE is set; pushes need the
+      # secret CACHIX_AUTH_TOKEN and happen only on pushes to main, never on
+      # pull requests.
+      - name: Cachix
+        if: vars.CACHIX_CACHE != ''
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.CACHIX_CACHE }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: ${{ github.event_name == 'pull_request' }}
       - name: Build .#optgraph-app
         run: nix build -L .#optgraph-app
       - name: The wrapper runs
