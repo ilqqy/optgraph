@@ -41,6 +41,8 @@
           inherit toolVersion viewer;
         };
         # The native viewer (app/); runs the CLI above for flake references.
+        # The cargo build (optgraph-app.unwrapped) depends on app/ and two
+        # fonts only; the wrapper that adds the CLI builds in a second.
         optgraph-app = pkgs.callPackage ./app/package.nix {
           src = ./.;
           optgraph = default;
