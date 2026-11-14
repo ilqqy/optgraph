@@ -3,11 +3,21 @@
 
 use gpui::{AnyElement, Context, FontWeight, IntoElement, MouseButton, div, prelude::*, px};
 use optgraph_core::Model;
-use optgraph_core::text::{plural, thousands};
+use optgraph_core::text::{break_lines, elide_middle, plural, thousands};
 
 use crate::theme::{FONT_MONO, FS_LG, FS_SM, FS_XS, R_MD, R_SM, SIDE_W, TOP_H, Theme};
 use crate::ui::{icon, instance_chip, kbd, status_chip};
 use crate::view::{ListKind, OptgraphView, Sel, SideRow};
+
+/// How many characters of the 12 px mono font fit a line of this width.
+fn line_chars(width: f32) -> usize {
+    (width / 7.2).floor().max(4.) as usize
+}
+
+/// How many fit two lines; a few are left free for where the lines break.
+fn list_chars(width: f32) -> usize {
+    2 * line_chars(width) - 3
+}
 
 impl OptgraphView {
     /// Child index in the sidebar's scroll list of sidebar item `cursor`.
@@ -252,15 +262,16 @@ impl OptgraphView {
                     .flex_col()
                     .child(
                         div()
-                            .whitespace_nowrap()
-                            .overflow_hidden()
-                            .text_ellipsis_start()
+                            .line_clamp(2)
                             .font_family(FONT_MONO)
                             .text_size(px(FS_SM))
                             .line_height(px(17.))
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(t.text)
-                            .child(label),
+                            .child({
+                                let width = 172. - depth as f32 * 10.;
+                                break_lines(&elide_middle(&label, list_chars(width)).text, line_chars(width))
+                            }),
                     )
                     .child(
                         div()
@@ -312,12 +323,19 @@ impl OptgraphView {
             ListKind::Instance(g) => is.list[g].depth + 1,
             _ => 0,
         };
-        // In a group the path below the instance; else the full path, which
-        // wraps, and a chip with its instance.
-        let text = if in_group {
-            is.relative_path(oi, &path).to_string()
+        // In a group the path below the instance; else the full path with a
+        // chip naming its instance. At most two lines, cut in the middle.
+        let shown = if in_group {
+            is.relative_path(oi, &path)
         } else {
-            path
+            path.as_str()
+        };
+        let width = 214. - depth as f32 * 10.;
+        let text = break_lines(&elide_middle(shown, list_chars(width)).text, line_chars(width));
+        let tip = if item.note.is_empty() || item.note == path {
+            path.clone()
+        } else {
+            format!("{path}\n{}", item.note)
         };
         let chip = if in_group { None } else { is.of_option[oi] };
         div()
@@ -331,21 +349,29 @@ impl OptgraphView {
             .text_size(px(FS_SM))
             .line_height(px(18.))
             .cursor_pointer()
-            .when(is_sel, |d| d.bg(t.accent_soft).border_l_2().border_color(t.accent))
+            // The selection's bar is always there, so selecting doesn't rewrap.
+            .border_l_2()
+            .border_color(gpui::transparent_black())
+            .when(is_sel, |d| d.bg(t.accent_soft).border_color(t.accent))
             .when(is_cursor && !is_sel, |d| d.bg(t.s3))
             .hover(|s| s.bg(t.s3).text_color(t.text))
-            .tooltip(crate::ui::tip(item.note.clone()))
+            .tooltip(crate::ui::tip(tip))
             .on_click(cx.listener(move |this, _, _, cx| {
                 this.side_cursor = Some(i);
                 this.select(Sel::Option(oi), cx);
                 this.side_cursor = Some(i);
             }))
-            .when_some(chip.is_none().then_some(text.clone()), |d, s| {
-                d.child(div().truncate().child(s))
-            })
+            .child(div().line_clamp(2).child(text))
             .when_some(chip, |d, c| {
-                d.child(div().child(text))
-                    .child(div().mt(px(3.)).flex().child(instance_chip(t, &is.list[c].name)))
+                let inst = &is.list[c];
+                d.child(
+                    div().mt(px(3.)).flex().child(
+                        div()
+                            .id(("side-chip", i))
+                            .tooltip(crate::ui::tip(inst.path.clone()))
+                            .child(instance_chip(t, is.chip_name(c))),
+                    ),
+                )
             })
             .into_any_element()
     }

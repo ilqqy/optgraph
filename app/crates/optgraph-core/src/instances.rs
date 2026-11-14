@@ -296,6 +296,13 @@ impl Instances {
         out
     }
 
+    /// The short name of an instance for a chip: the name of the outermost
+    /// instance around it (`ilya` for `home-manager.users.ilya.programs.x.profiles.default`,
+    /// where the instance's own name would only say `default`).
+    pub fn chip_name(&self, i: usize) -> &str {
+        &self.list[self.chain(i)[0]].name
+    }
+
     /// `i` and the instances inside it.
     pub fn subtree(&self, i: usize) -> Vec<usize> {
         let mut out = vec![i];

@@ -586,6 +586,20 @@ pub fn module_short_label(m: &Module) -> String {
     }
 }
 
+/// The label of a module in the inspector's rows: as `module_short_label`, with
+/// the line of an inline module when the data has it: `ilya › home.nix:12`,
+/// `inline #3 (flake.nix:20)`. A file imported as a whole has no line.
+pub fn module_detail_label(m: &Module) -> String {
+    let is_path = |id: &str| id == m.file || id.ends_with(&format!("»{}", m.file));
+    match (&m.scope, &m.position) {
+        (Some(scope), Some(p)) if !is_path(&m.id) => format!("{} › {}", instance_name(scope), base_name(p)),
+        (None, Some(p)) if m.origin == Origin::UserInline => {
+            format!("{} ({})", module_short_label(m), base_name(p))
+        }
+        _ => module_short_label(m),
+    }
+}
+
 /// The last component of a submodule instance path: `users.users.alice` ->
 /// `alice`, `fileSystems."/boot"` -> `/boot`.
 pub fn instance_name(scope: &str) -> String {

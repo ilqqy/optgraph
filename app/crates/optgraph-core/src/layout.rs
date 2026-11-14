@@ -630,3 +630,66 @@ pub fn clustered_layout(sizes: &[Size], edges: &[(usize, usize)], clusters: &[Cl
     }
     ClusteredLayout { x, y, boxes, paths }
 }
+
+/// A cluster on the screen; `head` is the height of its label row.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClusterScreen {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub head: f64,
+}
+
+/// A cluster at camera (`cam_x`, `cam_y`, `k`). Below zoom `read_k` pinned
+/// members are drawn larger than the zoom (`pinned`: world centre and size of
+/// each): the box grows around them, its label row is drawn at full size, and
+/// the box is as wide as that label (`label_w` includes the row's padding).
+pub fn cluster_on_screen(
+    b: ClusterBox,
+    (cam_x, cam_y, k): (f64, f64, f64),
+    label_w: f64,
+    pinned: &[(f64, f64, f64, f64)],
+    read_k: f64,
+) -> ClusterScreen {
+    let (mut x0, mut y0) = (cam_x + b.x * k, cam_y + b.y * k);
+    let (mut x1, mut y1) = (x0 + b.w * k, y0 + b.h * k);
+    let mut head = CLUSTER_HEAD * k;
+    if k < read_k && !pinned.is_empty() {
+        let s = read_k / k;
+        let pad = 8.;
+        head = CLUSTER_HEAD;
+        let mut top = f64::INFINITY;
+        for &(wx, wy, w, h) in pinned {
+            let (cx, cy) = (cam_x + wx * k, cam_y + wy * k);
+            let (hw, hh) = (w / 2. * k * s, h / 2. * k * s);
+            x0 = x0.min(cx - hw - pad);
+            x1 = x1.max(cx + hw + pad);
+            top = top.min(cy - hh - pad);
+            y1 = y1.max(cy + hh + pad);
+        }
+        y0 = y0.min(top - head);
+        x1 = x1.max(x0 + label_w);
+    }
+    ClusterScreen {
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+        head,
+    }
+}
+
+/// Which owner links to bundle: an owner with more than `max_fan` links keeps
+/// only those marked `keep` (the expanded clusters); the rest are bundled.
+/// `links`: per link, its owner node (`None`: not an owner link) and `keep`.
+pub fn bundled_links(links: &[Option<(usize, bool)>], max_fan: usize) -> Vec<bool> {
+    let mut fan: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    for (owner, _) in links.iter().flatten() {
+        *fan.entry(*owner).or_default() += 1;
+    }
+    links
+        .iter()
+        .map(|l| l.is_some_and(|(owner, keep)| !keep && fan[&owner] > max_fan))
+        .collect()
+}

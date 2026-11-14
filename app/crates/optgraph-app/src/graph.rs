@@ -17,7 +17,10 @@ use gpui::{
     App, BorderStyle, Bounds, BoxShadow, Corners, Font, FontWeight, Hsla, PathBuilder, Pixels, SharedString, TextRun,
     Window, point, px, quad, size,
 };
-use optgraph_core::layout::{CLUSTER_HEAD, ClusterSpec, Point as LPoint, Size, clustered_layout};
+use optgraph_core::layout::{
+    CLUSTER_HEAD, ClusterBox, ClusterScreen, ClusterSpec, Point as LPoint, Size, bundled_links, cluster_on_screen,
+    clustered_layout,
+};
 use optgraph_core::{Model, ModuleStatus, OriginClass, Status, module_short_label, nested_file_label, ring_text};
 
 use crate::theme::{FONT_MONO, FONT_UI, Theme};
@@ -39,6 +42,10 @@ const MAX_K: f64 = 4.;
 const RESERVE_BOTTOM: f64 = 44.;
 /// An instance with more modules than this starts collapsed into one pill.
 pub const COLLAPSE_OVER: usize = 6;
+/// An owner with more cluster links than this draws only those of its expanded
+/// clusters; the others are a count badge on the owner (all show on hover, or
+/// when the owner or something behind them is selected).
+const OWNER_FAN_MAX: usize = 3;
 /// Below this zoom labels are not drawn.
 const LABEL_MIN_K: f64 = 0.42;
 /// Cluster labels longer than this keep their end.
@@ -77,6 +84,8 @@ pub struct Link {
     /// More targets of one owner link: the other modules this owner wrote in
     /// the same cluster (the line ends on the cluster's side).
     pub also: Vec<usize>,
+    /// Links of a large owner fan that are not drawn by default.
+    pub bundled: bool,
     pub dashed: bool,
     pub pts: Vec<LPoint>,
 }
@@ -87,6 +96,8 @@ pub struct Cluster {
     /// Index into `Model::instances.list`.
     pub inst: usize,
     pub label: SharedString,
+    /// The label row's width at full size, its padding included.
+    pub label_w: f64,
     pub x: f64,
     pub y: f64,
     pub w: f64,
@@ -95,11 +106,21 @@ pub struct Cluster {
     pub members: Vec<usize>,
 }
 
+/// The count badge of an owner's bundled links.
+#[derive(Clone, Debug)]
+pub struct Bundle {
+    pub node: usize,
+    pub count: usize,
+    pub text: SharedString,
+    pub w: f64,
+}
+
 /// The laid-out graph: fixed until an instance is expanded or collapsed.
 pub struct GraphData {
     pub nodes: Vec<Node>,
     pub links: Vec<Link>,
     pub clusters: Vec<Cluster>,
+    pub bundles: Vec<Bundle>,
     pub by_module: HashMap<usize, usize>,
     /// Per node: indices of the links into it.
     pub parents: Vec<Vec<usize>>,
@@ -250,15 +271,10 @@ fn cluster_font() -> Font {
     }
 }
 
-/// A cluster's label, its end kept when long.
+/// A cluster's label: cut in the middle when long (its full path is in the
+/// tooltip).
 fn short_label(label: &str) -> String {
-    let n = label.chars().count();
-    if n <= LABEL_MAX {
-        label.to_string()
-    } else {
-        let tail: String = label.chars().skip(n - (LABEL_MAX - 1)).collect();
-        format!("…{tail}")
-    }
+    optgraph_core::text::elide_middle(label, LABEL_MAX).text
 }
 
 fn text_width(window: &Window, text: &str, font: Font, size: f64) -> f64 {
@@ -431,6 +447,7 @@ impl GraphState {
                     clusters.push(Cluster {
                         inst: i,
                         label: short_label(is.label(i)).into(),
+                        label_w: 0.,
                         x: 0.,
                         y: 0.,
                         w: 0.,
@@ -473,6 +490,7 @@ impl GraphState {
         let mut seen: HashSet<(usize, usize)> = HashSet::new();
         // One line per owner and cluster: (owner node, cluster) -> link.
         let mut owner_link: HashMap<(usize, usize), usize> = HashMap::new();
+        let mut owner_links: HashSet<usize> = HashSet::new();
         for &mi in &shown {
             let s = by_module[&mi];
             for t in &all[mi].imports {
@@ -484,6 +502,7 @@ impl GraphState {
                         source: s,
                         target: tn,
                         also: Vec::new(),
+                        bundled: false,
                         dashed: nodes[tn].disabled,
                         pts: vec![],
                     });
@@ -513,10 +532,12 @@ impl GraphState {
                         if let Some(c) = nodes[s].in_box {
                             owner_link.insert((on, c), links.len());
                         }
+                        owner_links.insert(links.len());
                         links.push(Link {
                             source: on,
                             target: s,
                             also: Vec::new(),
+                            bundled: false,
                             dashed: false,
                             pts: vec![],
                         });
@@ -524,11 +545,44 @@ impl GraphState {
                 }
             }
         }
+        // Bundling: the fan of a large owner shows only its expanded clusters.
+        let kept = |n: &Node| {
+            let inst = n.collapsed.or(n.in_box.map(|c| clusters[c].inst));
+            inst.is_some_and(|i| self.auto_open.contains(&i) || self.user_open.get(&i) == Some(&true))
+        };
+        let plan: Vec<Option<(usize, bool)>> = links
+            .iter()
+            .enumerate()
+            .map(|(k, l)| owner_links.contains(&k).then(|| (l.source, kept(&nodes[l.target]))))
+            .collect();
+        let mut counts: HashMap<usize, usize> = HashMap::new();
+        for (l, b) in links.iter_mut().zip(bundled_links(&plan, OWNER_FAN_MAX)) {
+            l.bundled = b;
+            if b {
+                *counts.entry(l.source).or_default() += 1;
+            }
+        }
+        let mut bundles: Vec<Bundle> = counts
+            .into_iter()
+            .map(|(node, count)| {
+                let text: SharedString = format!("+{count}").into();
+                Bundle {
+                    node,
+                    count,
+                    w: text_width(window, &text, mono_font(), 10.).ceil() + 12.,
+                    text,
+                }
+            })
+            .collect();
+        bundles.sort_by_key(|b| b.node);
+        for c in &mut clusters {
+            c.label_w = text_width(window, &c.label, cluster_font(), 11.).ceil() + 26.;
+        }
         let specs: Vec<ClusterSpec> = clusters
             .iter()
             .map(|c| ClusterSpec {
                 members: c.members.clone(),
-                label_w: text_width(window, &c.label, cluster_font(), 11.).ceil() + 18.,
+                label_w: c.label_w,
             })
             .collect();
         let lay = clustered_layout(
@@ -557,6 +611,7 @@ impl GraphState {
             nodes,
             links,
             clusters,
+            bundles,
             by_module,
             parents,
             banner,
@@ -1006,22 +1061,37 @@ impl GraphState {
                 return Some(i);
             }
         }
-        (0..data.nodes.len()).rev().find(|&i| hit(i, 1.))
+        if let Some(i) = (0..data.nodes.len()).rev().find(|&i| hit(i, 1.)) {
+            return Some(i);
+        }
+        // A bundle's badge stands for its owner.
+        data.bundles.iter().map(|b| b.node).find(|&node| {
+            let (bx, by, bw, bh) = self.badge_rect(node);
+            px_ >= bx && px_ <= bx + bw && py >= by && py <= by + bh
+        })
+    }
+
+    /// Screen rectangle (stage coordinates) of an owner's bundle badge.
+    fn badge_rect(&self, node: usize) -> (f64, f64, f64, f64) {
+        let data = self.data.as_ref().unwrap();
+        let w = data.bundles.iter().find(|b| b.node == node).map_or(0., |b| b.w);
+        let (x, y, rw, rh) = self.node_rect(node);
+        badge_geometry(x, y, rw, rh, w, self.chip_w(node), self.cam.k * self.pin_scale(node))
     }
 
     /// The cluster whose label row is under a stage point.
     pub fn cluster_at(&self, px_: f64, py: f64) -> Option<usize> {
         let data = self.data.as_ref()?;
         (0..data.clusters.len()).find(|&c| {
-            let (x, y, w, _, head) = cluster_screen(data, c, self.cam, &self.pins);
-            px_ >= x && px_ <= x + w && py >= y && py <= y + head
+            let s = cluster_screen(data, c, self.cam, &self.pins);
+            px_ >= s.x && px_ <= s.x + s.w && py >= s.y && py <= s.y + s.head
         })
     }
 
     /// Screen rectangle (stage coordinates) of a cluster.
     pub fn cluster_rect(&self, c: usize) -> (f64, f64, f64, f64) {
-        let (x, y, w, h, _) = cluster_screen(self.data.as_ref().unwrap(), c, self.cam, &self.pins);
-        (x, y, w, h)
+        let s = cluster_screen(self.data.as_ref().unwrap(), c, self.cam, &self.pins);
+        (s.x, s.y, s.w, s.h)
     }
 
     /// Screen rectangle (stage coordinates) of a node's pill.
@@ -1142,38 +1212,37 @@ impl GraphState {
     }
 }
 
-/// A cluster on the screen (stage coordinates): x, y, w, h and the height of
-/// its label row. Pinned members are drawn larger than the zoom: the box grows
-/// around them and its label row stays readable, so they never poke out of it.
-fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>) -> (f64, f64, f64, f64, f64) {
+/// A cluster on the screen (stage coordinates). Pinned members are drawn larger
+/// than the zoom: the box grows around them and its label stays readable.
+fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>) -> ClusterScreen {
     let b = &data.clusters[c];
-    let k = cam.k;
-    let (mut x0, mut y0) = (cam.x + b.x * k, cam.y + b.y * k);
-    let (mut x1, mut y1) = (x0 + b.w * k, y0 + b.h * k);
-    let mut head = CLUSTER_HEAD * k;
-    let pinned = k < READ_K && b.members.iter().any(|m| pins.contains(m));
-    if pinned {
-        let s = READ_K / k;
-        let pad = 8.;
-        head = CLUSTER_HEAD;
-        // The label row goes above the box's own top or the highest pin.
-        let mut top = f64::INFINITY;
-        for &m in &b.members {
-            if !pins.contains(&m) {
-                continue;
-            }
+    let pinned: Vec<(f64, f64, f64, f64)> = b
+        .members
+        .iter()
+        .filter(|m| pins.contains(m))
+        .map(|&m| {
             let n = &data.nodes[m];
-            let cx = cam.x + (n.x + n.w / 2.) * k;
-            let cy = cam.y + n.y * k;
-            let (hw, hh) = (n.w / 2. * k * s, PILL_H / 2. * k * s);
-            x0 = x0.min(cx - hw - pad);
-            x1 = x1.max(cx + hw + pad);
-            top = top.min(cy - hh - pad);
-            y1 = y1.max(cy + hh + pad);
-        }
-        y0 = y0.min(top - head);
-    }
-    (x0, y0, x1 - x0, y1 - y0, head)
+            (n.x + n.w / 2., n.y, n.w, PILL_H)
+        })
+        .collect();
+    cluster_on_screen(
+        ClusterBox {
+            x: b.x,
+            y: b.y,
+            w: b.w,
+            h: b.h,
+        },
+        (cam.x, cam.y, cam.k),
+        b.label_w,
+        &pinned,
+        READ_K,
+    )
+}
+
+/// Where a bundle's badge goes, right of the owner's pill and priority chip.
+fn badge_geometry(x: f64, y: f64, rw: f64, rh: f64, w: f64, chip_w: f64, k: f64) -> (f64, f64, f64, f64) {
+    let h = 16. * k;
+    (x + rw + (chip_w + 12.) * k, y + (rh - h) / 2., w * k, h)
 }
 
 /// Paints a frame of the graph into `bounds` (the stage).
@@ -1272,12 +1341,14 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
         if any { b.build().ok() } else { None }
     };
     let on_path = |k: usize| frame.path.as_ref().is_some_and(|p| p.contains(&k));
+    // A large owner's other links show only while it is hovered.
+    let drawn = |l: &Link| !l.bundled || frame.hover == Some(l.source);
     for dashed in [false, true] {
         let rest = data
             .links
             .iter()
             .enumerate()
-            .filter(|(k, l)| l.dashed == dashed && !on_path(*k))
+            .filter(|(k, l)| l.dashed == dashed && !on_path(*k) && drawn(l))
             .map(|(_, l)| l);
         let alpha = if frame.path.is_some() { dim_a } else { 1. };
         if let Some(p) = edge_path(&mut rest.into_iter(), (1.25 * cam.k).max(1.), dashed) {
@@ -1354,6 +1425,16 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
         if let Some(r) = frame.rings.get(&i) {
             paint_status(frame, t, &data.nodes[i], r, pin_scale(i), (ox, oy), window, cx);
         }
+    }
+    for b in &data.bundles {
+        let tier_a = if !dimming || is_lit(b.node) {
+            1.
+        } else if frame.via.as_ref().is_some_and(|v| v.contains(&b.node)) {
+            1. - 0.25 * f
+        } else {
+            1. - 0.6 * f
+        };
+        paint_bundle(frame, t, b, pin_scale(b.node), tier_a as f32, (ox, oy), window, cx);
     }
     if let Some(s) = frame.selected
         && frame.rings.is_empty()
@@ -1491,6 +1572,65 @@ fn paint_pill(
     }
 }
 
+/// The count badge of an owner's bundled links, on a short faint edge.
+#[allow(clippy::too_many_arguments)]
+fn paint_bundle(
+    frame: &Frame,
+    t: &Theme,
+    b: &Bundle,
+    s: f64,
+    alpha: f32,
+    o: (f64, f64),
+    window: &mut Window,
+    cx: &mut App,
+) {
+    let n = &frame.data.nodes[b.node];
+    let (x, cy, w, h, k) = node_screen(frame, n, s, o);
+    let chip_w = frame.rings.get(&b.node).map_or(0., |r| r.chip_w + 8.);
+    let (bx, by, bw, bh) = badge_geometry(x, cy - h / 2., w, h, b.w, chip_w, k);
+    if frame.hover != Some(b.node) {
+        let mut stub = PathBuilder::stroke(px((k).max(1.) as f32));
+        stub.move_to(point(px((x + w) as f32), px(cy as f32)));
+        stub.line_to(point(px(bx as f32), px(cy as f32)));
+        if let Ok(p) = stub.build() {
+            window.paint_path(p, t.edge.opacity(0.7 * alpha));
+        }
+    }
+    window.paint_quad(quad(
+        Bounds::new(point(px(bx as f32), px(by as f32)), size(px(bw as f32), px(bh as f32))),
+        px((bh / 2.) as f32),
+        t.s2.opacity(alpha),
+        px(1.),
+        t.accent.opacity(0.45 * alpha),
+        BorderStyle::Solid,
+    ));
+    if k < LABEL_MIN_K {
+        return;
+    }
+    let size_ = 10. * k;
+    let run = TextRun {
+        len: b.text.len(),
+        font: mono_font(),
+        color: t.text2.opacity(alpha),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    let line = window
+        .text_system()
+        .shape_line(b.text.clone(), px(size_ as f32), &[run], None);
+    let lh = size_ * 1.3;
+    line.paint(
+        point(px((bx + 6. * k) as f32), px((cy - lh / 2.) as f32)),
+        px(lh as f32),
+        gpui::TextAlign::Left,
+        None,
+        window,
+        cx,
+    )
+    .ok();
+}
+
 /// An instance's rounded box and its label row: a chevron (click to
 /// collapse) and the label.
 #[allow(clippy::too_many_arguments)]
@@ -1506,10 +1646,10 @@ fn paint_cluster(
     window: &mut Window,
     cx: &mut App,
 ) {
-    let (sx, sy, w, h, head) = cluster_screen(&frame.data, c, frame.cam, &frame.pins);
-    let (x, y) = (view.0 + sx, view.1 + sy);
+    let s = cluster_screen(&frame.data, c, frame.cam, &frame.pins);
+    let (x, y, w, h) = (view.0 + s.x, view.1 + s.y, s.w, s.h);
     // The label row's scale: 1 when the box grew around pinned members.
-    let k = head / CLUSTER_HEAD;
+    let k = s.head / CLUSTER_HEAD;
     if x + w < view.0 - 20. || x > view.0 + view.2 + 20. || y + h < view.1 - 20. || y > view.1 + view.3 + 20. {
         return;
     }

@@ -17,6 +17,9 @@ use crate::theme::{FONT_MONO, FS_LG, FS_MD, FS_SM, FS_XS, R_LG, R_MD, R_XL, Them
 use crate::ui::{dashed_badge, icon, kbd, origin_chip, shadow_3};
 use crate::view::{OptgraphView, PalClose, PalConfirm, PalDown, PalUp, Sel};
 
+/// Two lines of a palette row's path column (at its narrowest).
+const PATH_CHARS: usize = 88;
+
 pub struct PaletteState {
     pub open: bool,
     pub input: Entity<TextInput>,
@@ -75,6 +78,21 @@ fn highlighted(t: &Theme, text: &str, hits: &[usize]) -> StyledText {
         }
     }
     StyledText::new(text.to_string()).with_highlights(ranges)
+}
+
+/// A path in the palette: at most two lines, cut in the middle, the matched
+/// characters highlighted where they survive the cut.
+fn path_text(t: &Theme, path: &str, hits: &[usize]) -> gpui::Div {
+    let e = optgraph_core::text::elide_middle(path, PATH_CHARS);
+    let mapped: Vec<usize> = hits.iter().filter_map(|&h| e.map_index(h)).collect();
+    div()
+        .flex_1()
+        .min_w_0()
+        .line_clamp(2)
+        .font_family(FONT_MONO)
+        .text_size(px(FS_MD))
+        .line_height(px(18.))
+        .child(highlighted(t, &e.text, &mapped))
 }
 
 impl OptgraphView {
@@ -343,12 +361,12 @@ impl OptgraphView {
                 let inst = &model.instances.list[it.index];
                 (
                     div()
+                        .id(("pal-path", n))
                         .flex_1()
                         .min_w_0()
-                        .truncate()
-                        .font_family(FONT_MONO)
-                        .text_size(px(FS_MD))
-                        .child(highlighted(t, &inst.path, &it.hits))
+                        .flex()
+                        .tooltip(crate::ui::tip(inst.path.clone()))
+                        .child(path_text(t, &inst.path, &it.hits))
                         .into_any_element(),
                     div()
                         .flex_none()
@@ -380,7 +398,9 @@ impl OptgraphView {
                         )))
                         .child(
                             div()
-                                .truncate()
+                                .whitespace_nowrap()
+                                .overflow_hidden()
+                                .text_ellipsis_middle()
                                 .text_color(t.text3)
                                 .font_family(FONT_MONO)
                                 .text_size(px(FS_XS))
@@ -451,12 +471,12 @@ impl OptgraphView {
                 };
                 (
                     div()
+                        .id(("pal-path", n))
                         .flex_1()
                         .min_w_0()
-                        .truncate()
-                        .font_family(FONT_MONO)
-                        .text_size(px(FS_MD))
-                        .child(highlighted(t, &o.path, &it.hits))
+                        .flex()
+                        .tooltip(crate::ui::tip(o.path.clone()))
+                        .child(path_text(t, &o.path, &it.hits))
                         .into_any_element(),
                     meta.into_any_element(),
                 )

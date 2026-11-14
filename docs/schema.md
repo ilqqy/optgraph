@@ -209,7 +209,7 @@ Options that a user module touches can have hundreds of nixpkgs definitions (in 
 
 Enforced by the JSON Schema: field presence and types, enums, `origin` pattern, unique `imports` and `winners`, `loc` non-empty, indices and `modulesIndex` non-negative.
 
-Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (140 checks; a check whose target is missing fails, it is not skipped):
+Not expressible in the schema; asserted by `tests/assertions.jq` on the fixture (141 checks; a check whose target is missing fails, it is not skipped):
 
 - every id in `imports` and every definition's `module` is the `id` of a record in `modules`, and module ids are unique;
 - a definition's `file` is absent when it equals its module's file;
@@ -403,7 +403,7 @@ An option with a definition that throws (`fixture.throws = throw "..."`): the de
 
 ### Nested example
 
-Same run with the default `--submodule-depth 3` (10 warnings, 67 modules, 71 options; re-run 2026-10-31). `meta` gets `"submoduleDepth": 3`, and the nesting warnings, reduced to code and subject:
+Same run with the default `--submodule-depth 3` (10 warnings, 70 modules, 72 options; re-run 2026-10-31). `meta` gets `"submoduleDepth": 3`, and the nesting warnings, reduced to code and subject:
 
 ```json
 [

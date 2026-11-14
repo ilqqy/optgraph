@@ -12,6 +12,7 @@ pub mod text;
 
 pub use analysis::{
     Analysis, Beats, LadderRow, Model, ModuleStatus, OffRef, OptionInfo, Stats, Status, ValueView, instance_name,
-    module_label, module_short_label, nested_file_label, omitted_badge, parent_path, ring_text, value_view,
+    module_detail_label, module_label, module_short_label, nested_file_label, omitted_badge, parent_path, ring_text,
+    value_view,
 };
 pub use model::{Condition, DefKind, Definition, Graph, Meta, Module, OptionEntry, Origin, OriginClass, Warning};

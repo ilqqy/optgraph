@@ -4,7 +4,7 @@
 
 use optgraph_core::instances::{Crumb, CrumbTarget, relative_to};
 use optgraph_core::search::{Group, Kind, palette_search};
-use optgraph_core::{Model, Status, load, parent_path};
+use optgraph_core::{Model, Status, load, module_detail_label, parent_path};
 
 fn fixture() -> Model {
     Model::new(load::from_str(include_str!("data/nested.json")).expect("loads"))
@@ -221,4 +221,56 @@ fn the_palette_lists_instances() {
     let old = Model::new(load::from_str(include_str!("data/demo.json")).unwrap());
     assert!(palette_search(&old, "").iter().all(|g| g.group != Group::Instances));
     assert!(old.instances.is_empty());
+}
+
+#[test]
+fn the_chip_names_the_outermost_instance() {
+    let m = fixture();
+    let is = &m.instances;
+    assert_eq!(is.chip_name(inst(&m, "fixture.home.alice.files.todo")), "alice");
+    assert_eq!(is.chip_name(inst(&m, "fixture.home.alice")), "alice");
+    let long = "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\"";
+    assert_eq!(is.chip_name(inst(&m, long)), "zoe");
+    assert_eq!(
+        is.list[inst(&m, long)].name,
+        "config/some-application/with/a/rather/long/path/settings.conf"
+    );
+}
+
+#[test]
+fn inspector_labels_have_the_line_of_inline_modules() {
+    let m = fixture();
+    let by = |id: &str| {
+        m.modules()
+            .iter()
+            .find(|x| x.id == id)
+            .unwrap_or_else(|| panic!("{id}"))
+    };
+    // An inline definition in a file: its line.
+    let dave = by("«fixture.accounts.dave»:anon-4");
+    assert!(
+        module_detail_label(dave).starts_with("dave › nested-force.nix:"),
+        "{}",
+        module_detail_label(dave)
+    );
+    // A file imported inside the instance: no line.
+    let extra = m
+        .modules()
+        .iter()
+        .find(|x| x.scope.as_deref() == Some("fixture.home.alice") && x.id.ends_with("/alice-extra.nix"))
+        .unwrap();
+    assert_eq!(module_detail_label(extra), "alice › alice-extra.nix");
+    // A top-level path module has none either; a user-inline one says where.
+    let top = m
+        .modules()
+        .iter()
+        .find(|x| x.id.ends_with("/modules/users.nix"))
+        .unwrap();
+    assert_eq!(module_detail_label(top), "users.nix");
+    let inline = m.modules().iter().find(|x| x.modules_index == Some(3)).unwrap();
+    assert!(
+        module_detail_label(inline).starts_with("inline #3 (flake.nix:"),
+        "{}",
+        module_detail_label(inline)
+    );
 }

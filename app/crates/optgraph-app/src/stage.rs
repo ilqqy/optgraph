@@ -10,6 +10,7 @@ use gpui::{
     AnyElement, Context, CursorStyle, FontWeight, IntoElement, MouseButton, Pixels, ScrollEvent, Window, canvas, div,
     prelude::*, px,
 };
+use optgraph_core::text::plural;
 use optgraph_core::{Model, module_label};
 
 use crate::graph::{self, GraphState};
@@ -517,6 +518,13 @@ impl OptgraphView {
                         .italic()
                         .child("disabled (disabledModules): not evaluated"),
                 )
+            })
+            .when_some(data.bundles.iter().find(|b| b.node == n), |d, b| {
+                d.child(div().mt(px(4.)).text_color(t.text3).italic().child(format!(
+                    "+{}: its links to {} are drawn while it is hovered or selected",
+                    b.count,
+                    plural(b.count as u64, "more nested instance", None)
+                )))
             })
             .into_any_element()
     }
