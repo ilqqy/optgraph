@@ -8,7 +8,7 @@ Findings about `lib/modules.nix` and friends that optgraph depends on.
 - Re-run date: 2026-10-02; items marked 2026-10-03 were re-run after the review fixes (topics 3, 6, 7, 8)
 - Refs are written `nixpkgs@c59305b:path:line`. Refs into this repository (`nix/*.nix`) use line numbers of the same commit and drift with edits.
 
-This file covers module-system internals only. CLI flags and the output schema live in `docs/schema.md` and `README.md`.
+This file covers module-system internals only. CLI flags and the output schema live in `docs/schema.md` and `docs/usage.md`.
 
 ## Conventions
 
