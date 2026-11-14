@@ -51,6 +51,63 @@ pub fn base_name(p: &str) -> String {
     }
 }
 
+/// A submodule instance name that is a file path (`home.file."/home/u/.config/app/search.json"`,
+/// `xdg.configFile."nvim/init.lua"`): its last segment (`search.json`), so chips,
+/// labels and verdicts stay short; tooltips, titles and copies keep the full
+/// name. A name without a `/` before its last segment is returned unchanged
+/// (`alice`, `/boot`, `settings.ini`), and so is a trailing `/`'s segment kept
+/// without the slash (`nvim/lua/` -> `lua`).
+pub fn display_name(name: &str) -> String {
+    let t = name.trim_end_matches('/');
+    match t.rfind('/') {
+        Some(i) if i > 0 && i + 1 < t.len() => t[i + 1..].to_string(),
+        _ => name.to_string(),
+    }
+}
+
+/// An option path with each quoted key that is a file path cut to its last
+/// segment: `home.file."/home/u/.config/app/x.json".source` ->
+/// `home.file."…/x.json".source`. Other keys are unchanged.
+pub fn short_keys(path: &str) -> String {
+    let mut out = String::with_capacity(path.len());
+    let mut rest = path;
+    while let Some(open) = rest.find('"') {
+        out.push_str(&rest[..open]);
+        let body = &rest[open + 1..];
+        // The closing quote, skipping escaped characters.
+        let mut close = None;
+        let mut esc = false;
+        for (i, c) in body.char_indices() {
+            match c {
+                _ if esc => esc = false,
+                '\\' => esc = true,
+                '"' => {
+                    close = Some(i);
+                    break;
+                }
+                _ => {}
+            }
+        }
+        let Some(close) = close else {
+            out.push_str(&rest[open..]);
+            return out;
+        };
+        let key = &body[..close];
+        let short = display_name(key);
+        out.push('"');
+        if short == key {
+            out.push_str(key);
+        } else {
+            out.push_str("…/");
+            out.push_str(&short);
+        }
+        out.push('"');
+        rest = &body[close + 1..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// An option path cut in the middle: `text` is at most `max` characters. The
 /// first `head` characters of the path are kept, then `…`, then the path from
 /// character `tail` on. A path that fits has `head == tail == its length`.
@@ -129,9 +186,20 @@ pub fn break_lines(text: &str, per_line: usize) -> String {
     if n <= per_line {
         return text.to_string();
     }
+    // A dot inside a quoted key (`"settings.conf"`) is no boundary: an odd
+    // number of quotes follows it (counted from the end, which elision keeps).
+    let mut quotes_after = vec![0usize; n + 1];
+    for i in (0..n).rev() {
+        quotes_after[i] = quotes_after[i + 1] + usize::from(chars[i] == '"');
+    }
     let at = (n.saturating_sub(per_line).max(1)..=per_line.min(n - 1))
         .rev()
-        .find(|&i| matches!(chars[i - 1], '.' | '/') || chars[i] == '/' || chars[i] == '…');
+        .find(|&i| {
+            (chars[i - 1] == '.' && quotes_after[i].is_multiple_of(2))
+                || chars[i - 1] == '/'
+                || chars[i] == '/'
+                || chars[i] == '…'
+        });
     match at {
         Some(i) => format!(
             "{}\n{}",
@@ -273,6 +341,36 @@ mod tests {
     }
 
     #[test]
+    fn path_like_names() {
+        assert_eq!(
+            display_name("/home/u/.config/zen/default/search.json.mozlz4"),
+            "search.json.mozlz4"
+        );
+        assert_eq!(display_name("nvim/lua/plugins/colorscheme.lua"), "colorscheme.lua");
+        assert_eq!(display_name("nvim/lua/"), "lua");
+        for same in ["alice", "/boot", "/", "settings.ini", ".bashrc", ""] {
+            assert_eq!(display_name(same), same);
+        }
+        assert_eq!(
+            short_keys("home.file.\"/home/u/.config/app/x.json\".source"),
+            "home.file.\"…/x.json\".source"
+        );
+        assert_eq!(
+            short_keys("files.\"config/some-application/with/a/rather/long/path/settings.conf\""),
+            "files.\"…/settings.conf\""
+        );
+        for same in [
+            "users.users.alice",
+            "fileSystems.\"/boot\"",
+            "a.\"b\\\"/c",
+            "a.\"x.y\".z",
+        ] {
+            assert_eq!(short_keys(same), same);
+        }
+        assert_eq!(short_keys("a.\"p/q\\\"r/s.t\".u"), "a.\"…/s.t\".u");
+    }
+
+    #[test]
     fn breaking_lines_at_boundaries() {
         assert_eq!(break_lines("users.users.alice", 30), "users.users.alice");
         assert_eq!(
@@ -285,6 +383,11 @@ mod tests {
         assert_eq!(
             break_lines("abcdefghijklmnopqrstuvwxyz", 13),
             "abcdefghijklmnopqrstuvwxyz"
+        );
+        // Not inside a quoted key: at its slash instead.
+        assert_eq!(
+            break_lines("files.\"…/settings.conf\"", 20),
+            "files.\"…/\nsettings.conf\""
         );
         let q = "fixture.home.zoe.…/rather/long/path/settings.conf\".text";
         for line in break_lines(q, 29).lines() {

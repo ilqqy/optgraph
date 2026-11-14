@@ -97,7 +97,7 @@ impl OptgraphView {
                         .min_w_0()
                         .truncate()
                         .tooltip(crate::ui::tip(inst.path.clone()))
-                        .child(format!("instance: {}", inst.name)),
+                        .child(format!("instance: {}", inst.short)),
                 )
                 .child(
                     div()

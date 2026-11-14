@@ -360,8 +360,8 @@ function renderOption(model, oi, onModule, onCopyLink) {
       ? h(
           "div",
           { class: "crumbs" },
-          h("span", {}, breadcrumb(model, o).join(" › ")),
-          h("span", { class: "inst-chip", title: `in ${o.parent}` }, o.instance),
+          h("span", { title: breadcrumb(model, o, true).join(" › ") }, breadcrumb(model, o).join(" › ")),
+          h("span", { class: "inst-chip", title: `${o.instance}\nin ${o.parent}` }, shortKeys(o.instance)),
         )
       : null,
     h("h1", { class: "opt-path" }, ...pathTitle(o.path)),

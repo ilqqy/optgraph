@@ -4,7 +4,7 @@
 
 use optgraph_core::instances::{Crumb, CrumbTarget, relative_to};
 use optgraph_core::search::{Group, Kind, palette_search};
-use optgraph_core::{Model, Status, load, module_detail_label, parent_path};
+use optgraph_core::{Model, Status, load, module_detail_label, module_label, module_short_label, parent_path};
 
 fn fixture() -> Model {
     Model::new(load::from_str(include_str!("data/nested.json")).expect("loads"))
@@ -137,6 +137,7 @@ fn a_submodule_inside_a_submodule() {
         c[0],
         Crumb {
             text: "fixture.home".into(),
+            full: "fixture.home".into(),
             target: CrumbTarget::Option(oi(&m, "fixture.home"))
         }
     );
@@ -160,6 +161,42 @@ fn a_quoted_instance_name() {
     let i = inst(&m, "fileSystems.\"/boot\"");
     assert_eq!(m.instances.list[i].name, "/boot");
     assert_eq!(m.instances.list[i].parent, "fileSystems");
+}
+
+#[test]
+fn a_path_like_instance_name_shows_its_last_segment() {
+    let m = fixture();
+    let is = &m.instances;
+    let full = "config/some-application/with/a/rather/long/path/settings.conf";
+    let i = inst(&m, &format!("fixture.home.zoe.files.\"{full}\""));
+    assert_eq!(is.list[i].name, full);
+    assert_eq!(is.list[i].short, "settings.conf");
+    assert_eq!(is.label(i), "files.\"…/settings.conf\"");
+    assert_eq!(is.full_label(i), format!("files.\"{full}\""));
+    // The chip names the outermost instance; the search finds the full name.
+    assert_eq!(is.chip_name(i), "zoe");
+    assert_eq!(is.find(full), Ok(i));
+    let path = format!("fixture.home.zoe.files.\"{full}\".text");
+    let c = is.breadcrumb(oi(&m, &path), &path);
+    let texts: Vec<&str> = c.iter().map(|c| c.text.as_str()).collect();
+    assert_eq!(texts, vec!["fixture.home", "zoe", "files", "settings.conf", "text"]);
+    assert_eq!(c[3].full, full);
+    assert_eq!(c[3].target, CrumbTarget::Instance(i));
+    // Its modules' labels, the verdict and the ladder use the short name; the
+    // long label keeps the path.
+    let mi = is.list[i].modules[0];
+    assert!(module_short_label(&m.modules()[mi]).starts_with("settings.conf › "));
+    assert!(module_label(&m.modules()[mi]).contains(full));
+    let o = oi(&m, &path);
+    let by = m.analysis.info[o].beats.as_ref().expect("an override").by_module();
+    assert!(by.contains("settings.conf › ") && !by.contains(full), "{by}");
+    for r in m.ladder(o) {
+        assert!(!r.reason.contains(full), "{}", r.reason);
+    }
+    // A top-level single-segment path stays whole.
+    let d = demo();
+    let boot = inst(&d, "fileSystems.\"/boot\"");
+    assert_eq!(d.instances.list[boot].short, "/boot");
 }
 
 #[test]

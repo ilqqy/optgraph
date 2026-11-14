@@ -18,8 +18,8 @@ use gpui::{
     Window, point, px, quad, size,
 };
 use optgraph_core::layout::{
-    CLUSTER_HEAD, ClusterBox, ClusterScreen, ClusterSpec, Point as LPoint, Size, bundled_links, cluster_on_screen,
-    clustered_layout,
+    CLUSTER_HEAD, CLUSTER_PAD, ClusterBox, ClusterScreen, ClusterSpec, Point as LPoint, Size, bundled_links,
+    cluster_on_screen, clustered_layout,
 };
 use optgraph_core::{Model, ModuleStatus, OriginClass, Status, module_short_label, nested_file_label, ring_text};
 
@@ -50,6 +50,9 @@ const OWNER_FAN_MAX: usize = 3;
 const LABEL_MIN_K: f64 = 0.42;
 /// Cluster labels longer than this keep their end.
 const LABEL_MAX: usize = 40;
+/// The instance filter's camera tries a smaller set below this zoom (its
+/// cluster labels and badges stay full size).
+const SCOPE_MIN_K: f64 = LABEL_MIN_K;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cam {
@@ -151,6 +154,14 @@ pub struct EdgeChip {
     pub text: SharedString,
 }
 
+/// The instance filter in the graph: the nodes of the instance and those
+/// inside it, with their owners, and the clusters of those instances.
+#[derive(Clone, Debug, Default)]
+pub struct Scope {
+    pub nodes: HashSet<usize>,
+    pub clusters: HashSet<usize>,
+}
+
 /// What a frame draws: the camera and the selection at that moment.
 #[derive(Clone)]
 pub struct Frame {
@@ -162,6 +173,7 @@ pub struct Frame {
     pub pins: Rc<HashSet<usize>>,
     pub path: Option<Rc<HashSet<usize>>>,
     pub via: Option<Rc<HashSet<usize>>>,
+    pub scope: Option<Rc<Scope>>,
     pub hover: Option<usize>,
     pub hover_cluster: Option<usize>,
     pub selected: Option<usize>,
@@ -185,6 +197,8 @@ pub struct GraphState {
     /// Links on the import paths to what is selected, and their modules.
     pub path: Option<Rc<HashSet<usize>>>,
     pub via: Option<Rc<HashSet<usize>>>,
+    /// The instance filter, while nothing is selected.
+    pub scope: Option<Rc<Scope>>,
     fade_at: Instant,
     pub hover: Option<usize>,
     /// A cluster's label row under the pointer.
@@ -217,8 +231,12 @@ enum Goal {
         context: Vec<usize>,
         max_k: f64,
     },
-    /// These nodes with their clusters, nothing pinned.
-    Nodes(Vec<usize>),
+    /// The first of these node sets (with their clusters) that shows at
+    /// SCOPE_MIN_K or closer, else the last; `pinned` drawn at full size.
+    Scope {
+        sets: Vec<Vec<usize>>,
+        pinned: Vec<usize>,
+    },
 }
 
 impl Default for GraphState {
@@ -232,6 +250,7 @@ impl Default for GraphState {
             pins: Rc::default(),
             path: None,
             via: None,
+            scope: None,
             fade_at: Instant::now() - Duration::from_secs(10),
             hover: None,
             hover_cluster: None,
@@ -423,7 +442,7 @@ impl GraphState {
             let closed = inst.and_then(|i| is.chain(i).into_iter().find(|&a| !self.is_open(model, a)));
             if let Some(a) = closed {
                 let n = *pill_of.entry(a).or_insert_with(|| {
-                    let label = format!("{} · {}", short_label(is.label(a)), is.list[a].total_modules);
+                    let label = format!("{} · {}", short_label(&is.label(a)), is.list[a].total_modules);
                     nodes.push(Node {
                         module: mi,
                         w: pill_w(&label),
@@ -446,7 +465,7 @@ impl GraphState {
                 *box_of.entry(i).or_insert_with(|| {
                     clusters.push(Cluster {
                         inst: i,
-                        label: short_label(is.label(i)).into(),
+                        label: short_label(&is.label(i)).into(),
                         label_w: 0.,
                         x: 0.,
                         y: 0.,
@@ -569,7 +588,7 @@ impl GraphState {
                 Bundle {
                     node,
                     count,
-                    w: text_width(window, &text, mono_font(), 10.).ceil() + 12.,
+                    w: text_width(window, &text, mono_font(), 11.).ceil() + 12.,
                     text,
                 }
             })
@@ -624,13 +643,14 @@ impl GraphState {
         self.pins = Rc::default();
         self.path = None;
         self.via = None;
+        self.scope = None;
         self.selected = None;
         self.hover = None;
         self.hover_cluster = None;
     }
 
     pub fn dimming(&self) -> bool {
-        !self.rings.is_empty() || self.lit.is_some()
+        !self.rings.is_empty() || self.lit.is_some() || self.scope.is_some()
     }
 
     fn start_fade(&mut self, was_dim: bool) {
@@ -643,11 +663,6 @@ impl GraphState {
     pub fn select_none(&mut self) {
         self.clear();
         self.goal(Goal::Fit, true);
-    }
-
-    /// Nothing selected, with the camera left alone.
-    pub fn select_none_keep(&mut self) {
-        self.clear();
     }
 
     /// A selected option: rings on its defining modules, their import
@@ -749,28 +764,67 @@ impl GraphState {
         self.move_to(target, animate && !self.quiet);
     }
 
-    /// The camera on an instance and those inside it; on the instance alone
-    /// if that whole set would make the labels too small to read.
-    pub fn frame_instances(&mut self, inst: usize, inside: &[usize]) {
+    /// The instance filter with nothing selected: the instance, those inside
+    /// it and its owners (`owners`: module indices) stay lit, the rest
+    /// recedes as for a selection. The owners are pinned (full-size labels).
+    /// The camera fits the open clusters of the filter and the owners; if
+    /// that is too small to read, the instance's own cluster and owners, then
+    /// that cluster alone. What is out of view gets an edge chip.
+    pub fn filter_instances(&mut self, inst: usize, inside: &[usize], owners: &[usize]) {
         let Some(data) = self.data.clone() else { return };
-        let nodes_of = |insts: &[usize]| -> Vec<usize> {
-            data.nodes
-                .iter()
-                .enumerate()
-                .filter(|(_, n)| {
-                    n.collapsed.is_some_and(|i| insts.contains(&i))
-                        || n.in_box.is_some_and(|c| insts.contains(&data.clusters[c].inst))
-                })
-                .map(|(i, _)| i)
-                .collect()
+        let was_dim = self.dimming();
+        self.clear();
+        let mut nodes: HashSet<usize> = data
+            .nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, n)| {
+                n.collapsed.is_some_and(|i| inside.contains(&i))
+                    || n.in_box.is_some_and(|c| inside.contains(&data.clusters[c].inst))
+            })
+            .map(|(i, _)| i)
+            .collect();
+        if nodes.is_empty() {
+            self.goal(Goal::Fit, true);
+            return;
+        }
+        let clusters: HashSet<usize> = (0..data.clusters.len())
+            .filter(|&c| inside.contains(&data.clusters[c].inst))
+            .collect();
+        let mut owner_nodes: Vec<usize> = owners
+            .iter()
+            .filter_map(|m| data.by_module.get(m).copied())
+            .filter(|n| !nodes.contains(n))
+            .collect();
+        owner_nodes.sort();
+        owner_nodes.dedup();
+        let members = |cs: &mut dyn Iterator<Item = usize>| -> Vec<usize> {
+            let mut v: Vec<usize> = cs.flat_map(|c| data.clusters[c].members.iter().copied()).collect();
+            v.sort();
+            v
         };
-        let mut nodes = nodes_of(inside);
-        if self.width > 0. && !nodes.is_empty() && self.view(&nodes, 1.3, &[]).k < LABEL_MIN_K {
-            nodes = nodes_of(&[inst]);
-        }
-        if !nodes.is_empty() {
-            self.goal(Goal::Nodes(nodes), true);
-        }
+        let mut all = members(&mut clusters.iter().copied());
+        let own = members(&mut (0..data.clusters.len()).filter(|&c| data.clusters[c].inst == inst));
+        let mut own_owners = own.clone();
+        all.extend(&owner_nodes);
+        own_owners.extend(&owner_nodes);
+        nodes.extend(&owner_nodes);
+        let nodes = Rc::new(nodes);
+        self.pins = Rc::new(owner_nodes.iter().copied().collect());
+        self.lit = Some(nodes.clone());
+        self.via = Some(nodes.clone());
+        self.scope = Some(Rc::new(Scope {
+            nodes: (*nodes).clone(),
+            clusters,
+        }));
+        self.start_fade(was_dim);
+        self.goal(
+            Goal::Scope {
+                sets: vec![all, own_owners, own],
+                pinned: owner_nodes,
+            },
+            true,
+        );
     }
 
     fn resolve(&self, g: &Goal) -> Cam {
@@ -778,7 +832,17 @@ impl GraphState {
         match g {
             Goal::Fit => self.view(&(0..data.nodes.len()).collect::<Vec<_>>(), 1.3, &[]),
             Goal::Frame { core, context, max_k } => self.frame(core, context, *max_k),
-            Goal::Nodes(nodes) => self.view(nodes, 1.3, &[]),
+            Goal::Scope { sets, pinned } => {
+                let mut best = self.cam;
+                for set in sets.iter().filter(|s| !s.is_empty()) {
+                    let pins: Vec<usize> = pinned.iter().copied().filter(|p| set.contains(p)).collect();
+                    best = self.view(set, 1.3, &pins);
+                    if best.k >= SCOPE_MIN_K {
+                        break;
+                    }
+                }
+                best
+            }
         }
     }
 
@@ -864,6 +928,7 @@ impl GraphState {
                 pins: self.pins.clone(),
                 path: self.path.clone(),
                 via: self.via.clone(),
+                scope: self.scope.clone(),
                 hover: self.hover,
                 hover_cluster: self.hover_cluster,
                 selected: self.selected,
@@ -923,20 +988,45 @@ impl GraphState {
                 .max(MIN_K)
         };
         let pin_set: HashSet<usize> = pinned.iter().copied().collect();
-        // Nothing pinned: the whole graph or an instance, clusters included.
-        let mut b = self.bounds(nodes, &HashSet::new(), 1., pin_set.is_empty());
+        // Nothing pinned (the whole graph) or the instance filter: clusters included.
+        let boxes = pin_set.is_empty() || self.scope.is_some();
+        let mut b = self.bounds(nodes, &HashSet::new(), 1., boxes);
         let mut k = fit_k(b);
         for _ in 0..3 {
-            if pin_set.is_empty() || k >= READ_K {
+            let pins = !pin_set.is_empty() && k < READ_K;
+            let labels = self.scope.is_some() && k < READ_K;
+            if !pins && !labels {
                 break;
             }
-            b = self.bounds(nodes, &pin_set, READ_K / k, false);
+            b = if pins {
+                self.bounds(nodes, &pin_set, READ_K / k, boxes && self.scope.is_some())
+            } else {
+                self.bounds(nodes, &HashSet::new(), 1., boxes)
+            };
+            if labels {
+                self.grow_for_labels(&mut b, nodes, k);
+            }
             k = fit_k(b);
         }
         Cam {
             k,
             x: pad + (ww - (b.2 - b.0) * k) / 2. - b.0 * k,
             y: pad + top + (hh - (b.3 - b.1) * k) / 2. - b.1 * k,
+        }
+    }
+
+    /// World bounds `b` grown for the instance filter's full-size cluster
+    /// label rows at zoom `k` (wider and above the box, `cluster_on_screen`).
+    fn grow_for_labels(&self, b: &mut (f64, f64, f64, f64), nodes: &[usize], k: f64) {
+        let (Some(data), Some(scope)) = (&self.data, &self.scope) else {
+            return;
+        };
+        for &c in &scope.clusters {
+            let cl = &data.clusters[c];
+            if cl.members.iter().any(|m| nodes.contains(m)) {
+                b.2 = b.2.max(cl.x + cl.label_w / k);
+                b.1 = b.1.min(cl.y + CLUSTER_HEAD + CLUSTER_PAD - (CLUSTER_HEAD + 4.) / k);
+            }
         }
     }
 
@@ -1076,21 +1166,37 @@ impl GraphState {
         let data = self.data.as_ref().unwrap();
         let w = data.bundles.iter().find(|b| b.node == node).map_or(0., |b| b.w);
         let (x, y, rw, rh) = self.node_rect(node);
-        badge_geometry(x, y, rw, rh, w, self.chip_w(node), self.cam.k * self.pin_scale(node))
+        let k = self.cam.k * self.pin_scale(node);
+        badge_geometry(
+            x,
+            y,
+            rw,
+            rh,
+            w,
+            self.chip_w(node),
+            k,
+            badge_k(self.scope.as_deref(), node, k),
+        )
     }
 
     /// The cluster whose label row is under a stage point.
     pub fn cluster_at(&self, px_: f64, py: f64) -> Option<usize> {
         let data = self.data.as_ref()?;
         (0..data.clusters.len()).find(|&c| {
-            let s = cluster_screen(data, c, self.cam, &self.pins);
+            let s = cluster_screen(data, c, self.cam, &self.pins, self.scope.as_deref());
             px_ >= s.x && px_ <= s.x + s.w && py >= s.y && py <= s.y + s.head
         })
     }
 
     /// Screen rectangle (stage coordinates) of a cluster.
     pub fn cluster_rect(&self, c: usize) -> (f64, f64, f64, f64) {
-        let s = cluster_screen(self.data.as_ref().unwrap(), c, self.cam, &self.pins);
+        let s = cluster_screen(
+            self.data.as_ref().unwrap(),
+            c,
+            self.cam,
+            &self.pins,
+            self.scope.as_deref(),
+        );
         (s.x, s.y, s.w, s.h)
     }
 
@@ -1108,14 +1214,37 @@ impl GraphState {
     /// import paths (its defining modules and their ancestors) that are out
     /// of view: an arrow towards each and its name, a defining module's
     /// chip in its status colour with its ring text; a click brings it into
-    /// view.
+    /// view. With the instance filter: its owners, collapsed instances and
+    /// clusters out of view (a cluster by its label).
     pub fn edge_chips(&self) -> Vec<EdgeChip> {
         let (Some(data), Some(via)) = (&self.data, &self.via) else {
             return vec![];
         };
-        if self.rings.is_empty() || self.anim.is_some() {
+        if self.anim.is_some() {
             return vec![];
         }
+        // (node to reveal, its name, its screen rectangle)
+        type Target = (usize, SharedString, (f64, f64, f64, f64));
+        let targets: Vec<Target> = if !self.rings.is_empty() {
+            via.iter()
+                .map(|&n| (n, data.nodes[n].full.clone(), self.node_rect(n)))
+                .collect()
+        } else if let Some(scope) = &self.scope {
+            let mut t: Vec<_> = scope
+                .nodes
+                .iter()
+                .filter(|&&n| data.nodes[n].in_box.is_none_or(|c| !scope.clusters.contains(&c)))
+                .map(|&n| (n, data.nodes[n].full.clone(), self.node_rect(n)))
+                .collect();
+            for &c in &scope.clusters {
+                if let Some(&first) = data.clusters[c].members.first() {
+                    t.push((first, data.clusters[c].label.clone(), self.cluster_rect(c)));
+                }
+            }
+            t
+        } else {
+            return vec![];
+        };
         let margin = 10.;
         // Bottom chips stay above the legend.
         let (w, h) = (self.width, self.height - RESERVE_BOTTOM - 36.);
@@ -1133,29 +1262,68 @@ impl GraphState {
                 )
             })
             .collect();
-        let mut ids: Vec<usize> = via.iter().copied().collect();
-
-        ids.sort_by(|a, b| data.nodes[*a].y.total_cmp(&data.nodes[*b].y));
-        for n in ids {
-            let (x, y, rw, rh) = self.node_rect(n);
-            let (cx, cy) = (x + rw / 2., y + rh / 2.);
-            let off_x = if x + rw < 0. {
+        // Out of view: wholly; with the filter, by its centre (a pinned owner
+        // cut by the edge gets a chip too).
+        let by_centre = self.scope.is_some();
+        let side = |(x, y, rw, rh): (f64, f64, f64, f64)| {
+            let (x0, x1, y0, y1) = if by_centre {
+                (x + rw / 2., x + rw / 2., y + rh / 2., y + rh / 2.)
+            } else {
+                (x, x + rw, y, y + rh)
+            };
+            let off_x = if x1 < 0. {
                 -1
-            } else if x > w {
+            } else if x0 > w {
                 1
             } else {
                 0
             };
-            let off_y = if y + rh < self.banner_h() {
+            let off_y = if y1 < self.banner_h() {
                 -1
-            } else if y > h {
+            } else if y0 > h {
                 1
             } else {
                 0
             };
-            if off_x == 0 && off_y == 0 {
-                continue;
+            (off_x, off_y)
+        };
+        let mut targets: Vec<_> = targets.into_iter().filter(|t| side(t.2) != (0, 0)).collect();
+        targets.sort_by(|a, b| {
+            (a.2.1, a.0)
+                .partial_cmp(&(b.2.1, b.0))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        if self.scope.is_some() {
+            // The filter: one chip per side, for the first out there ("files.a +3").
+            let mut by_side: Vec<((i32, i32), usize)> = Vec::new();
+            let mut kept = Vec::new();
+            for t in targets {
+                let d = side(t.2);
+                match by_side.iter_mut().find(|(s, _)| *s == d) {
+                    Some((_, n)) => *n += 1,
+                    None => {
+                        by_side.push((d, 1));
+                        kept.push(t);
+                    }
+                }
             }
+            targets = kept
+                .into_iter()
+                .zip(&by_side)
+                .map(|((n, name, r), (_, count))| {
+                    let name = if *count > 1 {
+                        format!("{name} +{}", count - 1).into()
+                    } else {
+                        name
+                    };
+                    (n, name, r)
+                })
+                .collect();
+        }
+        for (n, name, r) in targets {
+            let (x, y, rw, rh) = r;
+            let (cx, cy) = (x + rw / 2., y + rh / 2.);
+            let (off_x, off_y) = side(r);
             let arrow = match (off_x, off_y) {
                 (-1, 0) => "←",
                 (1, 0) => "→",
@@ -1168,8 +1336,8 @@ impl GraphState {
             };
             let ring = self.rings.get(&n);
             let text: SharedString = match ring {
-                Some(r) => format!("{arrow} {} · {}", data.nodes[n].full, r.chip),
-                None => format!("{arrow} {}", data.nodes[n].full),
+                Some(r) => format!("{arrow} {name} · {}", r.chip),
+                None => format!("{arrow} {name}"),
             }
             .into();
             let est_w = 14. + 7. * text.chars().count() as f64;
@@ -1214,7 +1382,8 @@ impl GraphState {
 
 /// A cluster on the screen (stage coordinates). Pinned members are drawn larger
 /// than the zoom: the box grows around them and its label stays readable.
-fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>) -> ClusterScreen {
+/// The instance filter's clusters keep a full-size label row.
+fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>, scope: Option<&Scope>) -> ClusterScreen {
     let b = &data.clusters[c];
     let pinned: Vec<(f64, f64, f64, f64)> = b
         .members
@@ -1236,13 +1405,26 @@ fn cluster_screen(data: &GraphData, c: usize, cam: Cam, pins: &HashSet<usize>) -
         b.label_w,
         &pinned,
         READ_K,
+        scope.is_some_and(|s| s.clusters.contains(&c)),
     )
 }
 
-/// Where a bundle's badge goes, right of the owner's pill and priority chip.
-fn badge_geometry(x: f64, y: f64, rw: f64, rh: f64, w: f64, chip_w: f64, k: f64) -> (f64, f64, f64, f64) {
-    let h = 16. * k;
-    (x + rw + (chip_w + 12.) * k, y + (rh - h) / 2., w * k, h)
+/// Where a bundle's badge goes, right of the owner's pill (zoom `k`) and
+/// priority chip; the badge itself is drawn at scale `kb`.
+#[allow(clippy::too_many_arguments)]
+fn badge_geometry(x: f64, y: f64, rw: f64, rh: f64, w: f64, chip_w: f64, k: f64, kb: f64) -> (f64, f64, f64, f64) {
+    let h = 16. * kb;
+    (x + rw + chip_w * k + 6. * k + 6. * kb, y + (rh - h) / 2., w * kb, h)
+}
+
+/// A badge's scale: its owner's, at least full size (11 px text) for an owner
+/// in the instance filter.
+fn badge_k(scope: Option<&Scope>, node: usize, k: f64) -> f64 {
+    if scope.is_some_and(|s| s.nodes.contains(&node)) {
+        k.max(1.)
+    } else {
+        k
+    }
 }
 
 /// Paints a frame of the graph into `bounds` (the stage).
@@ -1257,6 +1439,7 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
     );
     let sp = |x: f64, y: f64| point(px((ox + cam.x + x * cam.k) as f32), px((oy + cam.y + y * cam.k) as f32));
     let dimming = !frame.rings.is_empty() || frame.lit.is_some();
+    let scope = frame.scope.as_deref();
     let f = frame.fade;
     let dim_a = 1. - 0.7 * f;
 
@@ -1284,11 +1467,13 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
     // Clusters under everything else.
     for (c, b) in data.clusters.iter().enumerate() {
         let lit = !dimming
-            || b.members.iter().any(|m| {
-                frame.rings.contains_key(m)
-                    || frame.via.as_ref().is_some_and(|v| v.contains(m))
-                    || frame.lit.as_ref().is_some_and(|l| l.contains(m))
-            });
+            || scope.is_some_and(|s| s.clusters.contains(&c))
+            || (scope.is_none()
+                && b.members.iter().any(|m| {
+                    frame.rings.contains_key(m)
+                        || frame.via.as_ref().is_some_and(|v| v.contains(m))
+                        || frame.lit.as_ref().is_some_and(|l| l.contains(m))
+                }));
         paint_cluster(
             frame,
             t,
@@ -1343,16 +1528,45 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
     let on_path = |k: usize| frame.path.as_ref().is_some_and(|p| p.contains(&k));
     // A large owner's other links show only while it is hovered.
     let drawn = |l: &Link| !l.bundled || frame.hover == Some(l.source);
+    let in_view = |n: usize| {
+        let nd = &data.nodes[n];
+        let (x0, y) = (cam.x + nd.x * cam.k, cam.y + nd.y * cam.k);
+        x0 + nd.w * cam.k >= 0. && x0 <= bw && y >= 0. && y <= bh
+    };
+    // With the instance filter: a link inside it is drawn while both its ends
+    // are in view (an edge chip stands for the end out of view), the rest
+    // recede; a hovered owner's fan is drawn in full.
+    let scoped = |l: &Link| -> Option<bool> {
+        let s = scope?;
+        if frame.hover == Some(l.source) {
+            return Some(true);
+        }
+        (s.nodes.contains(&l.source) && s.nodes.contains(&l.target)).then(|| in_view(l.source) && in_view(l.target))
+    };
     for dashed in [false, true] {
         let rest = data
             .links
             .iter()
             .enumerate()
-            .filter(|(k, l)| l.dashed == dashed && !on_path(*k) && drawn(l))
+            .filter(|(k, l)| l.dashed == dashed && !on_path(*k) && drawn(l) && scoped(l).is_none())
             .map(|(_, l)| l);
-        let alpha = if frame.path.is_some() { dim_a } else { 1. };
+        let alpha = if frame.path.is_some() || scope.is_some() {
+            dim_a
+        } else {
+            1.
+        };
         if let Some(p) = edge_path(&mut rest.into_iter(), (1.25 * cam.k).max(1.), dashed) {
             window.paint_path(p, t.edge.opacity(alpha as f32));
+        }
+        if scope.is_some() {
+            let own = data
+                .links
+                .iter()
+                .filter(|l| l.dashed == dashed && scoped(l) == Some(true) && drawn(l))
+                .collect::<Vec<_>>();
+            if let Some(p) = edge_path(&mut own.into_iter(), (1.25 * cam.k).max(1.), dashed) {
+                window.paint_path(p, t.edge);
+            }
         }
         if frame.path.is_some() {
             let lit = data
@@ -1413,7 +1627,7 @@ pub fn paint(frame: &Frame, t: &Theme, bounds: Bounds<Pixels>, window: &mut Wind
             &data.nodes[i],
             i,
             pin_scale(i),
-            true,
+            show_text || scope.is_none() || frame.pins.contains(&i),
             Tier::Own,
             1.,
             (ox, oy, bw, bh),
@@ -1587,7 +1801,8 @@ fn paint_bundle(
     let n = &frame.data.nodes[b.node];
     let (x, cy, w, h, k) = node_screen(frame, n, s, o);
     let chip_w = frame.rings.get(&b.node).map_or(0., |r| r.chip_w + 8.);
-    let (bx, by, bw, bh) = badge_geometry(x, cy - h / 2., w, h, b.w, chip_w, k);
+    let kb = badge_k(frame.scope.as_deref(), b.node, k);
+    let (bx, by, bw, bh) = badge_geometry(x, cy - h / 2., w, h, b.w, chip_w, k, kb);
     if frame.hover != Some(b.node) {
         let mut stub = PathBuilder::stroke(px((k).max(1.) as f32));
         stub.move_to(point(px((x + w) as f32), px(cy as f32)));
@@ -1604,10 +1819,10 @@ fn paint_bundle(
         t.accent.opacity(0.45 * alpha),
         BorderStyle::Solid,
     ));
-    if k < LABEL_MIN_K {
+    if kb < LABEL_MIN_K {
         return;
     }
-    let size_ = 10. * k;
+    let size_ = 11. * kb;
     let run = TextRun {
         len: b.text.len(),
         font: mono_font(),
@@ -1621,7 +1836,7 @@ fn paint_bundle(
         .shape_line(b.text.clone(), px(size_ as f32), &[run], None);
     let lh = size_ * 1.3;
     line.paint(
-        point(px((bx + 6. * k) as f32), px((cy - lh / 2.) as f32)),
+        point(px((bx + 6. * kb) as f32), px((cy - lh / 2.) as f32)),
         px(lh as f32),
         gpui::TextAlign::Left,
         None,
@@ -1646,7 +1861,7 @@ fn paint_cluster(
     window: &mut Window,
     cx: &mut App,
 ) {
-    let s = cluster_screen(&frame.data, c, frame.cam, &frame.pins);
+    let s = cluster_screen(&frame.data, c, frame.cam, &frame.pins, frame.scope.as_deref());
     let (x, y, w, h) = (view.0 + s.x, view.1 + s.y, s.w, s.h);
     // The label row's scale: 1 when the box grew around pinned members.
     let k = s.head / CLUSTER_HEAD;

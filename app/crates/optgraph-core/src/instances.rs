@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::analysis::{instance_name, parent_path};
 use crate::model::Graph;
+use crate::text::{display_name, short_keys};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instance {
@@ -13,6 +14,9 @@ pub struct Instance {
     pub path: String,
     /// `ilya`
     pub name: String,
+    /// The name as chips and labels show it: a path-like name's last segment
+    /// (`search.json` for `"/home/ilya/.config/app/search.json"`).
+    pub short: String,
     /// Path of the option whose value holds the instance (`home-manager.users`).
     /// It equals `path` for a single submodule.
     pub parent: String,
@@ -40,7 +44,10 @@ pub struct Instance {
 /// A breadcrumb segment and what clicking it does.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Crumb {
+    /// Path-like names cut to their last segment.
     pub text: String,
+    /// The segment in full (its tooltip and what a copy takes).
+    pub full: String,
     pub target: CrumbTarget,
 }
 
@@ -110,6 +117,7 @@ impl Instances {
                 Instance {
                     path: path.to_string(),
                     name: instance_name(path),
+                    short: display_name(&instance_name(path)),
                     parent_option: option_at.get(parent.as_str()).copied(),
                     parent,
                     enclosing: None,
@@ -298,9 +306,10 @@ impl Instances {
 
     /// The short name of an instance for a chip: the name of the outermost
     /// instance around it (`ilya` for `home-manager.users.ilya.programs.x.profiles.default`,
-    /// where the instance's own name would only say `default`).
+    /// where the instance's own name would only say `default`); a path-like
+    /// name gives its last segment.
     pub fn chip_name(&self, i: usize) -> &str {
-        &self.list[self.chain(i)[0]].name
+        &self.list[self.chain(i)[0]].short
     }
 
     /// `i` and the instances inside it.
@@ -320,11 +329,17 @@ impl Instances {
 
     /// The instance's path below its enclosing instance (`files.todo` in
     /// `fixture.home.alice`), its full path at the top level.
-    pub fn label(&self, i: usize) -> &str {
+    pub fn full_label(&self, i: usize) -> &str {
         let inst = &self.list[i];
         inst.enclosing
             .and_then(|e| relative_to(&inst.path, &self.list[e].path))
             .unwrap_or(&inst.path)
+    }
+
+    /// `full_label` with path-like keys cut to their last segment
+    /// (`xdg.configFile."…/init.lua"`): cluster labels and sidebar groups.
+    pub fn label(&self, i: usize) -> String {
+        short_keys(self.full_label(i))
     }
 
     /// An option's path below its instance (`programs.git.enable`).
@@ -350,20 +365,24 @@ impl Instances {
                 .and_then(|e| relative_to(&inst.parent, &self.list[e].path))
                 .unwrap_or(&inst.parent);
             out.push(Crumb {
-                text: holder.to_string(),
+                text: short_keys(holder),
+                full: holder.to_string(),
                 target: inst
                     .parent_option
                     .map_or(CrumbTarget::Instance(at), CrumbTarget::Option),
             });
             if inst.parent != inst.path {
                 out.push(Crumb {
-                    text: inst.name.clone(),
+                    text: inst.short.clone(),
+                    full: inst.name.clone(),
                     target: CrumbTarget::Instance(at),
                 });
             }
         }
+        let here = self.relative_path(oi, path);
         out.push(Crumb {
-            text: self.relative_path(oi, path).to_string(),
+            text: short_keys(here),
+            full: here.to_string(),
             target: CrumbTarget::Here,
         });
         out

@@ -640,9 +640,13 @@ impl OptgraphView {
             if k > 0 {
                 row = row.child(div().text_color(t.text3).child("›"));
             }
+            let cut = (c.text != c.full).then_some(c.full);
             let seg = div().id(("crumb", k)).rounded(px(R_SM)).px(px(3.)).child(c.text);
             row = row.child(match c.target {
-                CrumbTarget::Here => seg.text_color(t.text).font_weight(FontWeight::MEDIUM),
+                CrumbTarget::Here => seg
+                    .text_color(t.text)
+                    .font_weight(FontWeight::MEDIUM)
+                    .when_some(cut, |s, full| s.tooltip(crate::ui::tip(full))),
                 CrumbTarget::Option(p) => seg
                     .text_color(t.text2)
                     .cursor_pointer()
