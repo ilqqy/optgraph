@@ -1,5 +1,6 @@
-# optgraph CLI. cli/default.nix prepends OPTGRAPH_SRC, OPTGRAPH_NARHASH and
-# OPTGRAPH_VERSION, and writeShellApplication adds errexit/nounset/pipefail.
+# optgraph CLI. cli/default.nix prepends OPTGRAPH_SRC (cli/ and nix/ only),
+# OPTGRAPH_VERSION and OPTGRAPH_VIEWER, and writeShellApplication adds
+# errexit/nounset/pipefail.
 #
 # Why bash: the CLI only orchestrates `nix flake archive`, `nix eval` and a
 # retry loop; all JSON is handled by jq. writeShellApplication shellchecks it.
@@ -132,6 +133,12 @@ nix_flags=(--extra-experimental-features 'nix-command flakes' --option pure-eval
 lock_flags=(--no-write-lock-file)
 start=$SECONDS
 evals=0
+
+# fetchTree needs the NAR hash of the embedded source in pure mode
+# (docs/module-system-notes.md topic 8). It is computed here, not at build
+# time, so the package's store path depends only on cli/ and nix/.
+OPTGRAPH_NARHASH=$(nix "${nix_flags[@]}" hash path "$OPTGRAPH_SRC") ||
+  die 2 "cannot compute the NAR hash of $OPTGRAPH_SRC"
 
 # Last error block of a nix stderr log, without colours, at most 20 lines.
 errtail() {

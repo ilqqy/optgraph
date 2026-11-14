@@ -20,7 +20,7 @@ graph.json = { meta, modules[], options[] }
 | `nixpkgsRev` | string or null | `config.system.nixos.revision`. `null` when it cannot be read; seen with a configuration built by importing `nixos/lib/eval-config.nix` directly instead of through `nixosSystem`. |
 | `nixpkgsVersion` | string | `lib.version` of the evaluated configuration (`config.lib`), e.g. `26.11.20261001.c59305b`. `"unknown"` only in the CLI's last-resort document (see `complete`). |
 | `generatedAt` | string or null | UTC timestamp `YYYY-MM-DDTHH:MM:SSZ`, set by the CLI (pure evaluation has no clock). `null` when the lib is called directly without it. |
-| `toolVersion` | string | `0.1.0+<short rev>`, `-dirty` suffix for a dirty tree, `+unknown` without git info. |
+| `toolVersion` | string | `0.1.0+<7 characters>`: the start of the store hash of optgraph's `cli/` and `nix/`, so it identifies the extractor's code and changes only when those files do (not with every commit, which would rebuild every package that embeds it). |
 | `scope` | `"user"` or `"all"` | `"user"`: default scope filter. `"all"`: CLI flag `--all`. See [Scope](#scope). |
 | `attribution` | `"aligned"` or `"file-based"` | How top-level modules were classified. `"aligned"`: the evaluation's `getSubModules` list was lined up with `_module.args.baseModules`, `extraModules` and `modules` of `nixos/lib/eval-config.nix`, and the module `nixosSystem` injects (it sets only `nixpkgs.flake.source`) was found by content as the last user module. `"file-based"`: fallback; origins come from file paths and positions only, `modulesIndex` is always `null`, the `setDefaultModuleLocation` wrapper nodes are not collapsed (they show up as extra anonymous modules), and an `alignment-failed` warning is present. |
 | `complete` | boolean | `false` only when the CLI ran out of crash recoveries or time and wrote a partial document (CLI exit code 3). The lib itself always reports `true`. |
@@ -246,7 +246,7 @@ Run: `nix run . -- ./tests/fixture#nixosConfigurations.test -o /tmp/graph.json` 
   "nixpkgsRev": "c59305bab2065cfecc4944690d9eedbb56f3a9fa",
   "nixpkgsVersion": "26.11.20261001.c59305b",
   "generatedAt": "2026-10-02T23:48:29Z",
-  "toolVersion": "0.1.0+02eeb32-dirty",
+  "toolVersion": "0.1.0+lsbnsag",
   "scope": "user",
   "attribution": "aligned",
   "complete": true,

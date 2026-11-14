@@ -12,15 +12,32 @@
       ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
 
-      toolVersion = "0.1.0+${self.shortRev or self.dirtyShortRev or "unknown"}";
+      inherit (nixpkgs) lib;
+
+      # Every package's source is limited to the files it reads, so commits
+      # that touch only README, docs/, tests/, demo/ or .github/ leave their
+      # store paths (and a binary cache's hits) unchanged.
+      # The CLI's source: its scripts and the Nix lib it imports at run time.
+      cliSrc = lib.fileset.toSource {
+        root = ./.;
+        fileset = lib.fileset.unions [
+          ./cli
+          ./nix
+        ];
+      };
+      # The extractor's code, not the commit: the first characters of cliSrc's
+      # (content-addressed) store hash. A rev would change every package that
+      # embeds the version with every commit.
+      toolVersion = "0.1.0+${
+        builtins.substring 0 7 (baseNameOf (builtins.unsafeDiscardStringContext cliSrc.outPath))
+      }";
     in
     {
       lib = import ./nix { inherit toolVersion; };
 
       packages = forAllSystems (pkgs: rec {
         default = pkgs.callPackage ./cli {
-          src = self;
-          inherit (self) narHash;
+          src = cliSrc;
           inherit toolVersion viewer;
         };
         # The native viewer (app/); runs the CLI above for flake references.
@@ -31,7 +48,8 @@
           # derivation named after it) then survive commits.
           version = "0.1.0";
         };
-        # Single-file viewer: result/index.html (viewer/build.sh).
+        # Single-file viewer: result/index.html (viewer/build.sh). `./viewer`
+        # is copied on its own, so only viewer/ affects it.
         viewer = pkgs.runCommand "optgraph-viewer" { } ''
           bash ${./viewer/build.sh} ${./viewer} $out
         '';
