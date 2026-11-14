@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::instances::Instances;
 use crate::model::{Condition, Definition, Graph, Module, OptionEntry, Origin};
-use crate::text::{base_name, plural, prio_name};
+use crate::text::{base_name, display_name, plural, prio_name, short_keys};
 
 /// Per-option facts for the lists and the start summary.
 ///   override: a listed definition lost: active, known priority, not a winner,
@@ -454,8 +454,8 @@ impl Model {
     /// it lost at a listed option; an instance's own definitions have none.
     fn dropped_at(&self, at: &str) -> String {
         match self.option_index(at).and_then(|p| self.graph.options[p].highest_prio) {
-            Some(p) => format!("dropped at {at} ({})", prio_name(Some(p))),
-            None => format!("dropped at {at}"),
+            Some(p) => format!("dropped at {} ({})", short_keys(at), prio_name(Some(p))),
+            None => format!("dropped at {}", short_keys(at)),
         }
     }
 
@@ -568,10 +568,15 @@ pub fn module_label(m: &Module) -> String {
     }
 }
 
-/// Short label for graph nodes: the file name, or the inline index.
+/// Short label for graph nodes: the file name, or the inline index. A path-like
+/// instance name gives its last segment (`text::display_name`).
 pub fn module_short_label(m: &Module) -> String {
     if let Some(scope) = &m.scope {
-        return format!("{} › {}", instance_name(scope), base_name(&nested_where(m)));
+        return format!(
+            "{} › {}",
+            display_name(&instance_name(scope)),
+            base_name(&nested_where(m))
+        );
     }
     if m.origin == Origin::UserInline {
         return match m.modules_index {
@@ -592,7 +597,9 @@ pub fn module_short_label(m: &Module) -> String {
 pub fn module_detail_label(m: &Module) -> String {
     let is_path = |id: &str| id == m.file || id.ends_with(&format!("»{}", m.file));
     match (&m.scope, &m.position) {
-        (Some(scope), Some(p)) if !is_path(&m.id) => format!("{} › {}", instance_name(scope), base_name(p)),
+        (Some(scope), Some(p)) if !is_path(&m.id) => {
+            format!("{} › {}", display_name(&instance_name(scope)), base_name(p))
+        }
         (None, Some(p)) if m.origin == Origin::UserInline => {
             format!("{} ({})", module_short_label(m), base_name(p))
         }

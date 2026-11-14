@@ -42,6 +42,24 @@ function baseName(p) {
   return i >= 0 ? s.slice(i + 1) : s;
 }
 
+// A submodule instance name that is a file path (home.file."/home/u/.config/app/search.json"):
+// its last segment, so chips, labels and verdicts stay short; tooltips, titles and
+// copies keep the full name. As optgraph-core's text::display_name.
+function displayName(name) {
+  const t = name.replace(/\/+$/, "");
+  const i = t.lastIndexOf("/");
+  return i > 0 && i + 1 < t.length ? t.slice(i + 1) : name;
+}
+
+// An option path with each quoted key that is a file path cut to its last
+// segment: home.file."/home/u/x.json".source -> home.file."…/x.json".source.
+function shortKeys(path) {
+  return path.replace(/"((?:[^"\\]|\\.)*)"/g, (all, key) => {
+    const s = displayName(key);
+    return s === key ? all : `"…/${s}"`;
+  });
+}
+
 const PRIORITY_NAMES = {
   10: "mkVMOverride",
   50: "mkForce",

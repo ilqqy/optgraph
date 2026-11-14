@@ -948,25 +948,25 @@
    "override": true,
    "userVsUser": true,
    "beats": "normal (user) beats mkDefault (user)",
-   "beatsModules": "normal in config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix beats mkDefault in config/some-application/with/a/rather/long/path/settings.conf › nested.nix",
+   "beatsModules": "normal in settings.conf › nested-plain.nix beats mkDefault in settings.conf › nested.nix",
    "off": [],
    "ladder": [
     [
      1,
      "win",
-     "beats config/some-application/with/a/rather/long/path/settings.conf › nested.nix: 100 < 1000"
+     "beats settings.conf › nested.nix: 100 < 1000"
     ],
     [
      0,
      "lose",
-     "beaten by config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix: 100 < 1000"
+     "beaten by settings.conf › nested-plain.nix: 100 < 1000"
     ]
    ],
    "crumbs": [
     "fixture.home",
     "zoe",
     "files",
-    "config/some-application/with/a/rather/long/path/settings.conf",
+    "settings.conf",
     "text"
    ]
   },
@@ -2007,11 +2007,11 @@
    "fixture.home.zoe › …/tests/fixture/modules/nested.nix"
   ],
   [
-   "config/some-application/with/a/rather/long/path/settings.conf › nested.nix",
+   "settings.conf › nested.nix",
    "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\" › …/tests/fixture/modules/nested.nix"
   ],
   [
-   "config/some-application/with/a/rather/long/path/settings.conf › nested-plain.nix",
+   "settings.conf › nested-plain.nix",
    "fixture.home.zoe.files.\"config/some-application/with/a/rather/long/path/settings.conf\" › …/tests/fixture/modules/nested-plain.nix"
   ],
   [
@@ -3237,30 +3237,6 @@
       ],
       [
        "module",
-       52,
-       [
-        3,
-        4,
-        31,
-        35
-       ],
-       "label",
-       -15.4
-      ],
-      [
-       "module",
-       53,
-       [
-        3,
-        4,
-        31,
-        35
-       ],
-       "label",
-       -16
-      ],
-      [
-       "module",
        26,
        [
         8,
@@ -3310,6 +3286,30 @@
       [
        "module",
        11,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ],
+      [
+       "module",
+       12,
+       [
+        8,
+        9,
+        13,
+        14
+       ],
+       "path",
+       -21.3
+      ],
+      [
+       "module",
+       21,
        [
         8,
         9,
@@ -3401,23 +3401,23 @@
        "module",
        52,
        [
-        2,
-        3,
-        10
+        5,
+        12,
+        17
        ],
        "label",
-       -13.4
+       -12.6
       ],
       [
        "module",
        53,
        [
-        2,
-        3,
-        10
+        5,
+        12,
+        17
        ],
        "label",
-       -14
+       -13.2
       ],
       [
        "module",
@@ -3555,30 +3555,6 @@
      [
       [
        "module",
-       52,
-       [
-        0,
-        1,
-        31,
-        35
-       ],
-       "label",
-       -10.4
-      ],
-      [
-       "module",
-       53,
-       [
-        0,
-        1,
-        31,
-        35
-       ],
-       "label",
-       -11
-      ],
-      [
-       "module",
        67,
        [
         3,
@@ -3648,6 +3624,30 @@
        ],
        "path",
        -37.2
+      ],
+      [
+       "module",
+       30,
+       [
+        9,
+        11,
+        37,
+        38
+       ],
+       "path",
+       -37.4
+      ],
+      [
+       "module",
+       31,
+       [
+        9,
+        11,
+        37,
+        38
+       ],
+       "path",
+       -37.4
       ]
      ]
     ]

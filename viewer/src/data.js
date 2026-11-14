@@ -127,7 +127,7 @@ function ladder(model, o) {
       // Nested options: the instance never saw it (docs/schema.md).
       status = "lose";
       const at = model.options.find((x) => x.path === d.shadowedAt);
-      reason = `dropped at ${d.shadowedAt}${at && at.highestPrio != null ? ` (${prioName(at.highestPrio)})` : ""}`;
+      reason = `dropped at ${shortKeys(d.shadowedAt)}${at && at.highestPrio != null ? ` (${prioName(at.highestPrio)})` : ""}`;
     } else if (!d.active) {
       status = "off";
       reason = d.condition === "mkIf-error" ? "its mkIf condition threw or is not a bool" : "switched off: its mkIf condition is false";
@@ -200,8 +200,9 @@ function instanceName(scope) {
 
 // A nested option's breadcrumb, outermost first: the option holding each
 // instance (below the enclosing instance), the instance's name, the option's
-// own path below its instance. Empty at the top level.
-function breadcrumb(model, o) {
+// own path below its instance. Empty at the top level. Path-like names are cut
+// to their last segment; `full` keeps them whole (the tooltip).
+function breadcrumb(model, o, full = false) {
   if (!o.instance) return [];
   const below = (p, base) => (base && p.startsWith(base + ".") ? p.slice(base.length + 1) : p);
   const holder = (x) => model.options.find((y) => y.path === x.parent);
@@ -210,10 +211,11 @@ function breadcrumb(model, o) {
   const segs = [];
   for (const x of chain) {
     const h = holder(x);
-    segs.push(below(x.parent, h && h.instance));
-    if (x.parent !== x.instance) segs.push(instanceName(x.instance));
+    const key = (p) => (full ? p : shortKeys(p));
+    segs.push(key(below(x.parent, h && h.instance)));
+    if (x.parent !== x.instance) segs.push(full ? instanceName(x.instance) : displayName(instanceName(x.instance)));
   }
-  segs.push(below(o.path, o.instance));
+  segs.push(full ? below(o.path, o.instance) : shortKeys(below(o.path, o.instance)));
   return segs;
 }
 
@@ -246,7 +248,7 @@ function isUserish(m) {
 // Short label for graph nodes: the file name, or the inline index.
 function moduleShortLabel(m) {
   if (!m) return "?";
-  if (m.scope) return `${instanceName(m.scope)} › ${baseName(nestedWhere(m))}`;
+  if (m.scope) return `${displayName(instanceName(m.scope))} › ${baseName(nestedWhere(m))}`;
   if (m.origin === "user-inline") return m.modulesIndex != null ? `inline #${m.modulesIndex}` : "inline (nested)";
   const anon = m.id !== m.file;
   return anon ? `${baseName(m.position || m.file)} (anon)` : baseName(m.file);

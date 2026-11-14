@@ -423,7 +423,7 @@ impl GraphState {
             let closed = inst.and_then(|i| is.chain(i).into_iter().find(|&a| !self.is_open(model, a)));
             if let Some(a) = closed {
                 let n = *pill_of.entry(a).or_insert_with(|| {
-                    let label = format!("{} · {}", short_label(is.label(a)), is.list[a].total_modules);
+                    let label = format!("{} · {}", short_label(&is.label(a)), is.list[a].total_modules);
                     nodes.push(Node {
                         module: mi,
                         w: pill_w(&label),
@@ -446,7 +446,7 @@ impl GraphState {
                 *box_of.entry(i).or_insert_with(|| {
                     clusters.push(Cluster {
                         inst: i,
-                        label: short_label(is.label(i)).into(),
+                        label: short_label(&is.label(i)).into(),
                         label_w: 0.,
                         x: 0.,
                         y: 0.,
