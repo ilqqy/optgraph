@@ -430,6 +430,162 @@ pub fn layered_layout(sizes: &[Size], edges: &[(usize, usize)]) -> Layout {
 
 /// Space around a cluster's members.
 pub const CLUSTER_PAD: f64 = 12.;
+/// A cluster's tallest column with more members than this may wrap.
+pub const PACK_OVER: usize = 8;
+/// The shape a packed cluster aims for (width / height): about a stage's.
+const PACK_ASPECT: f64 = 1.3;
+/// Between the sub-columns of a wrapped column.
+const PACK_GAP_X: f64 = 48.;
+
+/// Wraps a cluster's tallest column into sub-columns when it is long (more
+/// than PACK_OVER members) and mostly leaves (no edges out of them inside the
+/// cluster): one long list would make the box tall, its shorter columns
+/// floating in empty space on the left. The members keep their order,
+/// staggered by a fraction of a row so the curves into a later sub-column pass
+/// between the pills of the earlier ones; the columns to its right move over.
+/// The number of sub-columns (up to 4) brings the box closest to PACK_ASPECT.
+/// Routes are moved with their ends.
+fn pack_tall_column(l: &mut Layout, sizes: &[Size], edges: &[(usize, usize)]) {
+    let n = sizes.len();
+    let mut linked = vec![false; n];
+    let mut has_out = vec![false; n];
+    for &(a, b) in edges {
+        if a != b {
+            linked[a] = true;
+            linked[b] = true;
+            has_out[a] = true;
+        }
+    }
+    let layers = (0..n)
+        .filter(|&v| linked[v])
+        .map(|v| l.layer[v])
+        .max()
+        .map_or(0, |m| m + 1);
+    let mut cols: Vec<Vec<usize>> = vec![Vec::new(); layers];
+    for v in (0..n).filter(|&v| linked[v]) {
+        cols[l.layer[v]].push(v);
+    }
+    // The tallest column (the first of equals).
+    let Some(at) = (0..layers).rev().max_by_key(|&c| cols[c].len()) else {
+        return;
+    };
+    let mut col = std::mem::take(&mut cols[at]);
+    let leaves = col.iter().filter(|&&v| !has_out[v]).count();
+    if col.len() <= PACK_OVER || leaves * 2 < col.len() || layers < 2 {
+        return;
+    }
+    col.sort_by(|&a, &b| l.y[a].total_cmp(&l.y[b]).then(a.cmp(&b)));
+    let (mut x0, mut x1) = (f64::INFINITY, f64::NEG_INFINITY);
+    let (mut y0, mut y1) = (f64::INFINITY, f64::NEG_INFINITY);
+    for v in (0..n).filter(|&v| linked[v]) {
+        x0 = x0.min(l.x[v] - sizes[v].w / 2.);
+        x1 = x1.max(l.x[v] + sizes[v].w / 2.);
+        if l.layer[v] != at {
+            y0 = y0.min(l.y[v] - sizes[v].h / 2.);
+            y1 = y1.max(l.y[v] + sizes[v].h / 2.);
+        }
+    }
+    let col_w = col.iter().fold(0f64, |m, &v| m.max(sizes[v].w));
+    let pill_h = col.iter().fold(0f64, |m, &v| m.max(sizes[v].h));
+    let row_h = pill_h + GAP_Y;
+    let left = col.iter().fold(f64::INFINITY, |m, &v| m.min(l.x[v] - sizes[v].w / 2.));
+    let right = left + col_w;
+    let mid = col.iter().map(|&v| l.y[v]).sum::<f64>() / col.len() as f64;
+    let len = col.len() as f64;
+    // Height of the column in c sub-columns: one step of row_h / c per member.
+    let height = |c: f64| (len - 1.) * row_h / c + pill_h;
+    let extra = |c: f64| (c - 1.) * (col_w + PACK_GAP_X);
+    let score = |c: usize| {
+        let c = c as f64;
+        let w = x1 - x0 + extra(c);
+        let h = y1.max(mid + height(c) / 2.) - y0.min(mid - height(c) / 2.);
+        (w / PACK_ASPECT).max(h)
+    };
+    let c = (1..=4usize).min_by(|&a, &b| score(a).total_cmp(&score(b))).unwrap_or(1);
+    if c == 1 {
+        return;
+    }
+    let shift = extra(c as f64);
+    for v in (0..n).filter(|&v| linked[v] && l.layer[v] > at) {
+        l.x[v] += shift;
+    }
+    let top = mid - height(c as f64) / 2.;
+    for (i, &v) in col.iter().enumerate() {
+        l.x[v] = left + (i % c) as f64 * (col_w + PACK_GAP_X) + sizes[v].w / 2.;
+        l.y[v] = top + pill_h / 2. + i as f64 * row_h / c as f64;
+    }
+    for (k, &(a, b)) in edges.iter().enumerate() {
+        let Some(Some(pts)) = l.paths.get_mut(k) else { continue };
+        // A reversed (back) edge's route runs from its target.
+        let (a, b) = if l.layer[a] <= l.layer[b] { (a, b) } else { (b, a) };
+        // Points right of the column (and a dummy's right side in it) move over.
+        for p in pts.iter_mut() {
+            if p.x >= right - 1e-6 {
+                p.x += shift;
+            }
+        }
+        if let Some(first) = pts.first_mut() {
+            *first = Point {
+                x: l.x[a] + sizes[a].w / 2.,
+                y: l.y[a],
+            };
+        }
+        if let Some(end) = pts.last_mut() {
+            *end = Point {
+                x: l.x[b] - sizes[b].w / 2.,
+                y: l.y[b],
+            };
+        }
+    }
+}
+
+/// Lays out a cluster's members without edges inside it (`layered_layout`
+/// stacks them in a grid as wide as the linked part, often one long column)
+/// in a grid under the linked part whose column count (up to 6) brings the
+/// box closest to PACK_ASPECT. Order kept; nothing changes for four or fewer.
+fn pack_unlinked(l: &mut Layout, sizes: &[Size], edges: &[(usize, usize)]) {
+    let n = sizes.len();
+    let mut linked = vec![false; n];
+    for &(a, b) in edges {
+        if a != b {
+            linked[a] = true;
+            linked[b] = true;
+        }
+    }
+    let free: Vec<usize> = (0..n).filter(|&v| !linked[v]).collect();
+    if free.len() <= 4 {
+        return;
+    }
+    let (mut x0, mut x1, mut y1) = (f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
+    let mut y0 = f64::INFINITY;
+    for v in (0..n).filter(|&v| linked[v]) {
+        x0 = x0.min(l.x[v] - sizes[v].w / 2.);
+        x1 = x1.max(l.x[v] + sizes[v].w / 2.);
+        y0 = y0.min(l.y[v] - sizes[v].h / 2.);
+        y1 = y1.max(l.y[v] + sizes[v].h / 2.);
+    }
+    let any_linked = x0.is_finite();
+    if !any_linked {
+        (x0, x1, y0, y1) = (0., 0., 0., 0.);
+    }
+    let cell_w = free.iter().fold(0f64, |m, &v| m.max(sizes[v].w)) + GAP_X / 2.;
+    let row_h = free.iter().fold(0f64, |m, &v| m.max(sizes[v].h)) + GAP_Y;
+    let top = if any_linked { y1 + 3. * GAP_Y } else { 0. };
+    let score = |cols: usize| {
+        let rows = free.len().div_ceil(cols) as f64;
+        let w = (x1 - x0).max(cols as f64 * cell_w - GAP_X / 2.);
+        let h = top - y0 + rows * row_h - GAP_Y;
+        (w / PACK_ASPECT).max(h)
+    };
+    let cols = (1..=6usize.min(free.len()))
+        .min_by(|&a, &b| score(a).total_cmp(&score(b)))
+        .unwrap_or(1);
+    for (i, &v) in free.iter().enumerate() {
+        l.x[v] = x0 + (i % cols) as f64 * cell_w + sizes[v].w / 2.;
+        l.y[v] = top + row_h / 2. + (i / cols) as f64 * row_h;
+    }
+}
+
 /// Height of a cluster's label row.
 pub const CLUSTER_HEAD: f64 = 24.;
 
@@ -502,7 +658,10 @@ pub fn clustered_layout(sizes: &[Size], edges: &[(usize, usize)], clusters: &[Cl
                 .enumerate()
                 .filter_map(|(k, (a, b))| Some((k, (*local.get(a)?, *local.get(b)?))))
                 .collect();
-            let l = layered_layout(&inner_sizes, &inner_edges.iter().map(|&(_, e)| e).collect::<Vec<_>>());
+            let local_edges: Vec<(usize, usize)> = inner_edges.iter().map(|&(_, e)| e).collect();
+            let mut l = layered_layout(&inner_sizes, &local_edges);
+            pack_tall_column(&mut l, &inner_sizes, &local_edges);
+            pack_unlinked(&mut l, &inner_sizes, &local_edges);
             let (mut x0, mut y0, mut x1, mut y1) = (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
             for (i, s) in inner_sizes.iter().enumerate() {
                 x0 = x0.min(l.x[i] - s.w / 2.);
@@ -645,21 +804,29 @@ pub struct ClusterScreen {
 /// members are drawn larger than the zoom (`pinned`: world centre and size of
 /// each): the box grows around them, its label row is drawn at full size, and
 /// the box is as wide as that label (`label_w` includes the row's padding).
+/// A `readable` cluster (one the view is about) gets the full-size label row
+/// below `read_k` without pins too, above its members.
 pub fn cluster_on_screen(
     b: ClusterBox,
     (cam_x, cam_y, k): (f64, f64, f64),
     label_w: f64,
     pinned: &[(f64, f64, f64, f64)],
     read_k: f64,
+    readable: bool,
 ) -> ClusterScreen {
     let (mut x0, mut y0) = (cam_x + b.x * k, cam_y + b.y * k);
     let (mut x1, mut y1) = (x0 + b.w * k, y0 + b.h * k);
     let mut head = CLUSTER_HEAD * k;
-    if k < read_k && !pinned.is_empty() {
+    if k < read_k && (readable || !pinned.is_empty()) {
         let s = read_k / k;
         let pad = 8.;
         head = CLUSTER_HEAD;
-        let mut top = f64::INFINITY;
+        // The members' top edge at this zoom, less a small gap.
+        let mut top = if readable {
+            y0 + (CLUSTER_HEAD + CLUSTER_PAD) * k - 4.
+        } else {
+            f64::INFINITY
+        };
         for &(wx, wy, w, h) in pinned {
             let (cx, cy) = (cam_x + wx * k, cam_y + wy * k);
             let (hw, hh) = (w / 2. * k * s, h / 2. * k * s);

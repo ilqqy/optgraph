@@ -191,15 +191,15 @@ mod clusters {
             h: 80.,
         };
         // At full zoom, or without pins, the box is the box.
-        let plain = cluster_on_screen(b, (0., 0., 0.5), 200., &[], 1.);
+        let plain = cluster_on_screen(b, (0., 0., 0.5), 200., &[], 1., false);
         assert_eq!((plain.x, plain.y, plain.w, plain.h), (50., 50., 60., 40.));
         assert_eq!(plain.head, CLUSTER_HEAD * 0.5);
-        let full = cluster_on_screen(b, (0., 0., 1.), 200., &[(160., 150., 100., 28.)], 1.);
+        let full = cluster_on_screen(b, (0., 0., 1.), 200., &[(160., 150., 100., 28.)], 1., false);
         assert_eq!((full.w, full.h), (120., 80.));
         // Zoomed out with a pin: wide enough for the full-size label, and
         // around the pin, whose label row sits above it.
         let pin = (160., 150., 100., 28.);
-        let s = cluster_on_screen(b, (0., 0., 0.5), 200., &[pin], 1.);
+        let s = cluster_on_screen(b, (0., 0., 0.5), 200., &[pin], 1., false);
         assert_eq!(s.head, CLUSTER_HEAD);
         assert!(s.w >= 200., "the label overruns: {}", s.w);
         let (cx, cy) = (160. * 0.5, 150. * 0.5);
@@ -207,8 +207,32 @@ mod clusters {
         assert!(s.y + s.head <= cy - 14., "the label row covers the pin");
         assert!(s.y + s.h >= cy + 14.);
         // A short label does not widen it beyond the pin.
-        let short = cluster_on_screen(b, (0., 0., 0.5), 10., &[pin], 1.);
+        let short = cluster_on_screen(b, (0., 0., 0.5), 10., &[pin], 1., false);
         assert!(short.w < s.w);
+    }
+
+    #[test]
+    fn a_readable_cluster_keeps_a_full_size_label_row() {
+        let b = ClusterBox {
+            x: 100.,
+            y: 100.,
+            w: 120.,
+            h: 80.,
+        };
+        let k = 0.5;
+        let s = cluster_on_screen(b, (0., 0., k), 200., &[], 1., true);
+        assert_eq!(s.head, CLUSTER_HEAD);
+        assert!(s.w >= 200., "the label overruns: {}", s.w);
+        // The row sits above the members (their top: box top + head + pad, zoomed).
+        let members_top = (b.y + CLUSTER_HEAD + CLUSTER_PAD) * k;
+        assert!(s.y + s.head <= members_top, "{} > {members_top}", s.y + s.head);
+        assert_eq!((s.x, s.y + s.h), (b.x * k, (b.y + b.h) * k));
+        // At full zoom it is the box.
+        let full = cluster_on_screen(b, (0., 0., 1.), 200., &[], 1., true);
+        assert_eq!(
+            (full.x, full.y, full.w, full.h, full.head),
+            (100., 100., 120., 80., CLUSTER_HEAD)
+        );
     }
 
     #[test]
@@ -229,6 +253,108 @@ mod clusters {
             vec![true, false, false, true, false, true, false]
         );
         assert_eq!(bundled_links(&links, 4), vec![false; 7]);
+    }
+
+    #[test]
+    fn a_long_last_column_of_leaves_wraps() {
+        // Cluster: 1 imports 2, 2 imports leaves 3..21 (19 of them); 0 owns 1.
+        let n = 22;
+        let sizes = vec![S; n];
+        let mut edges = vec![(0, 1), (1, 2)];
+        edges.extend((3..n).map(|v| (2, v)));
+        let members: Vec<usize> = (1..n).collect();
+        let spec = ClusterSpec {
+            members: members.clone(),
+            label_w: 0.,
+        };
+        let c = clustered_layout(&sizes, &edges, std::slice::from_ref(&spec));
+        let b = c.boxes[0];
+        let one_column = 19. * S.h + 18. * optgraph_core::layout::GAP_Y;
+        assert!(b.h < one_column * 0.75, "not wrapped: {} vs {one_column}", b.h);
+        // The leaves keep their order top to bottom, sit in more than one
+        // column, inside the box, without overlaps.
+        let leaves: Vec<usize> = (3..n).collect();
+        let mut xs: Vec<i64> = leaves.iter().map(|&v| c.x[v].round() as i64).collect();
+        xs.sort();
+        xs.dedup();
+        assert!(xs.len() > 1);
+        for &v in &leaves {
+            assert!(c.x[v] - S.w / 2. >= b.x + CLUSTER_PAD - 1e-6 && c.x[v] + S.w / 2. <= b.x + b.w + 1e-6);
+            assert!(
+                c.y[v] - S.h / 2. >= b.y + CLUSTER_HEAD + CLUSTER_PAD - 1e-6 && c.y[v] + S.h / 2. <= b.y + b.h + 1e-6
+            );
+            for &u in &leaves {
+                let apart = u == v || (c.x[u] - c.x[v]).abs() >= S.w || (c.y[u] - c.y[v]).abs() >= S.h;
+                assert!(apart, "{u} and {v} overlap");
+            }
+            // The route ends on the leaf's left side.
+            let k = edges.iter().position(|&e| e == (2, v)).unwrap();
+            let end = *c.paths[k].as_ref().unwrap().last().unwrap();
+            assert!((end.x - (c.x[v] - S.w / 2.)).abs() < 1e-6 && (end.y - c.y[v]).abs() < 1e-6);
+        }
+        // A short column, or one with an edge out of it, stays a column.
+        let short = clustered_layout(
+            &sizes[..8],
+            &edges[..7],
+            &[ClusterSpec {
+                members: (1..8).collect(),
+                label_w: 0.,
+            }],
+        );
+        let xs: std::collections::HashSet<i64> = (3..8).map(|v| short.x[v].round() as i64).collect();
+        assert_eq!(xs.len(), 1);
+        // A column after it moves over: leaf 3 imports 22, right of every leaf.
+        let mut sizes = sizes;
+        sizes.push(S);
+        let mut longer = edges.clone();
+        longer.push((3, n));
+        let mut members = members;
+        members.push(n);
+        let c = clustered_layout(&sizes, &longer, &[ClusterSpec { members, label_w: 0. }]);
+        let xs: std::collections::HashSet<i64> = (3..n).map(|v| c.x[v].round() as i64).collect();
+        assert!(xs.len() > 1, "not wrapped");
+        for v in 3..n {
+            assert!(c.x[n] - S.w / 2. > c.x[v] + S.w / 2., "{n} is not right of {v}");
+        }
+        let k = longer.len() - 1;
+        let pts = c.paths[k].as_ref().unwrap();
+        assert!((pts[0].x - (c.x[3] + S.w / 2.)).abs() < 1e-6 && (pts[0].y - c.y[3]).abs() < 1e-6);
+        let end = pts.last().unwrap();
+        assert!((end.x - (c.x[n] - S.w / 2.)).abs() < 1e-6 && (end.y - c.y[n]).abs() < 1e-6);
+    }
+
+    #[test]
+    fn unlinked_members_fill_a_grid() {
+        // Cluster: 1 imports 2; 3..15 have no edges inside it; 0 owns them all.
+        let n = 15;
+        let sizes = vec![S; n];
+        let mut edges = vec![(1, 2)];
+        edges.extend((1..n).map(|v| (0, v)));
+        let c = clustered_layout(
+            &sizes,
+            &edges,
+            &[ClusterSpec {
+                members: (1..n).collect(),
+                label_w: 0.,
+            }],
+        );
+        let free: Vec<usize> = (3..n).collect();
+        let xs: std::collections::HashSet<i64> = free.iter().map(|&v| c.x[v].round() as i64).collect();
+        assert!(xs.len() > 1, "one column");
+        let one_column = 12. * S.h + 11. * optgraph_core::layout::GAP_Y;
+        assert!(c.boxes[0].h < one_column, "{}", c.boxes[0].h);
+        for &v in &free {
+            assert!(
+                c.y[v] - S.h / 2. > c.y[1].max(c.y[2]) + S.h / 2.,
+                "{v} is not under the linked part"
+            );
+            for &u in &free {
+                let apart = u == v || (c.x[u] - c.x[v]).abs() >= S.w || (c.y[u] - c.y[v]).abs() >= S.h;
+                assert!(apart, "{u} and {v} overlap");
+            }
+        }
+        // Input order: row by row.
+        assert!(c.y[3] <= c.y[n - 1] && c.x[3] <= c.x[4]);
     }
 
     #[test]
