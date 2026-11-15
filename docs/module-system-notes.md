@@ -978,7 +978,7 @@ What pure `--apply` can and cannot do (re-run; see the table below):
 
 - It cannot `import` an absolute path or store path unless that path belongs to the evaluated flake (its own source or one of its inputs). An unrelated store path is forbidden.
 - It cannot use `builtins.storePath` or `builtins.path` on a non-store path, and `fetchTree` on an unlocked input.
-- It can use `builtins.fetchTree { type = "path"; path = <store path>; narHash = "sha256-..."; }`. The tool's own flake exposes `self.narHash`, so the CLI can embed the tool's source path and `narHash` and `import` from the result.
+- It can use `builtins.fetchTree { type = "path"; path = <store path>; narHash = "sha256-..."; }`. The tool's own flake exposes `self.narHash`, so the CLI could embed the tool's source path and `narHash` and `import` from the result. It embeds a source filtered to `cli/` and `nix/` instead, and computes the `narHash` at run time with `nix hash path <store path>` (the same value as `nix path-info --json`'s `narHash`, checked on Nix 2.34.9): embedding `self.narHash` made the CLI's store path change with every file in the repository, README included.
 - `builtins.currentTime` and `builtins.currentSystem` do not exist; `builtins.getEnv` returns `""`. `generatedAt` is therefore passed in by the CLI.
 - `builtins.getFlake` of optgraph's own flake is avoided: it would fetch all of its locked inputs. <!-- unverified: reasoning, not tested -->
 - Inlining the extraction code into `--apply` hits the ~128 KiB argument limit. <!-- unverified: not tested, research run, 2026-10-02 -->
